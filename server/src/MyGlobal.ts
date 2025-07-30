@@ -14,6 +14,10 @@ export namespace MyGlobal {
   export interface IEnvironments {
     API_PORT: `${number}`;
     OPENAI_API_KEY: string;
+    // 한국투자증권 OpenAPI 설정
+    KIS_APP_KEY: string;
+    KIS_APP_SECRET: string;
+    KIS_BASE_URL: string;
   }
 }
 
