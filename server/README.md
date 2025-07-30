@@ -1,7 +1,7 @@
   
 
 # 🚀 시작하기 전에
-해당 서버는 한국투자증권의 Open API를 활용하여 주식 거래 기능을 구현합니다.  
+해당 서버는 [한국투자증권](https://securities.koreainvestment.com/main/Main.jsp)의 Open API를 활용하여 주식 거래 기능을 구현합니다.  
 API 사용을 위해서는 한국투자증권 계좌와 KIS Developers 서비스 신청이 필요합니다.  
 
 
