@@ -11,11 +11,15 @@ export class MyBackend {
   private application_?: INestApplication;
 
   public async open(): Promise<void> {
+    console.log('🚀 Investica 서버를 시작합니다...');
+    
     //----
     // OPEN THE BACKEND SERVER
     //----
     // MOUNT CONTROLLERS
-    this.application_ = await NestFactory.create(MyModule, { logger: false });
+    this.application_ = await NestFactory.create(MyModule, { 
+      logger: ['log', 'error', 'warn', 'debug', 'verbose'] 
+    });
     await WebSocketAdaptor.upgrade(this.application_);
 
     // THE SWAGGER EDITOR
@@ -32,7 +36,7 @@ export class MyBackend {
       path: "editor",
       application: this.application_,
       swagger: document as any,
-      package: "Shopping Backend",
+      package: "Investica Backend",
       simulate: true,
       e2e: true,
     });
@@ -40,6 +44,9 @@ export class MyBackend {
     // DO OPEN
     this.application_.enableCors();
     await this.application_.listen(MyConfiguration.API_PORT(), "0.0.0.0");
+
+    console.log(`✅ Investica 서버가 성공적으로 시작되었습니다!`);
+    console.log(`🌐 서버 주소: http://localhost:${MyConfiguration.API_PORT()}`);
 
     //----
     // POST-PROCESSES
