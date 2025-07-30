@@ -9,7 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, 
+      isGlobal: true,
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client"),
@@ -17,7 +17,7 @@ import { ConfigModule } from '@nestjs/config';
     }),
     ChatModule,
     KisModule,
-    NewsModule,       
+    NewsModule,
   ],
 })
 export class MyModule {}
