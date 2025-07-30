@@ -46,7 +46,7 @@ export class MyBackend {
       path: "editor",
       application: this.application_,
       swagger: document as any,
-      package: "Shopping Backend",
+      package: "Investica Backend",
       simulate: true,
       e2e: true,
     });
