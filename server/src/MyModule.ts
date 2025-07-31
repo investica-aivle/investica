@@ -4,7 +4,7 @@ import { join } from "path";
 import { AppModule } from "./controllers/app.module";
 import { BbsArticleModule } from "./controllers/bbs/BbsArticleModule";
 import { ChatModule } from "./controllers/chat/ChatModule";
-import { PdfModule } from "./controllers/PdfModule";
+import { PdfModule } from "./controllers/pdf/PdfModule";
 import { AppConfigModule } from "./gemini/config.module";
 import { GeminiModule } from "./gemini/gemini.module";
 
