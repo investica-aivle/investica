@@ -1,12 +1,10 @@
 import { Module } from "@nestjs/common";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
-
 import { AppModule } from "./controllers/app.module";
 import { BbsArticleModule } from "./controllers/bbs/BbsArticleModule";
 import { ChatModule } from "./controllers/chat/ChatModule";
 import { PdfModule } from "./controllers/PdfModule";
-
 import { AppConfigModule } from "./gemini/config.module";
 import { GeminiModule } from "./gemini/gemini.module";
 
@@ -20,8 +18,8 @@ import { GeminiModule } from "./gemini/gemini.module";
     BbsArticleModule,
     ChatModule,
     PdfModule,
-    AppConfigModule, // ȯ   Ʈ
-    GeminiModule,    // Gemini   Ʈ
+    AppConfigModule,
+    GeminiModule,
   ],
 })
 export class MyModule { }

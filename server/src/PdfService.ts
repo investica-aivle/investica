@@ -1,55 +1,80 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
-import Tesseract from 'tesseract.js';
-import { createCanvas } from '@napi-rs/canvas';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import * as fs from 'fs';
 import * as path from 'path';
-
+import { promisify } from 'util';
+import { exec } from 'child_process';
 import axios from 'axios';
-import { Injectable } from '@nestjs/common';
+
+const execAsync = promisify(exec);
 
 @Injectable()
 export class PdfService {
-    async extractTextFromPdfUrl(pdfUrl: string): Promise<string> {
-        const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-        const fontPath = path.join(__dirname, '..', 'node_modules', 'pdfjs-dist', 'standard_fonts') + path.sep;
-        const cMapPath = path.join(__dirname, '..', 'node_modules', 'pdfjs-dist', 'cmaps') + path.sep;
+    private readonly logger = new Logger(PdfService.name);
 
-        const loadingTask = pdfjsLib.getDocument({
-            data: response.data,
-            standardFontDataUrl: fontPath,
-            cMapUrl: cMapPath,
-            cMapPacked: true,
-        }).promise;
-
-        const pdf = await loadingTask;
-
-        let fullText = '';
-
-        for (let i = 1; i <= pdf.numPages / 3; i++) {
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 3 });
-            const canvas = createCanvas(viewport.width, viewport.height);
-            const context = canvas.getContext('2d');
-
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport,
-            };
-
-            await page.render(renderContext).promise;
-
-            const imageBuffer = canvas.toBuffer('image/png');
-
-            const result = await Tesseract.recognize(imageBuffer, 'kor+eng', {
-                logger: (m) => console.log(m),
+    async extractTextFromUrl(pdfUrl: string): Promise<{
+        text: string;
+        method: string;
+        numPages: number;
+        encoding: string;
+    }> {
+        try {
+            const response = await axios.get(pdfUrl, {
+                responseType: 'arraybuffer',
             });
 
-            fullText += result.data.text + '\n\n';
-            console.log(result.data.text);
+            const contentType = response.headers['content-type'];
+            if (!contentType || !contentType.includes('pdf')) {
+                throw new BadRequestException('제공된 URL이 PDF 파일이 아닙니다.');
+            }
+
+            const buffer = Buffer.from(response.data);
+            return await this.extractText(buffer);
+        } catch (error: any) {
+            this.logger.warn(`PDF 다운로드 실패: ${error.message}`);
+            throw new BadRequestException(`PDF 다운로드 또는 파싱 실패: ${error.message}`);
         }
-        fullText = fullText.replace(/\s{2,}/g, ' ');
-        console.log(fullText);
-        return fullText;
     }
 
+    async extractText(buffer: Buffer): Promise<{
+        text: string;
+        method: string;
+        numPages: number;
+        encoding: string;
+    }> {
+        const tempPath = path.join(process.cwd(), 'temp', `pdf_${Date.now()}.pdf`);
 
+        try {
+            await fs.promises.mkdir(path.dirname(tempPath), { recursive: true });
+            await fs.promises.writeFile(tempPath, buffer);
+
+            const { stdout } = await execAsync(`pdftotext -enc UTF-8 -layout "${tempPath}" -`);
+            const { stdout: pageCount } = await execAsync(`pdfinfo "${tempPath}" | findstr Pages`);
+            const numPages = parseInt(pageCount.match(/Pages:\s*(\d+)/)?.[1] || '1', 10);
+
+            return {
+                text: stdout,
+                method: 'poppler',
+                numPages,
+                encoding: 'UTF-8'
+            };
+        } finally {
+            try {
+                await fs.promises.unlink(tempPath);
+            } catch (err: any) {
+                this.logger.warn(`임시 파일 삭제 실패: ${err.message}`);
+            }
+        }
+    }
+
+    cleanKoreanText(text: string): string {
+        return text
+            .replace(/\s+/g, ' ')
+            .replace(/([가-힣])\s*([0-9a-zA-Z])/g, '$1 $2')
+            .replace(/([0-9a-zA-Z])\s*([가-힣])/g, '$1 $2')
+            .replace(/\s*([.,!?;:])\s*/g, '$1 ')
+            .replace(/\s*\(\s*/g, ' (')
+            .replace(/\s*\)\s*/g, ') ')
+            .replace(/\n\s*\n/g, '\n')
+            .trim();
+    }
 }
