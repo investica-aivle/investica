@@ -68,11 +68,12 @@ export class PdfController {
       const buffer = Buffer.from(response.data);
       const result = await this.pdfService.extractText(buffer);
       const cleanText = this.pdfService.cleanKoreanText(result.text);
+      const llmSummarize = await this.pdfService.summarizePdfcontent(cleanText);
 
       return {
         success: true,
         data: {
-          text: cleanText,
+          text: llmSummarize,
           numPages: result.numPages,
           encoding: result.encoding
         },
