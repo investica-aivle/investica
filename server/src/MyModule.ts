@@ -4,6 +4,7 @@ import { join } from "path";
 
 import { BbsArticleModule } from "./controllers/bbs/BbsArticleModule";
 import { ChatModule } from "./controllers/chat/ChatModule";
+import { ReportsModule } from "./controllers/reports/ReportsModule";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ChatModule } from "./controllers/chat/ChatModule";
     }),
     BbsArticleModule,
     ChatModule,
+    ReportsModule,
   ],
 })
 export class MyModule {}
