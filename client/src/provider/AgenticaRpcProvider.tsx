@@ -5,19 +5,26 @@ import {
   PropsWithChildren,
   useCallback,
   useContext,
-  useEffect,
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
+
+export interface IKisAuthData {
+  accountNumber: string;
+  appKey: string;
+  appSecret: string;
+}
 
 interface AgenticaRpcContextType {
   messages: IAgenticaEventJson[];
   conversate: (message: string) => Promise<void>;
   isConnected: boolean;
   isError: boolean;
-  tryConnect: () => Promise<
+  authError: string | null;
+  isAuthenticating: boolean;
+  tryConnect: (authData: IKisAuthData) => Promise<
     | WebSocketConnector<
-        null,
+        IKisAuthData,
         IAgenticaRpcListener,
         IAgenticaRpcService<"chatgpt">
       >
@@ -32,6 +39,8 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [isError, setIsError] = useState(false);
   const [driver, setDriver] =
     useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const pushMessage = useCallback(
     async (message: IAgenticaEventJson) =>
@@ -39,31 +48,43 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     []
   );
 
-  const tryConnect = useCallback(async () => {
-    try {
-      setIsError(false);
-      const connector: WebSocketConnector<
-        null,
-        IAgenticaRpcListener,
-        IAgenticaRpcService<"chatgpt">
-      > = new WebSocketConnector<
-        null,
-        IAgenticaRpcListener,
-        IAgenticaRpcService<"chatgpt">
-      >(null, {
-        assistantMessage: pushMessage,
-        describe: pushMessage,
-        userMessage: pushMessage
-      });
-      await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
-      const driver = connector.getDriver();
-      setDriver(driver);
-      return connector;
-    } catch (e) {
-      console.error(e);
-      setIsError(true);
-    }
-  }, [pushMessage]);
+  const tryConnect = useCallback(
+    async (authData: IKisAuthData) => {
+      try {
+        setIsError(false);
+        setAuthError(null);
+        setIsAuthenticating(true);
+        const connector: WebSocketConnector<
+          IKisAuthData,
+          IAgenticaRpcListener,
+          IAgenticaRpcService<"chatgpt">
+        > = new WebSocketConnector<
+          IKisAuthData,
+          IAgenticaRpcListener,
+          IAgenticaRpcService<"chatgpt">
+        >(authData, {
+          assistantMessage: pushMessage,
+          describe: pushMessage,
+          userMessage: pushMessage
+        });
+        await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
+        const driver = connector.getDriver();
+        setDriver(driver);
+        return connector;
+      } catch (e) {
+        console.error(e);
+        setIsError(true);
+        if (e instanceof Error) {
+          setAuthError(e.message);
+        } else {
+          setAuthError("KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.");
+        }
+      } finally {
+        setIsAuthenticating(false);
+      }
+    },
+    [pushMessage]
+  );
 
   const conversate = useCallback(
     async (message: string) => {
@@ -81,21 +102,22 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     [driver]
   );
 
-  useEffect(() => {
-    (async () => {
-      const connector = await tryConnect();
-      return () => {
-        connector?.close();
-        setDriver(undefined);
-      };
-    })();
-  }, [tryConnect]);
+  // 자동 연결 제거 - 사용자가 수동으로 인증 정보를 입력해야 함
+  // useEffect(() => {
+  //   (async () => {
+  //     const connector = await tryConnect();
+  //     return () => {
+  //       connector?.close();
+  //       setDriver(undefined);
+  //     };
+  //   })();
+  // }, [tryConnect]);
 
   const isConnected = !!driver;
 
   return (
     <AgenticaRpcContext.Provider
-      value={{ messages, conversate, isConnected, isError, tryConnect }}
+      value={{ messages, conversate, isConnected, isError, authError, isAuthenticating, tryConnect }}
     >
       {children}
     </AgenticaRpcContext.Provider>
