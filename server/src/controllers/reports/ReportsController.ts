@@ -4,46 +4,12 @@ import {
   MiraeAssetReport,
   MiraeAssetScraperService,
 } from "../../providers/reports/MiraeAssetScraperService";
-import {
-  ReportData,
-  ReportScraperService,
-} from "../../providers/reports/ReportScraperService";
 
 @Controller("reports")
 export class ReportsController {
   constructor(
-    private readonly reportScraperService: ReportScraperService,
     private readonly miraeAssetScraperService: MiraeAssetScraperService,
   ) {}
-
-  /**
-   * 특정 URL의 보고서 스크래핑
-   */
-  @Post("scrape")
-  async scrapeReport(@Body() body: { url: string }): Promise<ReportData> {
-    return await this.reportScraperService.scrapeReport(body.url);
-  }
-
-  /**
-   * 여러 URL의 보고서 일괄 스크래핑
-   */
-  @Post("scrape-multiple")
-  async scrapeMultipleReports(
-    @Body() body: { urls: string[] },
-  ): Promise<ReportData[]> {
-    return await this.reportScraperService.scrapeMultipleReports(body.urls);
-  }
-
-  /**
-   * 특정 사이트의 최신 보고서 가져오기
-   */
-  @Get("latest")
-  async getLatestReports(
-    @Query("siteUrl") siteUrl: string,
-    @Query("limit") limit: number = 10,
-  ): Promise<ReportData[]> {
-    return await this.reportScraperService.getLatestReports(siteUrl, limit);
-  }
 
   // ===== 미래에셋증권 전용 API =====
 
