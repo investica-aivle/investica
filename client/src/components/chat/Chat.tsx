@@ -2,11 +2,19 @@ import { useAgenticaRpc } from "../../provider/AgenticaRpcProvider";
 import { ChatInput } from "./ChatInput";
 import { ChatMessages } from "./ChatMessages";
 import { ChatStatus } from "./ChatStatus";
+import { KisAuthForm, IKisAuthData } from "./KisAuthForm";
 import { useEffect, useRef } from "react";
 
 export function Chat() {
-  const { messages, conversate, isConnected, isError, tryConnect } =
-    useAgenticaRpc();
+  const {
+    messages,
+    conversate,
+    isConnected,
+    isError,
+    authError,
+    isAuthenticating,
+    tryConnect,
+  } = useAgenticaRpc();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasMessage = messages.length > 0;
   const lastMessage = messages[messages.length - 1];
@@ -31,6 +39,21 @@ export function Chat() {
     }
   };
 
+  const handleKisAuth = async (authData: IKisAuthData) => {
+    await tryConnect(authData);
+  };
+
+  // 연결되지 않았을 때 KIS 인증 폼 표시
+  if (!isConnected && !isAuthenticating) {
+    return (
+      <KisAuthForm
+        onSubmit={handleKisAuth}
+        isLoading={isAuthenticating}
+        error={authError || undefined}
+      />
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-w-0">
       <div className="relative w-full h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
@@ -44,7 +67,9 @@ export function Chat() {
               isError={isError}
               isConnected={isConnected}
               hasMessages={hasMessage}
-              onRetryConnect={tryConnect}
+              onRetryConnect={() => {
+                /* 재연결 시 인증 폼으로 돌아가도록 처리 */
+              }}
               isWsUrlConfigured={import.meta.env.VITE_AGENTICA_WS_URL !== ""}
             />
           </div>
