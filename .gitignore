@@ -11,3 +11,4 @@ build/
 .env.production.local
 package-lock.json
 _mydocs/
+.DS_Store
