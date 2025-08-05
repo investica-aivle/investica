@@ -5,6 +5,7 @@ import { BbsArticleModule } from "./controllers/bbs/BbsArticleModule";
 import { ChatModule } from "./controllers/chat/ChatModule";
 import { ConfigModule } from '@nestjs/config';
 import { NewsModule } from "./controllers/news/NewsModule";
+import { StocksModule } from "./controllers/stocks/sotcks.module";
 
 
 @Module({
@@ -13,7 +14,8 @@ import { NewsModule } from "./controllers/news/NewsModule";
     BbsArticleModule,
     ChatModule,
     NewsModule,          
-    ConfigModule.forRoot(),
+    StocksModule,
+    ConfigModule.forRoot()
   ],
 })
 export class MyModule {}
