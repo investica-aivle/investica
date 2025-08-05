@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { KisConstants } from "./KisConstants";
 
 export interface IKisAuthRequest {
   accountNumber: string;
@@ -31,10 +32,15 @@ export interface IKisApiHeaders {
   "hashkey"?: string;    // POST API용
 }
 
+// 계좌번호 파싱 결과
+export interface IAccountNumberParts {
+  CANO: string;           // 종합계좌번호 (8자리)
+  ACNT_PRDT_CD: string;   // 계좌상품코드 (2자리)
+}
+
 @Injectable()
 export class KisAuthProvider {
   private readonly logger = new Logger(KisAuthProvider.name);
-  private readonly KIS_BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
   /**
    * 한국투자증권 OAuth 인증을 수행하여 액세스 토큰을 발급받습니다.
@@ -52,9 +58,9 @@ export class KisAuthProvider {
         appsecret: request.appSecret,
       };
 
-      this.logger.debug(`Sending OAuth request to: ${this.KIS_BASE_URL}/oauth2/tokenP`);
+      this.logger.debug(`Sending OAuth request to: ${KisConstants.VIRTUAL_DOMAIN}/oauth2/tokenP`);
 
-      const response = await fetch(`${this.KIS_BASE_URL}/oauth2/tokenP`, {
+      const response = await fetch(`${KisConstants.VIRTUAL_DOMAIN}/oauth2/tokenP`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,7 +83,7 @@ export class KisAuthProvider {
         this.logger.error(`KIS OAuth request failed`, {
           status: response.status,
           statusText: response.statusText,
-          url: `${this.KIS_BASE_URL}/oauth2/tokenP`,
+          url: `${KisConstants.VIRTUAL_DOMAIN}/oauth2/tokenP`,
           accountNumber: maskedAccountNumber,
           appKey: maskedAppKey,
           requestBody: {
@@ -151,6 +157,8 @@ export class KisAuthProvider {
       return sessionData;
     }
 
+    this.logger.log(`Token expired, refreshing for account: ${sessionData.accountNumber.replace(/(\d{4})\d+(\d{2})/, '$1****$2')}`);
+
     return await this.authenticate({
       accountNumber: sessionData.accountNumber,
       appKey: sessionData.appKey,
@@ -159,51 +167,63 @@ export class KisAuthProvider {
   }
 
   /**
-   * KIS API 호출을 위한 공통 헤더를 생성합니다.
+   * 계좌번호를 KIS API 형식으로 파싱합니다.
    */
-  public createApiHeaders(
-    sessionData: IKisSessionData,
-    trId: string,
-    options?: {
-      trCont?: string;    // 연속조회용
-      hashkey?: string;   // POST API용
+  public parseAccountNumber(accountNumber: string): IAccountNumberParts {
+    const parts = accountNumber.split('-');
+    if (parts.length !== 2) {
+      throw new Error(`잘못된 계좌번호 형식입니다: ${accountNumber}. 올바른 형식: XXXXXXXX-XX`);
     }
-  ): IKisApiHeaders {
+
+    const CANO = parts[0];
+    const ACNT_PRDT_CD = parts[1];
+
+    // CANO는 정확히 8자리여야 함
+    if (CANO.length !== 8 || !/^\d{8}$/.test(CANO)) {
+      throw new Error(`잘못된 계좌번호 형식입니다: ${CANO}. 계좌번호는 정확히 8자리 숫자여야 합니다.`);
+    }
+
+    // ACNT_PRDT_CD는 정확히 2자리여야 함
+    if (ACNT_PRDT_CD.length !== 2 || !/^\d{2}$/.test(ACNT_PRDT_CD)) {
+      throw new Error(`잘못된 계좌상품코드 형식입니다: ${ACNT_PRDT_CD}. 계좌상품코드는 정확히 2자리 숫자여야 합니다.`);
+    }
+
+    this.logger.debug(`계좌번호 파싱 성공`, {
+      original: accountNumber,
+      CANO,
+      ACNT_PRDT_CD
+    });
+
+    return {
+      CANO,           // 8자리 계좌번호
+      ACNT_PRDT_CD,   // 2자리 상품코드
+    };
+  }
+
+  /**
+   * KIS API 호출용 공통 헤더를 생성합니다.
+   */
+  public createApiHeaders(sessionData: IKisSessionData, trId: string, options?: {
+    trCont?: string;
+    hashkey?: string;
+  }): IKisApiHeaders {
     const headers: IKisApiHeaders = {
       "content-type": "application/json; charset=utf-8",
       "authorization": `Bearer ${sessionData.accessToken}`,
       "appkey": sessionData.appKey,
       "appsecret": sessionData.appSecret,
       "tr_id": trId,
-      "custtype": "P" // 개인고객
+      "custtype": KisConstants.CUST_TYPE.PERSONAL, // 개인고객
     };
 
-    // 옵션에 따라 추가 헤더 설정
+    // 선택적 헤더 추가
     if (options?.trCont) {
       headers["tr_cont"] = options.trCont;
     }
-
     if (options?.hashkey) {
       headers["hashkey"] = options.hashkey;
     }
 
     return headers;
-  }
-
-  /**
-   * 계좌번호를 KIS API 형식으로 분리합니다 (CANO, ACNT_PRDT_CD)
-   */
-  public parseAccountNumber(accountNumber: string): { CANO: string; ACNT_PRDT_CD: string } {
-    // 계좌번호 형식: 12345678-01 또는 1234567801
-    const cleanAccountNumber = accountNumber.replace('-', '');
-
-    if (cleanAccountNumber.length !== 10) {
-      throw new Error(`Invalid account number format: ${accountNumber}`);
-    }
-
-    return {
-      CANO: cleanAccountNumber.substring(0, 8),        // 앞 8자리
-      ACNT_PRDT_CD: cleanAccountNumber.substring(8, 10) // 뒤 2자리
-    };
   }
 }
