@@ -20,10 +20,21 @@ export interface IKisSessionData {
   tokenExpiresAt: Date;
 }
 
+export interface IKisApiHeaders {
+  "content-type": string;
+  "authorization": string;
+  "appkey": string;
+  "appsecret": string;
+  "tr_id": string;
+  "custtype": string;
+  "tr_cont"?: string;    // 연속조회용 (GET API)
+  "hashkey"?: string;    // POST API용
+}
+
 @Injectable()
 export class KisAuthProvider {
   private readonly logger = new Logger(KisAuthProvider.name);
-    private readonly KIS_BASE_URL = "https://openapivts.koreainvestment.com:29443";
+  private readonly KIS_BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
   /**
    * 한국투자증권 OAuth 인증을 수행하여 액세스 토큰을 발급받습니다.
@@ -145,5 +156,54 @@ export class KisAuthProvider {
       appKey: sessionData.appKey,
       appSecret: sessionData.appSecret,
     });
+  }
+
+  /**
+   * KIS API 호출을 위한 공통 헤더를 생성합니다.
+   */
+  public createApiHeaders(
+    sessionData: IKisSessionData,
+    trId: string,
+    options?: {
+      trCont?: string;    // 연속조회용
+      hashkey?: string;   // POST API용
+    }
+  ): IKisApiHeaders {
+    const headers: IKisApiHeaders = {
+      "content-type": "application/json; charset=utf-8",
+      "authorization": `Bearer ${sessionData.accessToken}`,
+      "appkey": sessionData.appKey,
+      "appsecret": sessionData.appSecret,
+      "tr_id": trId,
+      "custtype": "P" // 개인고객
+    };
+
+    // 옵션에 따라 추가 헤더 설정
+    if (options?.trCont) {
+      headers["tr_cont"] = options.trCont;
+    }
+
+    if (options?.hashkey) {
+      headers["hashkey"] = options.hashkey;
+    }
+
+    return headers;
+  }
+
+  /**
+   * 계좌번호를 KIS API 형식으로 분리합니다 (CANO, ACNT_PRDT_CD)
+   */
+  public parseAccountNumber(accountNumber: string): { CANO: string; ACNT_PRDT_CD: string } {
+    // 계좌번호 형식: 12345678-01 또는 1234567801
+    const cleanAccountNumber = accountNumber.replace('-', '');
+
+    if (cleanAccountNumber.length !== 10) {
+      throw new Error(`Invalid account number format: ${accountNumber}`);
+    }
+
+    return {
+      CANO: cleanAccountNumber.substring(0, 8),        // 앞 8자리
+      ACNT_PRDT_CD: cleanAccountNumber.substring(8, 10) // 뒤 2자리
+    };
   }
 }
