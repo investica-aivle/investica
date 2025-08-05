@@ -1,18 +1,17 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// GoogleAIFileManager는 더 이상 직접 파일을 API에 전달하는 데 사용되지 않으므로 제거하거나 주석 처리할 수 있습니다.
-// import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import fetch from 'node-fetch'; // fetch 가져오기
 
 @Injectable()
-export class GeminiService {
-    private readonly logger = new Logger(GeminiService.name);
+export class PdfService {
+
+    private readonly logger = new Logger(PdfService.name);
     private genAI: GoogleGenerativeAI;
-    // private fileManager: GoogleAIFileManager; // 더 이상 사용되지 않음
     private readonly tempDir = path.join(__dirname, '..', '..', 'temp_files'); // 임시 파일 저장 디렉토리
+    private readonly reportDir = path.join(__dirname, '..', '..', 'reports'); // 보고서가 저장될 디렉토리
 
     constructor(private configService: ConfigService) {
         const apiKey = this.configService.get<string>('app.googleApiKey');
@@ -20,11 +19,13 @@ export class GeminiService {
             throw new InternalServerErrorException('Google API Key not found in configuration.');
         }
         this.genAI = new GoogleGenerativeAI(apiKey);
-        // this.fileManager = new GoogleAIFileManager(apiKey); // 더 이상 사용되지 않음
 
         // 임시 디렉토리가 없으면 생성
         if (!fs.existsSync(this.tempDir)) {
             fs.mkdirSync(this.tempDir, { recursive: true });
+        }
+        if (!fs.existsSync(this.reportDir)) {
+            fs.mkdirSync(this.reportDir, { recursive: true });
         }
     }
 
@@ -54,13 +55,30 @@ export class GeminiService {
             throw new InternalServerErrorException(`PDF 다운로드 실패: ${error.message}`);
         }
     }
+    /** PDF 내용을 받아 .md 형식의 파일로 저장합니다.
+     * @param content 추출된 PDF 내용
+     * @returns 없음
+     */
+    private makeMarkdownFile(content: string) {
+        const filePath = path.join(this.reportDir, 'latest_report.md');
+
+        fs.writeFile(filePath, content, 'utf-8', (err) => {
+            if (err) {
+                console.log("파일 저장 실패", err);
+            }
+            else {
+                console.log("보고서 파일 저장 완료");
+            }
+        })
+    }
+
 
     /**
      * PDF URL을 받아 Gemini API를 사용하여 내용을 자세히 정리합니다.
      * @param pdfUrl 정리할 PDF 파일의 URL
      * @returns 정리된 텍스트 내용
      */
-    async summarizePdfFromUrl(pdfUrl: string): Promise<string> {
+    async summarizePdfFromUrl(pdfUrl: string) {
         let tempPdfPath: string | null = null;
 
         try {
@@ -82,39 +100,37 @@ export class GeminiService {
             };
 
             const prompt = `
-                다음 PDF 문서의 내용을 최대한 자세히 정리해 주세요.
-                핵심 요약, 주요 섹션별 상세 내용, 중요한 통계나 수치, 그림이나 표에 대한 설명 등
-                문서의 전체적인 내용을 이해하는 데 도움이 되도록 구조화하여 설명해 주세요.
-                가능하다면 다음과 같은 형식으로 정리해주세요:
+첨부된 PDF는 금융 보고서입니다.
 
-                # 문서 제목 (만약 문서에서 제목을 찾을 수 있다면)
+이 문서의 내용을 가능한 한 "정확하고 자세하게" 정리하십시오.
+요약하거나 생략하지 말고, 보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.
+작성자의 해석이나 주관적 판단 없이, PDF에 포함된 내용을 기반으로 정리하십시오.
+형식은 마크다운을 계층형식으로 작성하십시오.
 
-                ## 1. 개요/요약
-                [문서 전체의 핵심 내용을 1~2문단으로 요약]
+그래프 같은 것 들이 있는 경우 각 그래프 마다 간단하게 지표를뽑아내거나 평가한정보가 있어야 함
+제목이나 항목 구분 하며 본문 내용을 작성하십시오.
 
-                ## 2. 주요 섹션별 분석
-                ### 2.1. [첫 번째 주요 섹션 제목]
-                [해당 섹션의 상세 내용, 중요한 개념, 정보 등을 자세히 설명]
+문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
+보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
 
-                ### 2.2. [두 번째 주요 섹션 제목]
-                [해당 섹션의 상세 내용, 중요한 개념, 정보 등을 자세히 설명]
-                ... (필요에 따라 더 많은 섹션 추가)
+결과는 아래 예시와 같이 **굵은 글씨**와 -을 활용한 리스트 형식으로 깔끔하게 정리하여야 함.
 
-                ## 3. 핵심 데이터 및 통계 (만약 존재한다면)
-                - [데이터 항목 1]: [값] ([단위], [설명])
-                - [데이터 항목 2]: [값]: [값] ([단위], [설명])
+## 전세계 주식시장의 이익동향
 
-                ## 4. 결론 및 시사점 (만약 존재한다면)
-                [문서가 제시하는 결론이나 시사하는 바]
+    **전세계 12개월 선행 EPS** : 전월 대비 -0.1% 하락
 
-                ## 5. 기타 특이사항 (그래프, 이미지, 표 등)
-                [문서 내의 중요한 시각적 요소에 대한 설명]
+    - 신흥국: -0.6%
 
-                최대한 자세하고 정확하게 답변해주세요.
+    - 선진국: -0.01%
+
+    - 국가별 변화
+
+    - 상향 조정: 미국(+0.4%), 홍콩(+0.2%)
+
+    - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)
             `;
 
             // 4. Gemini 모델 사용 및 API 호출
-            // 'gemini-2.5-pro'는 PDF 처리를 지원하는 강력한 모델입니다.
             const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
             this.logger.log('Gemini API에 요청 전송 중...');
             const result = await model.generateContent([prompt, filePart]);
@@ -122,7 +138,7 @@ export class GeminiService {
             const text = response.text();
 
             this.logger.log('Gemini API 응답 수신 완료.');
-            return text;
+            this.makeMarkdownFile(text);
 
         } catch (error: any) {
             this.logger.error(`PDF 처리 중 오류 발생: ${error.message}`, error.stack);
@@ -133,7 +149,20 @@ export class GeminiService {
                 fs.unlinkSync(tempPdfPath);
                 this.logger.log(`임시 파일 삭제: ${tempPdfPath}`);
             }
-            // GoogleAIFileManager를 통한 파일 삭제는 더 이상 필요하지 않습니다.
         }
     }
+
+    ReadMarkdownReport() {
+        const filePath = path.join(this.reportDir, 'latest_report.md')
+
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            return content;
+        }
+        catch (err) {
+            this.logger.error("파일 읽기 실패")
+            return '';
+        }
+    }
+
 }

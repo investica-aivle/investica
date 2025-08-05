@@ -49,7 +49,21 @@ export class MyChatController {
             host: `http://localhost:${MyConfiguration.API_PORT()}`,
           },
         },
-        
+        {
+          protocol: "http",
+          name: "pdf_reader",
+          application: HttpLlm.application({
+            model: "chatgpt",
+            document: OpenApi.convert(
+              await fetch(
+                `http://localhost:${MyConfiguration.API_PORT()}/editor/swagger.json`,
+              ).then((r) => r.json()),
+            ),
+          }),
+          connection: {
+            host: `http://localhost:${MyConfiguration.API_PORT()}`,
+          },
+        },
       ],
     });
     const service: AgenticaRpcService<"chatgpt"> = new AgenticaRpcService({
