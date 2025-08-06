@@ -3,12 +3,10 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { labelMap } from '../../common/labelMap';
+import { IKisSessionData } from '../kis/KisAuthProvider';
 
 interface StockRequestDto {
   company: string;
-  accessToken: string;
-  appKey: string;
-  appSecret: string;
 }
 
 const iscdStatClsCodeMap: Record<string, string> = {
@@ -36,8 +34,12 @@ export class StocksService {
     });
   }
 
-  async fetchStockPrice(body: StockRequestDto) {
-    const { company, accessToken, appKey, appSecret } = body;
+  async fetchStockPrice(
+    body: StockRequestDto,
+    session: IKisSessionData
+  ) {
+    const { company } = body;
+    const { accessToken, appKey, appSecret } = session;
 
     const prompt = `${company}의 한국 증권 종목코드를 숫자 6자리로 알려줘.`;
     const completion = await this.openai.chat.completions.create({
@@ -77,7 +79,6 @@ export class StocksService {
       for (const [key, value] of Object.entries(output)) {
         const label = labelMap[key] || key;
 
-        // 종목 상태 구분 코드 해석
         if (key === 'iscd_stat_cls_code') {
           result[label] = iscdStatClsCodeMap[String(value)] || value;
         } else {

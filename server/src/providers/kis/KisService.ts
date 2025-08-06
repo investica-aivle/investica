@@ -2,6 +2,7 @@ import { tags } from "typia";
 import { IKisStock } from "../../api/structures/kis/IKisStock";
 import { KisTradingProvider } from "./KisTradingProvider";
 import { IKisSessionData } from "./KisAuthProvider";
+import { StocksService } from "../stocks/stocks.service";
 
 /**
  * KIS Trading Service for Agentica Class Protocol
@@ -20,6 +21,7 @@ export class KisService {
   constructor(
     private readonly kisTradingProvider: KisTradingProvider,
     private readonly sessionData: IKisSessionData,
+    private readonly stocksService: StocksService
   ) {}
 
   /**
@@ -148,5 +150,25 @@ export class KisService {
       price: input.price,
       orderCondition: input.orderCondition
     });
+    
+  }
+  /**
+   * 주식 현재가 조회
+   */
+  public async getStockPrice(input: {
+    /**
+     * 기업명
+     * @example "삼성전자"
+     */
+    company: string;
+  }): Promise<{
+    message: string;
+    data: Record<string, any>;
+  }> {
+    const result = await this.stocksService.fetchStockPrice({ company: input.company }, this.sessionData);
+    return {
+      message: `${input.company}의 현재 주가 정보입니다.`,
+      data: result,
+    };
   }
 }

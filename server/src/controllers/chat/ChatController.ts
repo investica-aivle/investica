@@ -14,6 +14,9 @@ import { MyGlobal } from "../../MyGlobal";
 import { KisAuthProvider, IKisSessionData } from "../../providers/kis/KisAuthProvider";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisService } from "../../providers/kis/KisService";
+import { StocksService } from "../../providers/stocks/stocks.service";
+import { NewsService } from "../../providers/news/NewsService";
+import { NewsAgentService } from "../../providers/news/NewsAgentService";
 
 export interface IKisChatConnectionRequest {
   accountNumber: string;
@@ -28,6 +31,8 @@ export class MyChatController {
   constructor(
     private readonly kisAuthProvider: KisAuthProvider,
     private readonly kisTradingProvider: KisTradingProvider,
+    private readonly stocksService: StocksService,
+    private readonly newsService: NewsService
   ) {}
 
   @WebSocketRoute()
@@ -76,7 +81,11 @@ export class MyChatController {
           // Agentica 문서에 따른 올바른 TypeScript 클래스 프로토콜 사용
           typia.llm.controller<KisService, "chatgpt">(
             "kis",
-            new KisService(this.kisTradingProvider, kisSessionData)
+            new KisService(this.kisTradingProvider, kisSessionData, this.stocksService)
+          ),
+          typia.llm.controller<NewsAgentService, "chatgpt">(
+            "news",
+            new NewsAgentService(this.newsService),
           ),
         ],
         config: {

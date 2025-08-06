@@ -1,6 +1,9 @@
 import { Module } from "@nestjs/common";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
+import { StocksService } from "../../providers/stocks/stocks.service";
+import { HttpModule } from "@nestjs/axios";
+import { ConfigModule } from "@nestjs/config";
 
 /**
  * KIS (Korea Investment Securities) Module
@@ -9,7 +12,11 @@ import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
  * The providers are used by ChatModule for WebSocket-based trading operations.
  */
 @Module({
-  providers: [KisTradingProvider, KisAuthProvider],
-  exports: [KisTradingProvider, KisAuthProvider],
+  imports: [
+    HttpModule,
+    ConfigModule, // 둘 다 주입에 필요
+  ],
+  providers: [KisTradingProvider, KisAuthProvider, StocksService],
+  exports: [KisTradingProvider, KisAuthProvider, StocksService],
 })
 export class KisModule {}
