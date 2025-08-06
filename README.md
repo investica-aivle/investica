@@ -38,7 +38,11 @@ pnpm run start:dev
 ## 5. 기타
 - 서버 코드 실행 등 추가 안내가 필요하면 알려주세요.
 
-- npm run build:sdk - 툴 등록, 서버 실행전 필요
+```
+npm run build:sdk 
+```
+
+- 툴 등록, 서버 실행전 필요
 
 ## 6. Open API 키 설정
 프로젝트를 정상적으로 실행하려면 Open API 키를 반드시 설정해야 합니다.
