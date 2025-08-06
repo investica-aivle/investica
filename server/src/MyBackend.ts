@@ -41,6 +41,15 @@ export class MyBackend {
     this.application_.enableCors();
     await this.application_.listen(MyConfiguration.API_PORT(), "0.0.0.0");
 
+    // 포트 정보 출력
+    console.log(`🚀 Server is running on port ${MyConfiguration.API_PORT()}`);
+    console.log(
+      `📖 Swagger Editor: http://localhost:${MyConfiguration.API_PORT()}/editor`,
+    );
+    console.log(
+      `🔗 API Base URL: http://localhost:${MyConfiguration.API_PORT()}`,
+    );
+
     //----
     // POST-PROCESSES
     //----

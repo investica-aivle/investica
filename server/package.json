@@ -65,6 +65,7 @@
     "iconv-lite": "^0.6.3",
     "inquirer": "8.2.5",
     "openai": "5.10.2",
+    "perplexity": "^1.0.1",
     "serialize-error": "^4.1.0",
     "tgrid": "^1.2.0",
     "tstl": "^3.0.0",
