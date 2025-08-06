@@ -6,13 +6,14 @@ import {
 } from "@agentica/rpc";
 import { WebSocketRoute } from "@nestia/core";
 import { Controller, Logger } from "@nestjs/common";
-import { HttpLlm, OpenApi } from "@samchon/openapi";
 import OpenAI from "openai";
 import { WebSocketAcceptor } from "tgrid";
+import typia from "typia";
 
-import { MyConfiguration } from "../../MyConfiguration";
 import { MyGlobal } from "../../MyGlobal";
 import { KisAuthProvider, IKisSessionData } from "../../providers/kis/KisAuthProvider";
+import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
+import { KisService } from "../../providers/kis/KisService";
 
 export interface IKisChatConnectionRequest {
   accountNumber: string;
@@ -26,7 +27,7 @@ export class MyChatController {
 
   constructor(
     private readonly kisAuthProvider: KisAuthProvider,
-    // KisTradingProvider는 향후 AI 에이전트에서 필요할 때 추가 예정
+    private readonly kisTradingProvider: KisTradingProvider,
   ) {}
 
   @WebSocketRoute()
@@ -34,7 +35,7 @@ export class MyChatController {
     @WebSocketRoute.Acceptor()
     acceptor: WebSocketAcceptor<
       IKisChatConnectionRequest,
-      IAgenticaRpcService<"chatgpt"> & { kisSession?: IKisSessionData },
+      IAgenticaRpcService<"chatgpt"> & { kisSessionData?: IKisSessionData },
       IAgenticaRpcListener
     >,
   ): Promise<void> {
@@ -55,7 +56,7 @@ export class MyChatController {
         `Starting KIS authentication for WebSocket connection: ${maskedAccountNumber}`,
       );
 
-      const kisSession = await this.kisAuthProvider.authenticate({
+      const kisSessionData = await this.kisAuthProvider.authenticate({
         accountNumber: connectionRequest.accountNumber,
         appKey: connectionRequest.appKey,
         appSecret: connectionRequest.appSecret,
@@ -72,33 +73,29 @@ export class MyChatController {
           model: "gpt-4o-mini",
         },
         controllers: [
-          {
-            protocol: "http",
-            name: "bbs",
-            application: HttpLlm.application({
-              model: "chatgpt",
-              document: OpenApi.convert(
-                await fetch(
-                  `http://localhost:${MyConfiguration.API_PORT()}/editor/swagger.json`,
-                ).then((r) => r.json()),
-              ),
-            }),
-            connection: {
-              host: `http://localhost:${MyConfiguration.API_PORT()}`,
-            },
-          },
-          // TODO: KIS API를 위한 컨트롤러 추가 예정
+          // Agentica 문서에 따른 올바른 TypeScript 클래스 프로토콜 사용
+          typia.llm.controller<KisService, "chatgpt">(
+            "kis",
+            new KisService(this.kisTradingProvider, kisSessionData)
+          ),
         ],
+        config: {
+          systemPrompt: {
+            common: () => "당신은 한국투자증권 KIS API를 통해 주식 거래를 도와주는 전문 AI 어시스턴트입니다. 모든 응답은 한국어로 해주세요.",
+          },
+          locale: "ko-KR",
+          timezone: "Asia/Seoul"
+        }
       });
 
-      const service: AgenticaRpcService<"chatgpt"> & { kisSession?: IKisSessionData } =
+      const service: AgenticaRpcService<"chatgpt"> & { kisSessionData?: IKisSessionData } =
         new AgenticaRpcService({
           agent,
           listener: acceptor.getDriver(),
-        }) as any;
+        });
 
       // 서비스 객체에 KIS 세션 데이터 직접 저장
-      service.kisSession = kisSession;
+      service.kisSessionData = kisSessionData;
 
       await acceptor.accept(service);
     } catch (error) {
@@ -118,14 +115,5 @@ export class MyChatController {
       // 클라이언트에게는 간단한 인증 실패 메시지만 전달
       throw new Error("KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.");
     }
-  }
-
-  /**
-   * 소켓 서비스에서 KIS 세션 데이터 조회 (AI 에이전트에서 사용)
-   */
-  public static getKisSession(
-    service: IAgenticaRpcService<"chatgpt"> & { kisSession?: IKisSessionData },
-  ): IKisSessionData | undefined {
-    return service.kisSession;
   }
 }
