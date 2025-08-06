@@ -12,9 +12,18 @@ import { WebSocketAcceptor } from "tgrid";
 
 import { MyConfiguration } from "../../MyConfiguration";
 import { MyGlobal } from "../../MyGlobal";
+import { ChatService } from "../../providers/chat/ChatService";
 
+/**
+ * Chat Controller for Agentica WebSocket Connection
+ *
+ * Agentica AI와의 WebSocket 연결을 관리하고,
+ * 다양한 API 서비스들을 Agentica에 제공합니다.
+ */
 @Controller("chat")
-export class MyChatController {
+export class ChatController {
+  constructor(private readonly chatService: ChatService) {}
+
   @WebSocketRoute()
   public async start(
     @WebSocketRoute.Acceptor()
@@ -31,6 +40,7 @@ export class MyChatController {
         model: "gpt-4o-mini",
       },
       controllers: [
+        // BBS API
         {
           protocol: "http",
           name: "bbs",
@@ -46,7 +56,7 @@ export class MyChatController {
             host: `http://localhost:${MyConfiguration.API_PORT()}`,
           },
         },
-        // 보고서 API 추가
+        // Reports API
         {
           protocol: "http",
           name: "reports",
@@ -62,12 +72,30 @@ export class MyChatController {
             host: `http://localhost:${MyConfiguration.API_PORT()}`,
           },
         },
+        // Chat API (새로 추가)
+        {
+          protocol: "http",
+          name: "chat",
+          application: HttpLlm.application({
+            model: "chatgpt",
+            document: OpenApi.convert(
+              await fetch(
+                `http://localhost:${MyConfiguration.API_PORT()}/editor/swagger.json`,
+              ).then((r) => r.json()),
+            ),
+          }),
+          connection: {
+            host: `http://localhost:${MyConfiguration.API_PORT()}`,
+          },
+        },
       ],
     });
+
     const service: AgenticaRpcService<"chatgpt"> = new AgenticaRpcService({
       agent,
       listener: acceptor.getDriver(),
     });
+
     await acceptor.accept(service);
   }
 }

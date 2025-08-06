@@ -3,15 +3,16 @@ import axios from "axios";
 import * as fs from "fs";
 import * as path from "path";
 
-export interface PerplexityConversionResult {
-  markdown: string;
-  fileName: string;
-  success: boolean;
-  error?: string;
-}
+import { PdfConversionResult } from "../../models/Reports";
 
+/**
+ * Perplexity PDF Converter Provider
+ *
+ * Perplexity AI API를 사용하여 PDF 파일을 마크다운으로 변환하는 기능을 제공합니다.
+ * 내부적으로 사용되는 Provider입니다.
+ */
 @Injectable()
-export class PerplexityPdfConverterService {
+export class PerplexityPdfConverterProvider {
   private readonly perplexityApiUrl =
     "https://api.perplexity.ai/chat/completions";
   private readonly apiKey?: string;
@@ -31,7 +32,7 @@ export class PerplexityPdfConverterService {
   async convertPdfToMarkdown(
     pdfFilePath: string,
     outputDir: string = "./downloads/markdown",
-  ): Promise<PerplexityConversionResult> {
+  ): Promise<PdfConversionResult> {
     try {
       // API 키 확인
       if (!this.apiKey) {
@@ -110,15 +111,12 @@ export class PerplexityPdfConverterService {
         success: true,
       };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error(`PDF 변환 실패: ${errorMessage}`);
-
+      console.error("Error converting PDF to Markdown:", error);
       return {
         markdown: "",
         fileName: "",
         success: false,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -129,25 +127,12 @@ export class PerplexityPdfConverterService {
   async convertMultiplePdfsToMarkdown(
     pdfFilePaths: string[],
     outputDir: string = "./downloads/markdown",
-  ): Promise<PerplexityConversionResult[]> {
-    const results: PerplexityConversionResult[] = [];
+  ): Promise<PdfConversionResult[]> {
+    const results: PdfConversionResult[] = [];
 
     for (const pdfFilePath of pdfFilePaths) {
-      try {
-        const result = await this.convertPdfToMarkdown(pdfFilePath, outputDir);
-        results.push(result);
-        console.log(`변환 완료: ${pdfFilePath} -> ${result.fileName}`);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        console.error(`변환 실패: ${pdfFilePath} - ${errorMessage}`);
-        results.push({
-          markdown: "",
-          fileName: "",
-          success: false,
-          error: errorMessage,
-        });
-      }
+      const result = await this.convertPdfToMarkdown(pdfFilePath, outputDir);
+      results.push(result);
     }
 
     return results;
@@ -159,7 +144,7 @@ export class PerplexityPdfConverterService {
   async convertDownloadedPdfToMarkdown(
     pdfFilePath: string,
     outputDir: string = "./downloads/markdown",
-  ): Promise<PerplexityConversionResult> {
+  ): Promise<PdfConversionResult> {
     return this.convertPdfToMarkdown(pdfFilePath, outputDir);
   }
 }

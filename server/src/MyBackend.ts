@@ -15,7 +15,24 @@ export class MyBackend {
     // OPEN THE BACKEND SERVER
     //----
     // MOUNT CONTROLLERS
-    this.application_ = await NestFactory.create(MyModule, { logger: false });
+    this.application_ = await NestFactory.create(MyModule, {
+      logger: {
+        log: (message, context) =>
+          console.log(`[LOG] [${context || "Application"}] ${message}`),
+        error: (message, trace, context) =>
+          console.error(
+            `[ERROR] [${context || "Application"}] ${message}`,
+            trace ? `\n${trace}` : "",
+          ),
+        warn: (message, context) =>
+          console.warn(`[WARN] [${context || "Application"}] ${message}`),
+        debug: (message, context) =>
+          console.debug(`[DEBUG] [${context || "Application"}] ${message}`),
+        verbose: (message, context) =>
+          console.log(`[VERBOSE] [${context || "Application"}] ${message}`),
+      },
+    });
+    console.log(`[STARTUP] Upgrading WebSocket adaptor...`);
     await WebSocketAdaptor.upgrade(this.application_);
 
     // THE SWAGGER EDITOR
@@ -28,6 +45,7 @@ export class MyBackend {
         },
       ],
     });
+
     await NestiaEditorModule.setup({
       path: "editor",
       application: this.application_,
@@ -51,20 +69,16 @@ export class MyBackend {
     );
     // 환경변수 확인
     console.log("🔧 Environment Variables Check:");
-    console.log(`   API_PORT: ${process.env.API_PORT || "NOT SET"}`);
-    console.log(
-      `   OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? "SET" : "NOT SET"}`,
-    );
-    console.log(
-      `   PERPLEXITY_API_KEY: ${process.env.PERPLEXITY_API_KEY ? "SET" : "NOT SET"}`,
-    );
-    console.log("");
+    console.log(process.env);
 
     //----
     // POST-PROCESSES
     //----
     // INFORM TO THE PM2
-    if (process.send) process.send("ready");
+    if (process.send) {
+      console.log(`[STARTUP] Notifying PM2 that server is ready...`);
+      process.send("ready");
+    }
 
     // WHEN KILL COMMAND COMES
     process.on("SIGINT", async () => {
@@ -79,5 +93,6 @@ export class MyBackend {
     // DO CLOSE
     await this.application_.close();
     delete this.application_;
+    console.log(`[SHUTDOWN] Application closed successfully.`);
   }
 }

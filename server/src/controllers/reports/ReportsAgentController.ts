@@ -1,16 +1,12 @@
 import { Controller } from "@nestjs/common";
 
-import {
-  MiraeAssetReport,
-  MiraeAssetScraperService,
-} from "../../providers/reports/MiraeAssetScraperService";
-import { PerplexityPdfConverterService } from "../../providers/reports/PerplexityPdfConverterService";
+import { MiraeAssetReport } from "../../models/Reports";
+import { ReportsFunctionProvider } from "../../providers/reports/ReportsFunctionProvider";
 
 @Controller("reports-agent")
 export class ReportsAgentController {
   constructor(
-    private readonly miraeAssetScraperService: MiraeAssetScraperService,
-    private readonly perplexityPdfConverterService: PerplexityPdfConverterService,
+    private readonly reportsFunctionProvider: ReportsFunctionProvider,
   ) {}
 
   /**
@@ -19,29 +15,62 @@ export class ReportsAgentController {
   async getLatestReports(
     keywords: string[] = ["Earnings Revision", "Credit Market Weekly"],
     limit: number = 5,
-  ): Promise<MiraeAssetReport[]> {
-    return await this.miraeAssetScraperService.getLatestReportsByKeywords(
-      keywords,
-      limit,
-    );
+  ): Promise<{ message: string; reports: MiraeAssetReport[] }> {
+    const result =
+      await this.reportsFunctionProvider.getRecentReportsAndConvert({
+        keywords,
+        limit,
+      });
+    return {
+      message: result.message,
+      reports: result.reports.map((r: any) => ({
+        title: r.title,
+        date: r.date,
+        author: r.author,
+        downloadUrl: "", // ReportsFunctionProvider에서는 downloadUrl을 반환하지 않음
+        fileName: r.markdownFileName,
+        category: "Other",
+      })),
+    };
   }
 
   async getEarningsRevisionReports(
     limit: number = 5,
-  ): Promise<MiraeAssetReport[]> {
-    return await this.miraeAssetScraperService.getLatestReportsByKeywords(
-      ["Earnings Revision"],
-      limit,
-    );
+  ): Promise<{ message: string; reports: MiraeAssetReport[] }> {
+    const result =
+      await this.reportsFunctionProvider.getEarningsRevisionReports({ limit });
+    return {
+      message: result.message,
+      reports: result.reports.map((r: any) => ({
+        title: r.title,
+        date: r.date,
+        author: r.author,
+        downloadUrl: "",
+        fileName: r.markdownFileName,
+        category: "Earnings Revision",
+      })),
+    };
   }
 
   async getCreditMarketWeeklyReports(
     limit: number = 5,
-  ): Promise<MiraeAssetReport[]> {
-    return await this.miraeAssetScraperService.getLatestReportsByKeywords(
-      ["Credit Market Weekly"],
-      limit,
-    );
+  ): Promise<{ message: string; reports: MiraeAssetReport[] }> {
+    const result =
+      await this.reportsFunctionProvider.getRecentReportsAndConvert({
+        keywords: ["Credit Market Weekly"],
+        limit,
+      });
+    return {
+      message: result.message,
+      reports: result.reports.map((r: any) => ({
+        title: r.title,
+        date: r.date,
+        author: r.author,
+        downloadUrl: "",
+        fileName: r.markdownFileName,
+        category: "Credit Market Weekly",
+      })),
+    };
   }
 
   async downloadReport(
@@ -49,11 +78,12 @@ export class ReportsAgentController {
     outputDir: string = "./downloads",
   ): Promise<{ filePath: string; success: boolean }> {
     try {
-      const filePath = await this.miraeAssetScraperService.downloadPdf(
-        downloadUrl,
-        outputDir,
-      );
-      return { filePath, success: true };
+      const result =
+        await this.reportsFunctionProvider.downloadAndConvertReport({
+          downloadUrl,
+          outputDir,
+        });
+      return { filePath: result.markdownFileName, success: result.success };
     } catch (error) {
       return { filePath: "", success: false };
     }
@@ -71,15 +101,18 @@ export class ReportsAgentController {
     success: boolean;
     error?: string;
   }> {
-    return await this.perplexityPdfConverterService.convertPdfToMarkdown(
+    const result = await this.reportsFunctionProvider.convertPdfToMarkdown({
       pdfFilePath,
       outputDir,
-    );
+    });
+    return {
+      markdown: result.markdown,
+      fileName: result.fileName,
+      success: result.success,
+      error: result.error,
+    };
   }
 
-  /**
-   * 보고서 다운로드 후 자동으로 마크다운 변환
-   */
   async downloadAndConvertReport(
     downloadUrl: string,
     outputDir: string = "./downloads",
@@ -90,37 +123,16 @@ export class ReportsAgentController {
     success: boolean;
     error?: string;
   }> {
-    try {
-      // 1. PDF 다운로드
-      const pdfFilePath = await this.miraeAssetScraperService.downloadPdf(
-        downloadUrl,
-        outputDir,
-      );
-
-      // 2. 마크다운으로 변환
-      const conversionResult =
-        await this.perplexityPdfConverterService.convertPdfToMarkdown(
-          pdfFilePath,
-          `${outputDir}/markdown`,
-        );
-
-      return {
-        pdfFilePath,
-        markdown: conversionResult.markdown,
-        markdownFileName: conversionResult.fileName,
-        success: conversionResult.success,
-        error: conversionResult.error,
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      return {
-        pdfFilePath: "",
-        markdown: "",
-        markdownFileName: "",
-        success: false,
-        error: errorMessage,
-      };
-    }
+    const result = await this.reportsFunctionProvider.downloadAndConvertReport({
+      downloadUrl,
+      outputDir,
+    });
+    return {
+      pdfFilePath: "", // ReportsFunctionProvider에서는 pdfFilePath를 반환하지 않음
+      markdown: result.markdown,
+      markdownFileName: result.markdownFileName,
+      success: result.success,
+      error: result.error,
+    };
   }
 }
