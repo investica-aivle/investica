@@ -81,4 +81,20 @@ export const labelMap: Record<string, string> = {
   'short_over_yn': '단기과열여부',
   'sltr_yn': '정리매매여부',
   'mang_issu_cls_code': '관리종목여부',
+
+  'stck_cntg_hour': '체결 시간',
+  'stck_prpr_sign': '체결 부호',
+  'cntg_vol': '체결 수량',
+  'askp': '매도 호가',
+  'bidp': '매수 호가',
+  'cntg_smtl_val': '체결 누적 금액',
+  'antc_cntg_vol': '예상 체결 수량',
+  'antc_cntg_prc': '예상 체결 가격',
+  'antc_cntg_sign': '예상 체결 부호',
+  'tday_rltv': '금일 상대 거래량',
+
+  'stck_bsop_date': '주식 영업 일자',
+  'stck_clpr': '주식 종가',
+  'flng_cls_code': '락 구분 코드',
+  'acml_prtt_rate': '누적 분할 비율',
 };

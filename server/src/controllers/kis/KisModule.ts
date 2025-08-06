@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
-import { StocksService } from "../../providers/stocks/stocks.service";
+import { StocksService } from "../../providers/stocks/StocksService";
 import { HttpModule } from "@nestjs/axios";
 import { ConfigModule } from "@nestjs/config";
 

@@ -2,7 +2,7 @@ import { tags } from "typia";
 import { IKisStock } from "../../api/structures/kis/IKisStock";
 import { KisTradingProvider } from "./KisTradingProvider";
 import { IKisSessionData } from "./KisAuthProvider";
-import { StocksService } from "../stocks/stocks.service";
+import { StocksService } from "../stocks/StocksService";
 
 /**
  * KIS Trading Service for Agentica Class Protocol
@@ -168,6 +168,70 @@ export class KisService {
     const result = await this.stocksService.fetchStockPrice({ company: input.company }, this.sessionData);
     return {
       message: `${input.company}의 현재 주가 정보입니다.`,
+      data: result,
+    };
+  }
+  /**
+   * 국내 주식 체결 정보 조회
+   * @param input 기업명
+   * @returns 체결 정보 목록
+   */
+  public async getStockTrades(input: {
+    /**
+     * 기업명
+     * @example "카카오"
+     */
+    company: string;
+  }): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    const result = await this.stocksService.fetchStockTrades(
+      { company: input.company },
+      this.sessionData,
+    );
+    return {
+      message: `${input.company}의 실시간 체결 정보입니다.`,
+      data: result,
+    };
+  }
+  /**
+   * 국내 주식 일자별 가격 조회 (일/주/월별)
+   * @param input 기업명, 기간, 수정주가 반영 여부
+   * @returns 시계열 가격 데이터
+   */
+  public async getStockDailyPrices(input: {
+    /**
+     * 기업명
+     * @example "네이버"
+     */
+  company: string;
+
+    /**
+     * 기간 구분 (D: 일간, W: 주간, M: 월간)
+     * @example "W"
+     */
+    periodCode?: 'D' | 'W' | 'M';
+
+    /**
+     * 수정주가 반영 여부 (0: 미반영, 1: 반영)
+     * @example 1
+     */
+  adjustPrice?: 0 | 1;
+  }): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    const result = await this.stocksService.fetchStockDailyPrices(
+      {
+        company: input.company,
+        periodCode: input.periodCode ?? 'D',
+        adjustPrice: input.adjustPrice ?? 1,
+      },
+      this.sessionData,
+    );
+    return {
+      message: `${input.company}의 ${input.periodCode ?? 'D'} 단위 시세 정보입니다.`,
       data: result,
     };
   }

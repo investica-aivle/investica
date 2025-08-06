@@ -14,7 +14,7 @@ import { MyGlobal } from "../../MyGlobal";
 import { KisAuthProvider, IKisSessionData } from "../../providers/kis/KisAuthProvider";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisService } from "../../providers/kis/KisService";
-import { StocksService } from "../../providers/stocks/stocks.service";
+import { StocksService } from "../../providers/stocks/StocksService";
 import { NewsService } from "../../providers/news/NewsService";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
 

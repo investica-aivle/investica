@@ -10,7 +10,25 @@ export class NewsService {
     private readonly configService: ConfigService,
   ) {}
 
-  async fetchNewsSummaryAndSentiment(company: string) {
+  /**
+   * 기업명으로 최근 뉴스 요약 및 감성 분석 수행
+   * 
+   * 네이버 뉴스 API를 통해 최신 뉴스를 크롤링하고,
+   * 각 뉴스에 대해 ChatGPT API를 활용하여 요약 및 감성 분석을 진행합니다.
+   * 
+   * @param company 기업명 (예: 삼성전자)
+   * @returns 뉴스 제목, 날짜, 요약 및 감성 정보 배열
+   * @example
+   * [
+   *   {
+   *     title: '삼성전자, 신제품 출시',
+   *     pubDate: 'Wed, 07 Aug 2025 10:00:00 +0900',
+   *     summary: '삼성전자가 새로운 스마트폰을 출시했다.',
+   *     sentiment: '긍정'
+   *   }
+   * ]
+   */
+  public async fetchNewsSummaryAndSentiment(company: string) {
     const encodedCompany = encodeURIComponent(company);
     const naverUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodedCompany}&display=5`;
 
