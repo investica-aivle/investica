@@ -49,6 +49,16 @@ export class MyBackend {
     console.log(
       `🔗 API Base URL: http://localhost:${MyConfiguration.API_PORT()}`,
     );
+    // 환경변수 확인
+    console.log("🔧 Environment Variables Check:");
+    console.log(`   API_PORT: ${process.env.API_PORT || "NOT SET"}`);
+    console.log(
+      `   OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? "SET" : "NOT SET"}`,
+    );
+    console.log(
+      `   PERPLEXITY_API_KEY: ${process.env.PERPLEXITY_API_KEY ? "SET" : "NOT SET"}`,
+    );
+    console.log("");
 
     //----
     // POST-PROCESSES

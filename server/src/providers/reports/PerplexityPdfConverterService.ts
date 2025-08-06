@@ -14,14 +14,15 @@ export interface PerplexityConversionResult {
 export class PerplexityPdfConverterService {
   private readonly perplexityApiUrl =
     "https://api.perplexity.ai/chat/completions";
-  private readonly apiKey: string;
+  private readonly apiKey?: string;
 
   constructor() {
-    const apiKey = process.env.PERPLEXITY_API_KEY;
-    if (!apiKey) {
-      throw new Error("PERPLEXITY_API_KEY environment variable is required");
+    this.apiKey = process.env.PERPLEXITY_API_KEY;
+    if (!this.apiKey) {
+      console.warn(
+        "PERPLEXITY_API_KEY not properly configured, PDF conversion will be disabled",
+      );
     }
-    this.apiKey = apiKey;
   }
 
   /**
@@ -32,6 +33,16 @@ export class PerplexityPdfConverterService {
     outputDir: string = "./downloads/markdown",
   ): Promise<PerplexityConversionResult> {
     try {
+      // API 키 확인
+      if (!this.apiKey) {
+        return {
+          markdown: "",
+          fileName: "",
+          success: false,
+          error: "PERPLEXITY_API_KEY not configured",
+        };
+      }
+
       // 출력 디렉토리 생성
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });

@@ -1,12 +1,12 @@
 import { IAgenticaEventJson } from "@agentica/core";
 import { IAgenticaRpcListener, IAgenticaRpcService } from "@agentica/rpc";
 import {
-  createContext,
-  PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useState
+    createContext,
+    PropsWithChildren,
+    useCallback,
+    useContext,
+    useEffect,
+    useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
 
@@ -55,7 +55,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         describe: pushMessage,
         userMessage: pushMessage
       });
-      await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
+      await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL || "ws://localhost:37001/chat");
       const driver = connector.getDriver();
       setDriver(driver);
       return connector;

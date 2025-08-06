@@ -6,3 +6,4 @@
 //================================================================
 export * as bbs from "./bbs";
 export * as chat from "./chat";
+export * as reports from "./reports";
