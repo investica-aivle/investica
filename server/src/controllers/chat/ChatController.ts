@@ -17,8 +17,7 @@ import { KisService } from "../../providers/kis/KisService";
 import { StocksService } from "../../providers/stocks/StocksService";
 import { NewsService } from "../../providers/news/NewsService";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
-import { Post, Body } from '@nestjs/common';
-import { StockBalanceService } from '../modules/stockBalance/StockBalanceService';
+import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
 
 export interface IKisChatConnectionRequest {
   accountNumber: string;
@@ -35,8 +34,7 @@ export class MyChatController {
     private readonly kisTradingProvider: KisTradingProvider,
     private readonly stocksService: StocksService,
     private readonly newsService: NewsService,
-    private readonly stockBalanceService: StockBalanceService,
-    // KisTradingProvider는 향후 AI 에이전트에서 필요할 때 추가 예정
+    private readonly stockBalanceProvider: StockBalanceProvider,
   ) {}
 
   @WebSocketRoute()
@@ -85,7 +83,7 @@ export class MyChatController {
           // Agentica 문서에 따른 올바른 TypeScript 클래스 프로토콜 사용
           typia.llm.controller<KisService, "chatgpt">(
             "kis",
-            new KisService(this.kisTradingProvider, kisSessionData, this.stocksService)
+            new KisService(this.kisTradingProvider, kisSessionData, this.stocksService, this.stockBalanceProvider)
           ),
           typia.llm.controller<NewsAgentService, "chatgpt">(
             "news",
