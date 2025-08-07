@@ -17,6 +17,8 @@ import { KisService } from "../../providers/kis/KisService";
 import { StocksService } from "../../providers/stocks/StocksService";
 import { NewsService } from "../../providers/news/NewsService";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
+import { Post, Body } from '@nestjs/common';
+import { StockBalanceService } from '../modules/stockBalance/StockBalanceService';
 
 export interface IKisChatConnectionRequest {
   accountNumber: string;
@@ -32,7 +34,9 @@ export class MyChatController {
     private readonly kisAuthProvider: KisAuthProvider,
     private readonly kisTradingProvider: KisTradingProvider,
     private readonly stocksService: StocksService,
-    private readonly newsService: NewsService
+    private readonly newsService: NewsService,
+    private readonly stockBalanceService: StockBalanceService,
+    // KisTradingProvider는 향후 AI 에이전트에서 필요할 때 추가 예정
   ) {}
 
   @WebSocketRoute()
