@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { KisConstants } from '../kis/KisConstants';
+import { IKisSessionData } from '../kis/KisAuthProvider';
 
 export interface IStockBalanceItem {
   name: string;
@@ -13,21 +15,6 @@ export interface IStockBalanceResponse {
   stocks: IStockBalanceItem[];
 }
 
-export interface IKisBalanceConfig {
-  domain: string;
-  endpoints: {
-    token: string;
-    balance: string;
-  };
-  tr_id: string;
-}
-
-export interface IKisCredentials {
-  appkey: string;
-  appsecret: string;
-  account: string;
-}
-
 @Injectable()
 export class StockBalanceProvider {
   private readonly logger = new Logger(StockBalanceProvider.name);
@@ -35,15 +22,12 @@ export class StockBalanceProvider {
   /**
    * 잔고 조회하기
    */
-  async getStockBalance(config: IKisBalanceConfig, credentials: IKisCredentials): Promise<IStockBalanceResponse> {
+  async getStockBalance(sessionData: IKisSessionData): Promise<IStockBalanceResponse> {
     try {
-      // 1. 토큰 받기
-      const token = await this.getToken(config, credentials);
+      // 잔고 데이터 가져오기 (sessionData에 이미 토큰 포함)
+      const balanceData = await this.fetchBalance(sessionData);
 
-      // 2. 잔고 데이터 가져오기
-      const balanceData = await this.fetchBalance(config, credentials, token);
-
-      // 3. 간단하게 정리해서 리턴
+      // 간단하게 정리해서 리턴
       return this.formatBalance(balanceData);
 
     } catch (error) {
@@ -54,49 +38,37 @@ export class StockBalanceProvider {
   }
 
   /**
-   * 토큰 받기
-   */
-  private async getToken(config: IKisBalanceConfig, credentials: IKisCredentials): Promise<string> {
-    const tokenUrl = `${config.domain}${config.endpoints.token}`;
-
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        grant_type: 'client_credentials',
-        appkey: credentials.appkey,
-        appsecret: credentials.appsecret
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.access_token;
-  }
-
-  /**
    * 잔고 데이터 가져오기
    */
-  private async fetchBalance(config: IKisBalanceConfig, credentials: IKisCredentials, token: string): Promise<any> {
-    const balanceUrl = `${config.domain}${config.endpoints.balance}`;
+  private async fetchBalance(sessionData: IKisSessionData): Promise<any> {
+    const balanceUrl = `${KisConstants.VIRTUAL_DOMAIN}${KisConstants.ENDPOINTS.BALANCE}`;
+
+    // 계좌번호 파싱 (예: "5014853-01" -> CANO: "50148530", ACNT_PRDT_CD: "01")
+    const accountParts = sessionData.accountNumber.split('-');
+    const CANO = accountParts[0];
+    const ACNT_PRDT_CD = accountParts[1] || KisConstants.BALANCE_PARAMS.ACNT_PRDT_CD;
 
     const headers = {
-      'authorization': `Bearer ${token}`,
-      'appkey': credentials.appkey,
-      'appsecret': credentials.appsecret,
-      'tr_id': config.tr_id,
-      'custtype': 'P'
+      'content-type': 'application/json; charset=utf-8',
+      'authorization': `Bearer ${sessionData.accessToken}`,
+      'appkey': sessionData.appKey,
+      'appsecret': sessionData.appSecret,
+      'tr_id': KisConstants.TR_ID.BALANCE.VIRTUAL,
+      'custtype': KisConstants.CUST_TYPE.PERSONAL
     };
 
     const params = new URLSearchParams({
-      CANO: credentials.account,
-      ACNT_PRDT_CD: '01',
-      INQR_DVSN: '02'
+      CANO: CANO,
+      ACNT_PRDT_CD: ACNT_PRDT_CD,
+      AFHR_FLPR_YN: KisConstants.BALANCE_PARAMS.AFHR_FLPR_YN,
+      OFL_YN: KisConstants.BALANCE_PARAMS.OFL_YN,
+      INQR_DVSN: KisConstants.BALANCE_PARAMS.INQR_DVSN.BY_STOCK,
+      UNPR_DVSN: KisConstants.BALANCE_PARAMS.UNPR_DVSN,
+      FUND_STTL_ICLD_YN: KisConstants.BALANCE_PARAMS.FUND_STTL_ICLD_YN,
+      FNCG_AMT_AUTO_RDPT_YN: KisConstants.BALANCE_PARAMS.FNCG_AMT_AUTO_RDPT_YN,
+      PRCS_DVSN: KisConstants.BALANCE_PARAMS.PRCS_DVSN.EXCLUDE_PREV_DAY,
+      CTX_AREA_FK100: KisConstants.BALANCE_PARAMS.CTX_AREA_FK100,
+      CTX_AREA_NK100: KisConstants.BALANCE_PARAMS.CTX_AREA_NK100
     });
 
     const response = await fetch(`${balanceUrl}?${params}`, {
@@ -105,6 +77,14 @@ export class StockBalanceProvider {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      this.logger.error(`Balance request failed: ${response.status} ${response.statusText}`, {
+        url: response.url,
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: errorText,
+        account: sessionData.accountNumber.replace(/(\d{4})\d+(\d{2})/, '$1****$2')
+      });
       throw new Error(`Balance request failed: ${response.status} ${response.statusText}`);
     }
 
