@@ -2,7 +2,7 @@ import {tags} from "typia";
 import {IKisStock} from "../../api/structures/kis/IKisStock";
 import {KisTradingProvider} from "./KisTradingProvider";
 import {IKisSessionData} from "./KisAuthProvider";
-import {StocksService} from "../stocks/StocksService";
+import {StocksProvider} from "../stocks/StocksProvider";
 import {StockBalanceProvider} from "../stockBalance/StockBalanceProvider";
 
 /**
@@ -22,7 +22,7 @@ export class KisService {
     constructor(
         private readonly kisTradingProvider: KisTradingProvider,
         private readonly sessionData: IKisSessionData,
-        private readonly stocksService: StocksService,
+        private readonly stocksService: StocksProvider,
         private readonly stockBalanceProvider: StockBalanceProvider
     ) {
     }

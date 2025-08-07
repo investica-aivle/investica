@@ -14,7 +14,7 @@ import { MyGlobal } from "../../MyGlobal";
 import { KisAuthProvider, IKisSessionData } from "../../providers/kis/KisAuthProvider";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisService } from "../../providers/kis/KisService";
-import { StocksService } from "../../providers/stocks/StocksService";
+import { StocksProvider } from "../../providers/stocks/StocksProvider";
 import { NewsService } from "../../providers/news/NewsService";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
 import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
@@ -32,7 +32,7 @@ export class MyChatController {
   constructor(
     private readonly kisAuthProvider: KisAuthProvider,
     private readonly kisTradingProvider: KisTradingProvider,
-    private readonly stocksService: StocksService,
+    private readonly stocksService: StocksProvider,
     private readonly newsService: NewsService,
     private readonly stockBalanceProvider: StockBalanceProvider,
   ) {}
