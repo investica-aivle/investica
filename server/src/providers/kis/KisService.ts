@@ -3,6 +3,7 @@ import {IKisStock} from "../../api/structures/kis/IKisStock";
 import {KisTradingProvider} from "./KisTradingProvider";
 import {IKisSessionData} from "./KisAuthProvider";
 import {StocksService} from "../stocks/StocksService";
+import {StockBalanceProvider} from "../stockBalance/StockBalanceProvider";
 
 /**
  * KIS Trading Service for Agentica Class Protocol
@@ -21,7 +22,8 @@ export class KisService {
     constructor(
         private readonly kisTradingProvider: KisTradingProvider,
         private readonly sessionData: IKisSessionData,
-        private readonly stocksService: StocksService
+        private readonly stocksService: StocksService,
+        private readonly stockBalanceProvider: StockBalanceProvider
     ) {
     }
 
@@ -238,5 +240,64 @@ export class KisService {
             message: `${input.company}의 ${input.periodCode ?? 'D'} 단위 시세 정보입니다.`,
             data: result,
         };
+    }
+
+    /**
+     * Get account stock balance
+     *
+     * Retrieve the current stock holdings in the user's account.
+     * This function shows all stocks currently owned, including quantity,
+     * purchase price, current price, and profit/loss information.
+     *
+     * > This function provides a comprehensive view of the user's portfolio.
+     * > Use this before placing sell orders to check available quantities.
+     * > The profit/loss information is calculated based on current market prices.
+     *
+     * @returns Account balance information with stock holdings
+     */
+    public async getStockBalance(): Promise<{
+        /**
+         * Summary message about the account balance
+         * @example "3개 종목을 보유중이에요"
+         */
+        message: string;
+
+        /**
+         * List of stock holdings in the account
+         */
+        stocks: Array<{
+            /**
+             * Stock name
+             * @example "삼성전자"
+             */
+            name: string;
+
+            /**
+             * Number of shares owned
+             * @example "100"
+             */
+            quantity: string;
+
+            /**
+             * Average purchase price per share
+             * @example "75000"
+             */
+            buyPrice: string;
+
+            /**
+             * Current market price per share
+             * @example "78000"
+             */
+            currentPrice: string;
+
+            /**
+             * Profit/loss percentage
+             * @example "4.00"
+             */
+            profit: string;
+        }>;
+    }> {
+        // Execute balance inquiry using stored session data
+        return await this.stockBalanceProvider.getStockBalance(this.sessionData);
     }
 }

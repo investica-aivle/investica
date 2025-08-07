@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
 import { StocksService } from "../../providers/stocks/StocksService";
+import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
 import { HttpModule } from "@nestjs/axios";
 import { ConfigModule } from "@nestjs/config";
 
@@ -16,7 +17,7 @@ import { ConfigModule } from "@nestjs/config";
     HttpModule,
     ConfigModule, // 둘 다 주입에 필요
   ],
-  providers: [KisTradingProvider, KisAuthProvider, StocksService],
-  exports: [KisTradingProvider, KisAuthProvider, StocksService],
+  providers: [KisTradingProvider, KisAuthProvider, StocksService, StockBalanceProvider],
+  exports: [KisTradingProvider, KisAuthProvider, StocksService, StockBalanceProvider],
 })
 export class KisModule {}
