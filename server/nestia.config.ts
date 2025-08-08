@@ -18,7 +18,8 @@ const NESTIA_CONFIG: sdk.INestiaConfig = {
     beautify: true,
   },
   distribute: "packages/api",
-  primitive: false,
+  primitive: true,
   simulate: true,
+  clone: true,
 };
 export default NESTIA_CONFIG;
