@@ -10,8 +10,6 @@ export interface MiraeAssetReport {
   date: string;
   author: string;
   downloadUrl: string;
-  fileName: string;
-  category: string;
 }
 
 /**
@@ -163,4 +161,26 @@ export interface ReportSummary {
   title: string;
   summary: string;
   category: string;
+}
+
+/**
+ * 마크다운 파일 요약 요청
+ */
+export interface MarkdownSummaryInput {
+  markdownDir?: string;
+  limit?: number;
+}
+
+/**
+ * 마크다운 파일 요약 결과
+ */
+export interface MarkdownSummaryResult {
+  message: string;
+  summary: string;
+  referencedFiles: Array<{
+    fileName: string;
+    date: string;
+    title: string;
+    content: string;
+  }>;
 }
