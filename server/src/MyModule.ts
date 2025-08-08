@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
 
-import { BbsArticleModule } from "./controllers/bbs/BbsArticleModule";
+// import { BbsArticleModule } from "./controllers/bbs/BbsArticleModule";
 import { ChatModule } from "./controllers/chat/ChatModule";
 import { ReportsModule } from "./controllers/reports/ReportsModule";
 
@@ -12,7 +12,7 @@ import { ReportsModule } from "./controllers/reports/ReportsModule";
       rootPath: join(__dirname, "..", "client"),
       serveRoot: "/",
     }),
-    BbsArticleModule,
+    // BbsArticleModule,
     ChatModule,
     ReportsModule,
   ],

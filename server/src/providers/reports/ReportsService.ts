@@ -1,6 +1,6 @@
+import { MiraeAssetReport } from "@models/Reports";
 import { Injectable } from "@nestjs/common";
 
-import { MiraeAssetReport } from "../../models/Reports";
 import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
 import { PerplexityProvider } from "./PerplexityProvider";
 
@@ -27,48 +27,40 @@ export class ReportsService {
    * 모든 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
-  private async syncReports(): Promise<void> {
+  public async syncReports(): Promise<{
+    message: string;
+    scrapedCount: number;
+    convertedCount: number;
+  }> {
     try {
-      console.log("🔄 동기화 시작: 최신 보고서 다운로드 및 변환");
+      console.log("🔄 보고서 동기화 시작");
 
-      // 1. 최신 보고서 다운로드
+      // 1. 최신 보고서 스크래핑 및 데이터 저장
       const scrapeResult =
-        await this.miraeAssetReportProvider.scrapeAndDownloadReports(
-          [
-            "주식시장",
-            "증권시장",
-            "시장동향",
-            "주식분석",
-            "증권",
-            "분석",
-            "리포트",
-            "보고서",
-          ],
+        await this.miraeAssetReportProvider.scrapeAndSaveData(
           "./downloads",
           true, // 동기화 활성화
         );
 
-      if (scrapeResult.reports.length > 0) {
-        console.log(
-          `📥 ${scrapeResult.reports.length}개의 새로운 보고서 다운로드 완료`,
+      let convertedCount: number = 0;
+      // 2. PDF를 마크다운으로 변환 (URL 기반)
+      const conversionResults: { success: boolean; error?: string }[] =
+        await this.perplexityProvider.convertReportsFromJson(
+          "./downloads/reports.json",
+          "./downloads/markdown",
         );
 
-        // 2. PDF를 마크다운으로 변환
-        const conversionResults =
-          await this.perplexityProvider.convertDownloadedPdfToMarkdown(
-            "./downloads",
-            "./downloads/markdown",
-          );
+      convertedCount = conversionResults.filter((r) => r.success).length;
 
-        const successCount = conversionResults.filter((r) => r.success).length;
-        console.log(
-          `📝 ${conversionResults.length}개 중 ${successCount}개 마크다운 변환 완료`,
-        );
-      } else {
-        console.log("✅ 이미 최신 상태입니다.");
-      }
+      return {
+        message: `동기화 완료: ${scrapeResult.reports.length}개 스크래핑, ${convertedCount}개 변환`,
+        scrapedCount: scrapeResult.reports.length,
+        convertedCount,
+      };
     } catch (error) {
-      console.error("❌ 동기화 중 오류:", error);
+      throw new Error(
+        `동기화 중 오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -99,20 +91,26 @@ export class ReportsService {
       content: string;
     }>;
   }> {
-    // 동기화 먼저 실행
-    await this.syncReports();
+    try {
+      // 동기화 먼저 실행
+      await this.syncReports();
 
-    // 최신 마크다운 파일들 요약
-    const result = await this.perplexityProvider.summarizeLatestMarkdownFiles(
-      "./downloads/markdown",
-      input.limit || 5,
-    );
+      // 최신 마크다운 파일들 요약
+      const result = await this.perplexityProvider.summarizeLatestMarkdownFiles(
+        "./downloads/reports.json",
+        input.limit || 5,
+      );
 
-    return {
-      message: result.message,
-      summary: result.summary,
-      referencedFiles: result.referencedFiles,
-    };
+      return {
+        message: result.message,
+        summary: result.summary,
+        referencedFiles: result.referencedFiles,
+      };
+    } catch (error) {
+      throw new Error(
+        `최근 주식상황 요약 중 오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   /**
@@ -126,8 +124,8 @@ export class ReportsService {
    */
   public async getSecuritiesReportList(input: {
     /**
-     * 검색할 키워드들 (기본값: ["증권", "분석", "리포트", "보고서"])
-     * @example ["증권", "주식시장"]
+     * 검색할 키워드들 (선택사항)
+     * @example []
      */
     keywords?: string[];
 
@@ -140,45 +138,29 @@ export class ReportsService {
     limit?: number;
   }): Promise<{
     message: string;
-    reports: Array<{
-      title: string;
-      date: string;
-      author: string;
-      downloadUrl: string;
-      hasMarkdown: boolean;
-      markdownFileName?: string;
-    }>;
+    reports: Array<MiraeAssetReport>;
   }> {
     // 동기화 먼저 실행
     await this.syncReports();
 
-    // 보고서 스크래핑
-    const scrapeResult =
-      await this.miraeAssetReportProvider.scrapeAndDownloadReports(
-        input.keywords || ["증권", "분석", "리포트", "보고서"],
-        "./downloads",
-        true,
-      );
-
-    // 마크다운 파일 존재 여부 확인
-    const reportsWithMarkdown = scrapeResult.reports.map((report) => {
-      const fileName = this.extractFileNameFromReport(report);
-      const markdownFileName = `${fileName}.md`;
-      const markdownPath = `./downloads/markdown/${markdownFileName}`;
-      const hasMarkdown = require("fs").existsSync(markdownPath);
-
+    // JSON 파일에서 보고서 정보 읽기
+    const jsonFilePath = "./downloads/reports.json";
+    if (!require("fs").existsSync(jsonFilePath)) {
       return {
-        title: report.title,
-        date: report.date,
-        author: report.author,
-        downloadUrl: report.downloadUrl,
-        hasMarkdown,
-        markdownFileName: hasMarkdown ? markdownFileName : undefined,
+        message: "보고서 정보를 찾을 수 없습니다.",
+        reports: [],
       };
-    });
+    }
+
+    // JSON에서 마크다운 파일들 가져오기
+    const markdownFiles: MiraeAssetReport[] =
+      this.perplexityProvider.getMarkdownFilesFromJson(jsonFilePath);
 
     // limit 적용
-    const limitedReports = reportsWithMarkdown.slice(0, input.limit || 10);
+    const limitedReports: MiraeAssetReport[] = markdownFiles.slice(
+      0,
+      input.limit || 10,
+    );
 
     return {
       message: `증권보고서 ${limitedReports.length}개를 찾았습니다.`,
@@ -196,7 +178,7 @@ export class ReportsService {
    */
   public async getSpecificReportContent(input: {
     /**
-     * 보고서 제목 (정확히 일치해야 함)
+     * 보고서 제목
      * @example "주식시장 동향 분석"
      */
     title: string;
@@ -213,16 +195,27 @@ export class ReportsService {
     await this.syncReports();
 
     try {
-      // 1. 보고서 찾기
-      const scrapeResult =
-        await this.miraeAssetReportProvider.scrapeAndDownloadReports(
-          [], // 모든 보고서 검색
-          "./downloads",
-          true,
-        );
+      // JSON 파일에서 보고서 정보 읽기
+      const jsonFilePath = "./downloads/reports.json";
+      if (!require("fs").existsSync(jsonFilePath)) {
+        return {
+          message: "보고서 정보를 찾을 수 없습니다.",
+          title: "",
+          date: "",
+          author: "",
+          content: "",
+          success: false,
+          error: "JSON 파일이 없습니다.",
+        };
+      }
 
-      const targetReport = scrapeResult.reports.find(
-        (report) => report.title === input.title,
+      // JSON에서 마크다운 파일들 가져오기
+      const markdownFiles: MiraeAssetReport[] =
+        this.perplexityProvider.getMarkdownFilesFromJson(jsonFilePath);
+
+      // 제목으로 보고서 찾기
+      const targetReport: MiraeAssetReport | undefined = markdownFiles.find(
+        (report: MiraeAssetReport) => report.title === input.title,
       );
 
       if (!targetReport) {
@@ -237,61 +230,28 @@ export class ReportsService {
         };
       }
 
-      // 2. 마크다운 파일 확인
-      const fileName = this.extractFileNameFromReport(targetReport);
-      const markdownFileName = `${fileName}.md`;
-      const markdownPath = `./downloads/markdown/${markdownFileName}`;
-
-      if (!require("fs").existsSync(markdownPath)) {
-        // 마크다운 파일이 없으면 변환 시도
-        console.log(
-          `마크다운 파일이 없어서 변환을 시도합니다: ${markdownFileName}`,
-        );
-
-        const pdfPath = `./downloads/${fileName}.pdf`;
-        if (require("fs").existsSync(pdfPath)) {
-          const conversionResult =
-            await this.perplexityProvider.convertDownloadedPdfToMarkdown(
-              "./downloads",
-              "./downloads/markdown",
-            );
-
-          const targetConversion = conversionResult.find(
-            (r) => r.fileName === markdownFileName,
-          );
-          if (targetConversion && targetConversion.success) {
-            return {
-              message: `"${input.title}" 보고서 내용을 성공적으로 가져왔습니다.`,
-              title: targetReport.title,
-              date: targetReport.date,
-              author: targetReport.author,
-              content: targetConversion.markdown,
-              success: true,
-            };
-          }
-        }
-      } else {
+      // 마크다운 파일 확인
+      if (targetReport.mdFileName) {
         // 마크다운 파일이 있으면 읽기
-        const content = require("fs").readFileSync(markdownPath, "utf8");
-        return {
-          message: `"${input.title}" 보고서 내용을 성공적으로 가져왔습니다.`,
-          title: targetReport.title,
-          date: targetReport.date,
-          author: targetReport.author,
-          content,
-          success: true,
-        };
+        const markdownPath = `./downloads/markdown/${targetReport.mdFileName}`;
+
+        if (require("fs").existsSync(markdownPath)) {
+          const content: string = require("fs").readFileSync(
+            markdownPath,
+            "utf8",
+          );
+          return {
+            message: `"${input.title}" 보고서 내용을 성공적으로 가져왔습니다.`,
+            title: targetReport.title,
+            date: targetReport.date,
+            author: targetReport.author,
+            content,
+            success: true,
+          };
+        }
       }
 
-      return {
-        message: `"${input.title}" 보고서의 마크다운 파일을 찾을 수 없습니다.`,
-        title: targetReport.title,
-        date: targetReport.date,
-        author: targetReport.author,
-        content: "",
-        success: false,
-        error: "마크다운 파일을 찾을 수 없습니다.",
-      };
+      throw new Error("마크다운 파일이 없습니다.");
     } catch (error) {
       return {
         message: `"${input.title}" 보고서 처리 중 오류가 발생했습니다.`,
@@ -321,35 +281,26 @@ export class ReportsService {
     keywords?: string[];
   }): Promise<{
     message: string;
-    downloadedCount: number;
+    scrapedCount: number;
     convertedCount: number;
   }> {
     try {
       console.log("🔄 강제 동기화 시작");
 
-      // 1. 최신 보고서 다운로드
+      // 1. 최신 보고서 스크래핑 및 데이터 저장
       const scrapeResult =
-        await this.miraeAssetReportProvider.scrapeAndDownloadReports(
-          input.keywords || [
-            "주식시장",
-            "증권시장",
-            "시장동향",
-            "주식분석",
-            "증권",
-            "분석",
-            "리포트",
-            "보고서",
-          ],
+        await this.miraeAssetReportProvider.scrapeAndSaveData(
           "./downloads",
           true, // 동기화 활성화
+          input.keywords || [], // 키워드가 없으면 모든 보고서
         );
 
-      let convertedCount = 0;
+      let convertedCount: number = 0;
       if (scrapeResult.reports.length > 0) {
         // 2. PDF를 마크다운으로 변환
-        const conversionResults =
-          await this.perplexityProvider.convertDownloadedPdfToMarkdown(
-            "./downloads",
+        const conversionResults: { success: boolean; error?: string }[] =
+          await this.perplexityProvider.convertReportsFromJson(
+            "./downloads/reports.json",
             "./downloads/markdown",
           );
 
@@ -357,8 +308,8 @@ export class ReportsService {
       }
 
       return {
-        message: `동기화 완료: ${scrapeResult.reports.length}개 다운로드, ${convertedCount}개 변환`,
-        downloadedCount: scrapeResult.reports.length,
+        message: `동기화 완료: ${scrapeResult.reports.length}개 스크래핑, ${convertedCount}개 변환`,
+        scrapedCount: scrapeResult.reports.length,
         convertedCount,
       };
     } catch (error) {
@@ -368,29 +319,29 @@ export class ReportsService {
     }
   }
 
-  /**
-   * 보고서에서 파일명 추출 (내부용)
-   */
-  private extractFileNameFromReport(report: MiraeAssetReport): string {
-    // attachmentId 추출
-    const urlParams = new URLSearchParams(
-      report.downloadUrl.split("?")[1] || "",
-    );
-    const attachmentId = urlParams.get("attachmentId") || "unknown";
+  // /**
+  //  * 보고서에서 파일명 추출 (내부용)
+  //  */
+  // private extractFileNameFromReport(report: MiraeAssetReport): string {
+  //   // attachmentId 추출
+  //   const urlParams = new URLSearchParams(
+  //     report.downloadUrl.split("?")[1] || "",
+  //   );
+  //   const attachmentId = urlParams.get("attachmentId") || "unknown";
 
-    // 날짜를 yyyymmdd 형식으로 변환
-    const dateObj = new Date(report.date);
-    const formattedDate =
-      dateObj.getFullYear().toString() +
-      (dateObj.getMonth() + 1).toString().padStart(2, "0") +
-      dateObj.getDate().toString().padStart(2, "0");
+  //   // 날짜를 yyyymmdd 형식으로 변환
+  //   const dateObj = new Date(report.date);
+  //   const formattedDate =
+  //     dateObj.getFullYear().toString() +
+  //     (dateObj.getMonth() + 1).toString().padStart(2, "0") +
+  //     dateObj.getDate().toString().padStart(2, "0");
 
-    // 제목에서 특수문자 제거 및 공백을 언더스코어로 변경
-    const cleanTitle = report.title
-      .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
-      .replace(/\s+/g, "_") // 공백을 언더스코어로 변경
-      .substring(0, 50); // 길이 제한
+  //   // 제목에서 특수문자 제거 및 공백을 언더스코어로 변경
+  //   const cleanTitle = report.title
+  //     .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
+  //     .replace(/\s+/g, "_") // 공백을 언더스코어로 변경
+  //     .substring(0, 50); // 길이 제한
 
-    return `${formattedDate}_${cleanTitle}_${attachmentId}`;
-  }
+  //   return `${formattedDate}_${cleanTitle}_${attachmentId}`;
+  // }
 }

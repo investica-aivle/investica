@@ -68,8 +68,8 @@ export class MyBackend {
       `🔗 API Base URL: http://localhost:${MyConfiguration.API_PORT()}`,
     );
     // 환경변수 확인
-    console.log("🔧 Environment Variables Check:");
-    console.log(process.env);
+    // console.log("🔧 Environment Variables Check:");
+    // console.log(process.env);
 
     //----
     // POST-PROCESSES

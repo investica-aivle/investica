@@ -1,6 +1,18 @@
 import { Body, Controller, Post } from "@nestjs/common";
 
+import type { MiraeAssetReport } from "../../models/Reports";
 import { ReportsService } from "../../providers/reports/ReportsService";
+
+// API 응답 타입들을 export하여 Nestia가 인식할 수 있도록 함
+export interface SecuritiesReportListResponse {
+  message: string;
+  reports: MiraeAssetReport[];
+}
+
+export interface SecuritiesReportListRequest {
+  keywords?: string[];
+  limit?: number;
+}
 
 @Controller("reports")
 export class ReportsController {
@@ -13,7 +25,7 @@ export class ReportsController {
    *
    * 유저가 "최근 주식상황 어때?" 또는 "경제상황 어때?"라고 요청할 때 사용
    */
-  @Post("function/get-recent-market-summary")
+  @Post("get-recent-market-summary")
   async getRecentMarketSummary(
     @Body()
     body: {
@@ -39,24 +51,11 @@ export class ReportsController {
    *
    * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용
    */
-  @Post("function/get-securities-report-list")
+  @Post("get-securities-report-list")
   async getSecuritiesReportList(
     @Body()
-    body: {
-      keywords?: string[];
-      limit?: number;
-    },
-  ): Promise<{
-    message: string;
-    reports: Array<{
-      title: string;
-      date: string;
-      author: string;
-      downloadUrl: string;
-      hasMarkdown: boolean;
-      markdownFileName?: string;
-    }>;
-  }> {
+    body: SecuritiesReportListRequest,
+  ): Promise<SecuritiesReportListResponse> {
     return await this.reportsService.getSecuritiesReportList({
       keywords: body.keywords || ["증권", "분석", "리포트", "보고서"],
       limit: body.limit || 10,
@@ -68,7 +67,7 @@ export class ReportsController {
    *
    * 유저가 특정 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공
    */
-  @Post("function/get-specific-report-content")
+  @Post("get-specific-report-content")
   async getSpecificReportContent(@Body() body: { title: string }): Promise<{
     message: string;
     title: string;
@@ -88,10 +87,10 @@ export class ReportsController {
    *
    * 수동으로 동기화를 실행할 때 사용
    */
-  @Post("function/force-sync-reports")
+  @Post("force-sync-reports")
   async forceSyncReports(@Body() body: { keywords?: string[] }): Promise<{
     message: string;
-    downloadedCount: number;
+    scrapedCount: number;
     convertedCount: number;
   }> {
     return await this.reportsService.forceSyncReports({

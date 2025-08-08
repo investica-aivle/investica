@@ -1,11 +1,10 @@
+import { MiraeAssetReport, ReportsJsonData } from "@models/Reports";
 import { Injectable } from "@nestjs/common";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import * as fs from "fs";
 import * as iconv from "iconv-lite";
 import * as path from "path";
-
-import { MiraeAssetReport } from "../../models/Reports";
 
 @Injectable()
 export class MiraeAssetReportProvider {
@@ -16,44 +15,33 @@ export class MiraeAssetReportProvider {
   /**
    * 미래에셋증권 보고서 스크래핑 및 다운로드 (동기화 포함)
    */
-  public async scrapeAndDownloadReports(
-    keywords: string[] = [],
+  public async scrapeAndSaveData(
     outputDir: string = "./downloads",
     syncWithExisting: boolean = true,
+    keywords: string[] = [],
   ): Promise<{
     reports: MiraeAssetReport[];
-    downloadedFiles: string[];
   }> {
     try {
       // 1. 먼저 스크래핑으로 모든 보고서 가져오기
       const allReports = await this.scrapeReportsFromWeb(keywords);
 
-      // 2. 중복 제거 및 필터링
+      console.log(allReports);
+
+      // 2. JSON 파일 기반 중복 제거
       const filteredReports = syncWithExisting
-        ? this.filterDuplicateReports(allReports, outputDir)
+        ? this.filterDuplicateReportsFromJson(allReports, outputDir)
         : allReports;
 
-      // 3. 다운로드
-      const downloadedFiles: string[] = [];
-      for (const report of filteredReports) {
-        try {
-          const filePath = await this.downloadPdf(report, outputDir);
-          downloadedFiles.push(filePath);
-          console.log(`Downloaded: ${report.title} -> ${filePath}`);
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          console.error(`Failed to download ${report.title}: ${errorMessage}`);
-        }
-      }
+      // 3. 필터링된 새로운 보고서들만 JSON 파일에 추가
+      const reports = await this.saveReportsToJson(filteredReports, outputDir);
 
       return {
-        reports: filteredReports,
-        downloadedFiles,
+        reports,
       };
     } catch (error) {
       throw new Error(
-        `Failed to scrape and download Mirae Asset reports: ${error}`,
+        `Failed to scrape and save Mirae Asset reports data: ${error}`,
       );
     }
   }
@@ -105,7 +93,9 @@ export class MiraeAssetReportProvider {
 
         if (title && downloadLink) {
           if ((keywords.length > 0 && hasKeyword) || keywords.length === 0) {
+            const attachmentId = this.extractAttachmentId(downloadLink);
             reports.push({
+              id: attachmentId || "unknown",
               title,
               date,
               author,
@@ -118,58 +108,6 @@ export class MiraeAssetReportProvider {
       return reports;
     } catch (error) {
       throw new Error(`Failed to scrape reports from web: ${error}`);
-    }
-  }
-
-  /**
-   * 기존 다운로드된 PDF 파일들에서 attachmentId 추출
-   */
-  private getExistingAttachmentIds(outputDir: string): Set<string> {
-    const attachmentIds = new Set<string>();
-
-    try {
-      if (!fs.existsSync(outputDir)) {
-        return attachmentIds;
-      }
-
-      const files = fs.readdirSync(outputDir);
-
-      for (const file of files) {
-        if (file.endsWith(".pdf")) {
-          const attachmentId = this.extractAttachmentIdFromFileName(file);
-          if (attachmentId) {
-            attachmentIds.add(attachmentId);
-          }
-        }
-      }
-
-      console.log(
-        `Found ${attachmentIds.size} existing attachmentIds: ${Array.from(attachmentIds).join(", ")}`,
-      );
-    } catch (error) {
-      console.error(`Error reading existing files from ${outputDir}:`, error);
-    }
-
-    return attachmentIds;
-  }
-
-  /**
-   * 파일명에서 attachmentId 추출 (yyyymmdd_title_attachmentId.pdf 형식)
-   */
-  private extractAttachmentIdFromFileName(fileName: string): string | null {
-    try {
-      // yyyymmdd_title_attachmentId.pdf 형식에서 attachmentId 추출
-      const parts = fileName.replace(".pdf", "").split("_");
-      if (parts.length >= 3) {
-        return parts[parts.length - 1]; // 마지막 부분이 attachmentId
-      }
-      return null;
-    } catch (error) {
-      console.error(
-        `Error extracting attachmentId from filename ${fileName}:`,
-        error,
-      );
-      return null;
     }
   }
 
@@ -215,55 +153,43 @@ export class MiraeAssetReportProvider {
     return null;
   }
 
+  // /**
+  //  * 파일명 추출
+  //  */
+  // private extractFileName(
+  //   downloadUrl: string,
+  //   title: string,
+  //   date: string,
+  // ): string {
+  //   // attachmentId 추출
+  //   const urlParams = new URLSearchParams(downloadUrl.split("?")[1] || "");
+  //   const attachmentId = urlParams.get("attachmentId") || "unknown";
+
+  //   // 날짜를 yyyymmdd 형식으로 변환
+  //   const dateObj = new Date(date);
+  //   const formattedDate =
+  //     dateObj.getFullYear().toString() +
+  //     (dateObj.getMonth() + 1).toString().padStart(2, "0") +
+  //     dateObj.getDate().toString().padStart(2, "0");
+
+  //   // 제목에서 특수문자 제거 및 공백을 언더스코어로 변경
+  //   const cleanTitle = title
+  //     .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
+  //     .replace(/\s+/g, "_") // 공백을 언더스코어로 변경
+  //     .substring(0, 50); // 길이 제한
+
+  //   return `${formattedDate}_${cleanTitle}_${attachmentId}.pdf`;
+  // }
+
   /**
-   * 파일명 추출
+   * PDF 파일 다운로드 (더 이상 사용하지 않음 - Perplexity file_url 사용)
    */
-  private extractFileName(
-    downloadUrl: string,
-    title: string,
-    date: string,
-  ): string {
-    // attachmentId 추출
-    const urlParams = new URLSearchParams(downloadUrl.split("?")[1] || "");
-    const attachmentId = urlParams.get("attachmentId") || "unknown";
-
-    // 날짜를 yyyymmdd 형식으로 변환
-    const dateObj = new Date(date);
-    const formattedDate =
-      dateObj.getFullYear().toString() +
-      (dateObj.getMonth() + 1).toString().padStart(2, "0") +
-      dateObj.getDate().toString().padStart(2, "0");
-
-    // 제목에서 특수문자 제거 및 공백을 언더스코어로 변경
-    const cleanTitle = title
-      .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
-      .replace(/\s+/g, "_") // 공백을 언더스코어로 변경
-      .substring(0, 50); // 길이 제한
-
-    return `${formattedDate}_${cleanTitle}_${attachmentId}.pdf`;
-  }
-
-  /**
-   * PDF 파일 다운로드
-   */
+  /*
   private async downloadPdf(
     report: MiraeAssetReport,
     outputDir: string = "./downloads",
   ): Promise<string> {
     try {
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
-
-      const response = await axios.get(report.downloadUrl, {
-        responseType: "stream",
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      });
-
-      // 파일명 추출
       const fileName = this.extractFileName(
         report.downloadUrl,
         report.title,
@@ -271,39 +197,81 @@ export class MiraeAssetReportProvider {
       );
       const filePath = path.join(outputDir, fileName);
 
-      // 파일 스트림으로 저장
+      // 디렉토리가 없으면 생성
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+
+      // 파일이 이미 존재하면 건너뛰기
+      if (fs.existsSync(filePath)) {
+        console.log(`File already exists: ${filePath}`);
+        return filePath;
+      }
+
+      console.log(`Downloading: ${report.title} -> ${filePath}`);
+
+      const response = await axios.get(report.downloadUrl, {
+        responseType: "stream",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
+      });
+
       const writer = fs.createWriteStream(filePath);
       response.data.pipe(writer);
 
       return new Promise((resolve, reject) => {
-        writer.on("finish", () => resolve(filePath));
+        writer.on("finish", () => {
+          console.log(`Download completed: ${filePath}`);
+          resolve(filePath);
+        });
         writer.on("error", reject);
       });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to download PDF from ${report.downloadUrl}: ${errorMessage}`,
+        `Failed to download PDF for ${report.title}: ${error}`,
       );
     }
   }
+  */
 
   /**
-   * 중복된 보고서 필터링
+   * JSON 파일에서 중복된 보고서 필터링
    */
-  private filterDuplicateReports(
+  private filterDuplicateReportsFromJson(
     reports: MiraeAssetReport[],
     outputDir: string,
   ): MiraeAssetReport[] {
-    const existingAttachmentIds = this.getExistingAttachmentIds(outputDir);
+    const jsonFilePath = path.join(outputDir, "reports.json");
+    const existingIds = new Set<string>();
+
+    // 기존 JSON 파일에서 ID들 읽기
+    if (fs.existsSync(jsonFilePath)) {
+      try {
+        const jsonContent = fs.readFileSync(jsonFilePath, "utf8");
+        const existingData = JSON.parse(jsonContent);
+
+        if (existingData.reports && Array.isArray(existingData.reports)) {
+          existingData.reports.forEach((report: any) => {
+            if (report.id) {
+              existingIds.add(report.id);
+            }
+          });
+        }
+
+        console.log(`Found ${existingIds.size} existing report IDs in JSON`);
+      } catch (error) {
+        console.error(`Error reading existing JSON file:`, error);
+      }
+    }
+
+    // 중복되지 않은 보고서만 필터링
     const filteredReports: MiraeAssetReport[] = [];
-
     for (const report of reports) {
-      const attachmentId = this.extractAttachmentId(report.downloadUrl);
-
-      if (attachmentId && existingAttachmentIds.has(attachmentId)) {
+      if (report.id && existingIds.has(report.id)) {
         console.log(
-          `Skipping duplicate attachmentId: ${attachmentId} for "${report.title}"`,
+          `Skipping duplicate id: ${report.id} for "${report.title}"`,
         );
         continue;
       }
@@ -312,5 +280,63 @@ export class MiraeAssetReportProvider {
     }
 
     return filteredReports;
+  }
+
+  /**
+   * 보고서 정보를 JSON 파일로 저장 (기존 데이터에 추가)
+   */
+  private async saveReportsToJson(
+    newReports: MiraeAssetReport[],
+    outputDir: string,
+  ): Promise<MiraeAssetReport[]> {
+    try {
+      const filePath = path.join(outputDir, "reports.json");
+      let existingData: ReportsJsonData = {
+        lastUpdated: new Date().toISOString(),
+        reports: [],
+      };
+
+      // 기존 JSON 파일이 있으면 읽기
+      if (fs.existsSync(filePath)) {
+        try {
+          const jsonContent = fs.readFileSync(filePath, "utf8");
+          existingData = JSON.parse(jsonContent);
+          console.log(
+            `기존 JSON 파일 읽기: ${existingData.reports.length}개 보고서`,
+          );
+        } catch (error) {
+          console.error(`기존 JSON 파일 읽기 실패:`, error);
+        }
+      }
+
+      // 새로운 보고서들만 추가
+      const existingIds = new Set(existingData.reports.map((r: any) => r.id));
+      const reportsToAdd = newReports
+        .filter((report) => !existingIds.has(report.id))
+        .map((report) => ({
+          ...report,
+          mdFileName: null, // 나중에 마크다운 변환 시 업데이트
+        }));
+
+      if (reportsToAdd.length > 0) {
+        existingData.reports.push(...reportsToAdd);
+        existingData.lastUpdated = new Date().toISOString();
+
+        await fs.promises.writeFile(
+          filePath,
+          JSON.stringify(existingData, null, 2),
+          "utf8",
+        );
+        console.log(
+          `📄 보고서 정보 추가 완료: ${filePath} (${reportsToAdd.length}개 추가, 총 ${existingData.reports.length}개)`,
+        );
+      } else {
+        console.log(`📄 새로운 보고서가 없습니다.`);
+      }
+      return existingData.reports;
+    } catch (error) {
+      console.error(`❌ 보고서 JSON 저장 실패:`, error);
+      return [];
+    }
   }
 }
