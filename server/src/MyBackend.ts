@@ -42,6 +42,7 @@ export class MyBackend {
         },
       ],
     });
+
     await NestiaEditorModule.setup({
       path: "editor",
       application: this.application_,

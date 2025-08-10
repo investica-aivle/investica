@@ -1,13 +1,12 @@
 import { BrainIcon, DollarSignIcon, NewspaperIcon, PieChartIcon, TrendingUpIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
-import KospiOverview from './StockVisualization/KospiOverview';
-import StockTreemap from './StockVisualization/Treemap';
+import KospiOverview from '../StockVisualization/KospiOverview';
+import StockTreemap from '../StockVisualization/Treemap';
 
-export function Landing() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
   const onClose = () => {
-    setIsSidebarOpen(false);
+    setShowSideContainer(false);
   };
 
 
@@ -197,4 +196,3 @@ export function Landing() {
     </div>
   );
 }
-

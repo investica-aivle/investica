@@ -4,7 +4,10 @@ import path from "path";
 import { MyGlobal } from "./MyGlobal";
 
 export namespace MyConfiguration {
-  export const API_PORT = () => Number(MyGlobal.env.API_PORT);
+  export const API_PORT = () => {
+    const port = Number(MyGlobal.env.API_PORT);
+    return isNaN(port) ? 3000 : port;
+  };
 
   export const ROOT = (() => {
     const split: string[] = __dirname.split(path.sep);

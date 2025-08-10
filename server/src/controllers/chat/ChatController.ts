@@ -6,11 +6,14 @@ import {
 } from "@agentica/rpc";
 import { WebSocketRoute } from "@nestia/core";
 import { Controller, Logger } from "@nestjs/common";
+import { HttpLlm, OpenApi } from "@samchon/openapi";
 import OpenAI from "openai";
 import { WebSocketAcceptor } from "tgrid";
 import typia from "typia";
 
+import { MyConfiguration } from "../../MyConfiguration";
 import { MyGlobal } from "../../MyGlobal";
+import { ChatService } from "../../providers/chat/ChatService";
 import { KisAuthProvider, IKisSessionData } from "../../providers/kis/KisAuthProvider";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisService } from "../../providers/kis/KisService";
@@ -35,6 +38,7 @@ export class MyChatController {
     private readonly stocksService: StocksProvider,
     private readonly newsService: NewsService,
     private readonly stockBalanceProvider: StockBalanceProvider,
+    private readonly chatService: ChatService
   ) {}
 
   @WebSocketRoute()
@@ -89,6 +93,21 @@ export class MyChatController {
             "news",
             new NewsAgentService(this.newsService),
           ),
+          {
+            protocol: "http",
+            name: "reports",
+            application: HttpLlm.application({
+              model: "chatgpt",
+              document: OpenApi.convert(
+                await fetch(
+                  `http://localhost:${MyConfiguration.API_PORT()}/editor/swagger.json`,
+                ).then((r) => r.json()),
+              ),
+            }),
+            connection: {
+              host: `http://localhost:${MyConfiguration.API_PORT()}`,
+            },
+          },
         ],
         config: {
           systemPrompt: {
