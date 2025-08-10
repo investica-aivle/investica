@@ -33,22 +33,10 @@ export class MyChatController {
         api: new OpenAI({ apiKey: MyGlobal.env.OPENAI_API_KEY }),
         model: "gpt-4o-mini",
       },
+      config: {
+        locale: "kor",
+      },
       controllers: [
-        {
-          protocol: "http",
-          name: "bbs",
-          application: HttpLlm.application({
-            model: "chatgpt",
-            document: OpenApi.convert(
-              await fetch(
-                `http://localhost:${MyConfiguration.API_PORT()}/editor/swagger.json`,
-              ).then((r) => r.json()),
-            ),
-          }),
-          connection: {
-            host: `http://localhost:${MyConfiguration.API_PORT()}`,
-          },
-        },
         {
           protocol: "http",
           name: "pdf_reader",
