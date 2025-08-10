@@ -1,8 +1,8 @@
+import { useEffect, useRef } from "react";
 import { useAgenticaRpc } from "../../provider/AgenticaRpcProvider";
 import { ChatInput } from "./ChatInput";
 import { ChatMessages } from "./ChatMessages";
 import { ChatStatus } from "./ChatStatus";
-import { useEffect, useRef } from "react";
 
 export function Chat() {
   const { messages, conversate, isConnected, isError, tryConnect } =
@@ -32,9 +32,8 @@ export function Chat() {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-w-0">
-      <div className="relative w-full h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
-        <div className="h-full flex flex-col bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30">
+    <div className="flex-1 flex flex-col p-4 md:p-8 min-w-0">
+      <div className="flex-1 flex flex-col  bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30">
           <div
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
@@ -55,7 +54,6 @@ export function Chat() {
               disabled={!isConnected || isError || isLastMessageFromUser}
             />
           </div>
-        </div>
       </div>
     </div>
   );
