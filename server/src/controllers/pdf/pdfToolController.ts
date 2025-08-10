@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { PdfService } from './PdfService';
-import { Report } from './JsonManagement';
+import { PdfService } from '../../providers/pdf/PdfService';
+import { Report } from '../../providers/pdf/JsonManagement';
 
 export interface ReportIdentifierDto {
     identifier: string;

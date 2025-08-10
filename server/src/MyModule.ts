@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
-import { AppModule } from "./gemini/pdfModule";
+import { AppModule } from "./controllers/pdf/pdfModule";
 import { ChatModule } from "./controllers/chat/ChatModule";
-import { AppConfigModule } from "./gemini/config.module";
-import { PdfModule } from "./gemini/pdfServiceModule";
+import { AppConfigModule } from "./controllers/pdf/config.module";
+import { PdfModule } from "./controllers/pdf/pdfServiceModule";
 
 @Module({
   imports: [

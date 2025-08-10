@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
-import { PdfService } from './PdfService';
-import { Report } from './JsonManagement';
+import { PdfService } from '../../providers/pdf/PdfService';
+import { Report } from '../../providers/pdf/JsonManagement';
 
 
 

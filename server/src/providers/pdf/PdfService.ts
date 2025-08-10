@@ -117,7 +117,7 @@ export class PdfService {
             
 `
 
-            const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+            const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
             this.logger.log('Gemini API에 요청 전송 중...');
             const result = await model.generateContent([prompt, filePart]);
             const response = result.response;
