@@ -30,6 +30,13 @@ export interface IKisChatConnectionRequest {
   appSecret: string;
 }
 
+/**
+ * KIS 세션 데이터를 포함한 Agentica RPC 서비스 인터페이스
+ */
+export interface IAgenticaKisRpcService extends IAgenticaRpcService<"chatgpt"> {
+  kisSessionData?: IKisSessionData;
+}
+
 @Controller("chat")
 export class MyChatController {
   private readonly logger = new Logger(MyChatController.name);
@@ -49,7 +56,7 @@ export class MyChatController {
     @WebSocketRoute.Acceptor()
     acceptor: WebSocketAcceptor<
       IKisChatConnectionRequest,
-      IAgenticaRpcService<"chatgpt"> & { kisSessionData?: IKisSessionData },
+      IAgenticaKisRpcService,
       IAgenticaRpcListener
     >,
   ): Promise<void> {
@@ -59,26 +66,38 @@ export class MyChatController {
       /(\d{4})\d+(\d{2})/,
       "$1****$2",
     );
-
-    this.logger.log(
-      `New WebSocket connection attempt for account: ${maskedAccountNumber}`,
+    const maskedAppKey = connectionRequest.appKey.replace(
+      /(.{8}).*(.{3})/,
+      "$1***$2",
     );
+
+    this.logger.log(`=== 웹소켓 연결 요청 시작 ===`);
+    this.logger.log(`계좌번호: ${maskedAccountNumber}`);
+    this.logger.log(`App Key: ${maskedAppKey}`);
+    this.logger.log(`요청 시간: ${new Date().toISOString()}`);
 
     try {
       // KIS 인증 수행 - 실패 시 연결 거부
+      this.logger.log(`=== KIS 인증 시작 ===`);
       this.logger.log(
-        `Starting KIS authentication for WebSocket connection: ${maskedAccountNumber}`,
+        `KIS 인증 진행 중... 계좌: ${maskedAccountNumber}`,
       );
 
+      const authStartTime = Date.now();
       const kisSessionData = await this.kisAuthProvider.authenticate({
         accountNumber: connectionRequest.accountNumber,
         appKey: connectionRequest.appKey,
         appSecret: connectionRequest.appSecret,
       });
+      const authEndTime = Date.now();
 
-      this.logger.log(
-        `KIS authentication successful for WebSocket connection: ${maskedAccountNumber}`,
-      );
+      this.logger.log(`=== KIS 인증 성공 ===`);
+      this.logger.log(`계좌번호: ${maskedAccountNumber}`);
+      this.logger.log(`인증 소요시간: ${authEndTime - authStartTime}ms`);
+      this.logger.log(`토큰 만료시간: ${kisSessionData.tokenExpiresAt.toISOString()}`);
+
+      this.logger.log(`=== Agentica 에이전트 초기화 시작 ===`);
+      const agentStartTime = Date.now();
 
       const agent: Agentica<"chatgpt"> = new Agentica({
         model: "chatgpt",
@@ -116,25 +135,39 @@ export class MyChatController {
         },
       });
 
-      const service: AgenticaRpcService<"chatgpt"> & {
-        kisSessionData?: IKisSessionData;
-      } = new AgenticaRpcService({
+      const agentEndTime = Date.now();
+      this.logger.log(`Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`);
+      this.logger.log(`컨트롤러 등록: KIS, News, Reports`);
+
+      this.logger.log(`=== RPC 서비스 생성 및 웹소켓 연결 수락 ===`);
+      const service = new AgenticaRpcService({
         agent,
         listener: acceptor.getDriver(),
-      });
+      }) as IAgenticaKisRpcService;
 
       // 서비스 객체에 KIS 세션 데이터 직접 저장
       service.kisSessionData = kisSessionData;
+      this.logger.log(`KIS 세션 데이터가 RPC 서비스에 저장됨`);
 
       await acceptor.accept(service);
+
+      this.logger.log(`=== 웹소켓 연결 성공 ===`);
+      this.logger.log(`계좌: ${maskedAccountNumber}`);
+      this.logger.log(`총 소요시간: ${Date.now() - authStartTime}ms`);
+      this.logger.log(`연결 상태: 활성`);
+
     } catch (error) {
       // KIS 인증 실패 시 연결 거부
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
 
+      this.logger.error(`=== KIS 인증 실패 ===`);
+      this.logger.error(`계좌번호: ${maskedAccountNumber}`);
+      this.logger.error(`App Key: ${maskedAppKey}`);
+      this.logger.error(`실패 시간: ${new Date().toISOString()}`);
       this.logger.error(
-        `KIS authentication failed for WebSocket connection: ${maskedAccountNumber}`,
+        `인증 실패 상세:`,
         JSON.stringify(
           {
             error: errorMessage,

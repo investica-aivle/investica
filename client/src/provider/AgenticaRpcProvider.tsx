@@ -15,6 +15,20 @@ export interface IKisAuthData {
   appSecret: string;
 }
 
+/**
+ * KIS 세션 데이터를 포함한 Agentica RPC 서비스 인터페이스 (클라이언트용)
+ */
+export interface IAgenticaKisRpcService extends IAgenticaRpcService<"chatgpt"> {
+  kisSessionData?: {
+    accountNumber: string;
+    appKey: string;
+    appSecret: string;
+    accessToken: string;
+    tokenType: string;
+    expiresIn: number;
+  };
+}
+
 interface AgenticaRpcContextType {
   messages: IAgenticaEventJson[];
   conversate: (message: string) => Promise<void>;
@@ -26,7 +40,7 @@ interface AgenticaRpcContextType {
     | WebSocketConnector<
         IKisAuthData,
         IAgenticaRpcListener,
-        IAgenticaRpcService<"chatgpt">
+        IAgenticaKisRpcService
       >
     | undefined
   >;
@@ -38,7 +52,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [messages, setMessages] = useState<IAgenticaEventJson[]>([]);
   const [isError, setIsError] = useState(false);
   const [driver, setDriver] =
-    useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
+    useState<Driver<IAgenticaKisRpcService, false>>();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
@@ -57,11 +71,11 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         const connector: WebSocketConnector<
           IKisAuthData,
           IAgenticaRpcListener,
-          IAgenticaRpcService<"chatgpt">
+          IAgenticaKisRpcService
         > = new WebSocketConnector<
           IKisAuthData,
           IAgenticaRpcListener,
-          IAgenticaRpcService<"chatgpt">
+          IAgenticaKisRpcService
         >(authData, {
           assistantMessage: pushMessage,
           describe: pushMessage,
