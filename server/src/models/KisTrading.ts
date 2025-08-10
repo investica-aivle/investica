@@ -1,26 +1,85 @@
+import { tags } from "typia";
+
 /**
  * KIS Trading 관련 인터페이스 정의
  */
 
 /**
- * 주식 주문 요청
+ * Namespace for Korea Investment Securities (KIS) stock trading API structures
  */
-export interface IStockOrderRequest {
-  stockCode: string; // 종목코드 (6자리)
-  orderType: "buy" | "sell"; // 매수/매도 구분
-  quantity: number; // 주문수량
-  price?: number; // 지정가 (시장가 주문시 생략)
-  orderCondition: "market" | "limit"; // 시장가/지정가 구분
-}
+export namespace IKisStock {
+  /**
+   * Stock order request interface for placing buy or sell orders
+   */
+  export interface IOrderRequest {
+    /**
+     * Stock code (6 digits)
+     *
+     * @example "005930"
+     */
+    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
 
-/**
- * 주식 주문 응답
- */
-export interface IStockOrderResponse {
-  success: boolean;
-  orderId?: string; // 주문번호
-  message: string;
-  errorCode?: string;
+    /**
+     * Order type - buy or sell
+     *
+     * @example "buy"
+     */
+    orderType: "buy" | "sell";
+
+    /**
+     * Order quantity (number of shares)
+     *
+     * @example 10
+     */
+    quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
+
+    /**
+     * Order condition - market order or limit order
+     *
+     * @example "limit"
+     */
+    orderCondition: "market" | "limit";
+
+    /**
+     * Order price (required for limit orders, ignored for market orders)
+     *
+     * @example 75000
+     */
+    price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
+  }
+
+  /**
+   * Stock order response interface
+   */
+  export interface IOrderResponse {
+    /**
+     * Whether the order was successful
+     *
+     * @example true
+     */
+    success: boolean;
+
+    /**
+     * Order ID from KIS system (only provided on successful orders)
+     *
+     * @example "0000117057"
+     */
+    orderId?: string;
+
+    /**
+     * Response message describing the result
+     *
+     * @example "매수 주문이 완료되었습니다."
+     */
+    message: string;
+
+    /**
+     * Error code from KIS system (only provided on failed orders)
+     *
+     * @example "40310000"
+     */
+    errorCode?: string;
+  }
 }
 
 /**
@@ -154,4 +213,33 @@ export interface IStockDailyPricesRequest {
 export interface IStockDailyPricesResponse {
   message: string;
   data: IStockDailyPrice[];
+}
+
+export interface IKisAuthRequest {
+  accountNumber: string;
+  appKey: string;
+  appSecret: string;
+}
+
+export interface IKisAuthResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+export interface IKisApiHeaders {
+  "content-type": string;
+  authorization: string;
+  appkey: string;
+  appsecret: string;
+  tr_id: string;
+  custtype: string;
+  tr_cont?: string; // 연속조회용 (GET API)
+  hashkey?: string; // POST API용
+}
+
+// 계좌번호 파싱 결과
+export interface IAccountNumberParts {
+  CANO: string; // 종합계좌번호 (8자리)
+  ACNT_PRDT_CD: string; // 계좌상품코드 (2자리)
 }

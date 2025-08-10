@@ -1,43 +1,13 @@
+import {
+  IAccountNumberParts,
+  IKisApiHeaders,
+  IKisAuthRequest,
+  IKisAuthResponse,
+  IKisSessionData,
+} from "@models/KisTrading";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { KisConstants } from "./KisConstants";
-
-export interface IKisAuthRequest {
-  accountNumber: string;
-  appKey: string;
-  appSecret: string;
-}
-
-export interface IKisAuthResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-}
-
-export interface IKisSessionData {
-  accountNumber: string;
-  appKey: string;
-  appSecret: string;
-  accessToken: string;
-  tokenExpiresAt: Date;
-}
-
-export interface IKisApiHeaders {
-  "content-type": string;
-  authorization: string;
-  appkey: string;
-  appsecret: string;
-  tr_id: string;
-  custtype: string;
-  tr_cont?: string; // 연속조회용 (GET API)
-  hashkey?: string; // POST API용
-}
-
-// 계좌번호 파싱 결과
-export interface IAccountNumberParts {
-  CANO: string; // 종합계좌번호 (8자리)
-  ACNT_PRDT_CD: string; // 계좌상품코드 (2자리)
-}
 
 @Injectable()
 export class KisAuthProvider {
@@ -141,7 +111,7 @@ export class KisAuthProvider {
         appKey: request.appKey,
         appSecret: request.appSecret,
         accessToken: authResponse.access_token,
-        tokenExpiresAt,
+        expiresAt: tokenExpiresAt,
       };
     } catch (error) {
       if (
@@ -178,7 +148,7 @@ export class KisAuthProvider {
    * 토큰이 만료되었는지 확인합니다.
    */
   public isTokenExpired(sessionData: IKisSessionData): boolean {
-    return new Date() >= sessionData.tokenExpiresAt;
+    return new Date() >= sessionData.expiresAt;
   }
 
   /**
