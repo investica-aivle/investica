@@ -6,7 +6,7 @@ import { AgenticaRpcProvider } from "./provider/AgenticaRpcProvider";
 
 function App() {
 
-  const [showSideContainer, setShowSideContainer] = useState(false);
+  const [showSideContainer, setShowSideContainer] = useState(true);
 
   return (
     <div className="relative min-h-screen">

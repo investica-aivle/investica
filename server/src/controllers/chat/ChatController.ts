@@ -4,6 +4,7 @@ import {
   IAgenticaRpcListener,
   IAgenticaRpcService,
 } from "@agentica/rpc";
+import { IKisSessionData } from "@models/KisTrading";
 import { WebSocketRoute } from "@nestia/core";
 import { Controller, Logger } from "@nestjs/common";
 import OpenAI from "openai";
@@ -12,10 +13,7 @@ import typia from "typia";
 
 import { MyGlobal } from "../../MyGlobal";
 import { ChatService } from "../../providers/chat/ChatService";
-import {
-  IKisSessionData,
-  KisAuthProvider,
-} from "../../providers/kis/KisAuthProvider";
+import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
 import { KisService } from "../../providers/kis/KisService";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
@@ -94,7 +92,7 @@ export class MyChatController {
       this.logger.log(`=== KIS 인증 성공 ===`);
       this.logger.log(`계좌번호: ${maskedAccountNumber}`);
       this.logger.log(`인증 소요시간: ${authEndTime - authStartTime}ms`);
-      this.logger.log(`토큰 만료시간: ${kisSessionData.tokenExpiresAt.toISOString()}`);
+      this.logger.log(`토큰 만료시간: ${kisSessionData.expiresAt.toISOString()}`);
 
       this.logger.log(`=== Agentica 에이전트 초기화 시작 ===`);
       const agentStartTime = Date.now();
