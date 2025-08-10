@@ -6,21 +6,23 @@ import {
 } from "@agentica/rpc";
 import { WebSocketRoute } from "@nestia/core";
 import { Controller, Logger } from "@nestjs/common";
-import { HttpLlm, OpenApi } from "@samchon/openapi";
 import OpenAI from "openai";
 import { WebSocketAcceptor } from "tgrid";
 import typia from "typia";
 
-import { MyConfiguration } from "../../MyConfiguration";
 import { MyGlobal } from "../../MyGlobal";
 import { ChatService } from "../../providers/chat/ChatService";
-import { KisAuthProvider, IKisSessionData } from "../../providers/kis/KisAuthProvider";
-import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
+import {
+  IKisSessionData,
+  KisAuthProvider,
+} from "../../providers/kis/KisAuthProvider";
 import { KisService } from "../../providers/kis/KisService";
-import { StocksProvider } from "../../providers/stocks/StocksProvider";
-import { NewsService } from "../../providers/news/NewsService";
+import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
+import { NewsService } from "../../providers/news/NewsService";
+import { ReportsService } from "../../providers/reports/ReportsService";
 import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
+import { StocksProvider } from "../../providers/stocks/StocksProvider";
 
 export interface IKisChatConnectionRequest {
   accountNumber: string;
@@ -38,7 +40,8 @@ export class MyChatController {
     private readonly stocksService: StocksProvider,
     private readonly newsService: NewsService,
     private readonly stockBalanceProvider: StockBalanceProvider,
-    private readonly chatService: ChatService
+    private readonly chatService: ChatService,
+    private readonly reportsService: ReportsService,
   ) {}
 
   @WebSocketRoute()
@@ -87,42 +90,38 @@ export class MyChatController {
           // Agentica 문서에 따른 올바른 TypeScript 클래스 프로토콜 사용
           typia.llm.controller<KisService, "chatgpt">(
             "kis",
-            new KisService(this.kisTradingProvider, kisSessionData, this.stocksService, this.stockBalanceProvider)
+            new KisService(
+              this.kisTradingProvider,
+              kisSessionData,
+              this.stocksService,
+              this.stockBalanceProvider,
+            ),
           ),
           typia.llm.controller<NewsAgentService, "chatgpt">(
             "news",
             new NewsAgentService(this.newsService),
           ),
-          {
-            protocol: "http",
-            name: "reports",
-            application: HttpLlm.application({
-              model: "chatgpt",
-              document: OpenApi.convert(
-                await fetch(
-                  `http://localhost:${MyConfiguration.API_PORT()}/editor/swagger.json`,
-                ).then((r) => r.json()),
-              ),
-            }),
-            connection: {
-              host: `http://localhost:${MyConfiguration.API_PORT()}`,
-            },
-          },
+          typia.llm.controller<ReportsService, "chatgpt">(
+            "reports",
+            this.reportsService,
+          ),
         ],
         config: {
           systemPrompt: {
-            common: () => "당신은 한국투자증권 KIS API를 통해 주식 거래를 도와주는 전문 AI 어시스턴트입니다. 모든 응답은 한국어로 해주세요.",
+            common: () =>
+              "당신은 한국투자증권 KIS API를 통해 주식 거래를 도와주는 전문 AI 어시스턴트입니다. 모든 응답은 한국어로 해주세요.",
           },
           locale: "ko-KR",
-          timezone: "Asia/Seoul"
-        }
+          timezone: "Asia/Seoul",
+        },
       });
 
-      const service: AgenticaRpcService<"chatgpt"> & { kisSessionData?: IKisSessionData } =
-        new AgenticaRpcService({
-          agent,
-          listener: acceptor.getDriver(),
-        });
+      const service: AgenticaRpcService<"chatgpt"> & {
+        kisSessionData?: IKisSessionData;
+      } = new AgenticaRpcService({
+        agent,
+        listener: acceptor.getDriver(),
+      });
 
       // 서비스 객체에 KIS 세션 데이터 직접 저장
       service.kisSessionData = kisSessionData;
@@ -130,20 +129,27 @@ export class MyChatController {
       await acceptor.accept(service);
     } catch (error) {
       // KIS 인증 실패 시 연결 거부
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
 
       this.logger.error(
         `KIS authentication failed for WebSocket connection: ${maskedAccountNumber}`,
-        JSON.stringify({
-          error: errorMessage,
-          stack: errorStack,
-          errorType: error?.constructor?.name || 'Unknown'
-        }, null, 2)
+        JSON.stringify(
+          {
+            error: errorMessage,
+            stack: errorStack,
+            errorType: error?.constructor?.name || "Unknown",
+          },
+          null,
+          2,
+        ),
       );
 
       // 클라이언트에게는 간단한 인증 실패 메시지만 전달
-      throw new Error("KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.");
+      throw new Error(
+        "KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.",
+      );
     }
   }
 }

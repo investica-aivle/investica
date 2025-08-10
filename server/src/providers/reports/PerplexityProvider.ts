@@ -2,11 +2,11 @@ import PdfConversionResult, {
   MiraeAssetReport,
   ReportsJsonData,
 } from "@models/Reports";
+import { HttpService } from "@nestjs/axios";
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import * as fs from "fs";
 import * as path from "path";
-
-import { MyGlobal } from "../../MyGlobal";
 
 /**
  * Perplexity PDF Converter Provider
@@ -20,16 +20,19 @@ export class PerplexityProvider {
     "https://api.perplexity.ai/chat/completions";
   private readonly apiKey?: string;
 
-  constructor() {
-    this.apiKey = MyGlobal.env.PERPLEXITY_API_KEY;
-    console.log(this.apiKey);
-    if (!this.apiKey) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {
+    const apiKey = this.configService.get<string>("PERPLEXITY_API_KEY");
+    console.log(apiKey);
+    if (!apiKey) {
       console.warn(
         "PERPLEXITY_API_KEY not properly configured, PDF conversion will be disabled",
       );
     } else {
       console.log(
-        `✅ PERPLEXITY_API_KEY 설정됨: ${this.apiKey.substring(0, 10)}...`,
+        `✅ PERPLEXITY_API_KEY 설정됨: ${apiKey.substring(0, 10)}...`,
       );
     }
   }

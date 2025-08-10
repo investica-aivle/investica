@@ -1,9 +1,10 @@
+import { HttpModule } from "@nestjs/axios";
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 
 import { MiraeAssetReportProvider } from "../../providers/reports/MiraeAssetReportProvider";
 import { PerplexityProvider } from "../../providers/reports/PerplexityProvider";
 import { ReportsService } from "../../providers/reports/ReportsService";
-import { ReportsController } from "./ReportsController";
 
 /**
  * Reports Module
@@ -12,7 +13,7 @@ import { ReportsController } from "./ReportsController";
  * and converting financial reports from Mirae Asset Securities.
  */
 @Module({
-  controllers: [ReportsController],
+  imports: [HttpModule, ConfigModule],
   providers: [MiraeAssetReportProvider, PerplexityProvider, ReportsService],
   exports: [MiraeAssetReportProvider, PerplexityProvider, ReportsService],
 })
