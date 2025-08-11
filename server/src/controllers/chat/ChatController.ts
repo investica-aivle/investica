@@ -10,7 +10,6 @@ import { Controller, Logger } from "@nestjs/common";
 import OpenAI from "openai";
 import { WebSocketAcceptor } from "tgrid";
 import typia from "typia";
-
 import { MyGlobal } from "../../MyGlobal";
 import { ChatService } from "../../providers/chat/ChatService";
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
@@ -21,6 +20,7 @@ import { NewsService } from "../../providers/news/NewsService";
 import { ReportsService } from "../../providers/reports/ReportsService";
 import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
 import { StocksProvider } from "../../providers/stocks/StocksProvider";
+import { IClientEvents } from "../../types/agentica";
 
 export interface IKisChatConnectionRequest {
   accountNumber: string;
@@ -55,7 +55,7 @@ export class MyChatController {
     acceptor: WebSocketAcceptor<
       IKisChatConnectionRequest,
       IAgenticaKisRpcService,
-      IAgenticaRpcListener
+      IClientEvents
     >,
   ): Promise<void> {
     // 연결 시 전달받은 KIS 인증 정보 처리
@@ -97,6 +97,8 @@ export class MyChatController {
       this.logger.log(`=== Agentica 에이전트 초기화 시작 ===`);
       const agentStartTime = Date.now();
 
+      const listener = acceptor.getDriver();
+
       const agent: Agentica<"chatgpt"> = new Agentica({
         model: "chatgpt",
         vendor: {
@@ -116,7 +118,7 @@ export class MyChatController {
           ),
           typia.llm.controller<NewsAgentService, "chatgpt">(
             "news",
-            new NewsAgentService(this.newsService),
+            new NewsAgentService(this.newsService, listener),
           ),
           typia.llm.controller<ReportsService, "chatgpt">(
             "reports",
@@ -132,6 +134,8 @@ export class MyChatController {
           timezone: "Asia/Seoul",
         },
       });
+
+      
 
       const agentEndTime = Date.now();
       this.logger.log(`Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`);

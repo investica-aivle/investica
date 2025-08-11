@@ -8,6 +8,8 @@ import {
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
+import { IClientEvents } from "../types/agentica";
+import { NewsItem, NewsPushPayload } from "../types/news";
 
 export interface IKisAuthData {
   accountNumber: string;
@@ -39,11 +41,18 @@ interface AgenticaRpcContextType {
   tryConnect: (authData: IKisAuthData) => Promise<
     | WebSocketConnector<
         IKisAuthData,
-        IAgenticaRpcListener,
+        IClientEvents,
         IAgenticaKisRpcService
       >
     | undefined
   >;
+
+  news: {
+    company: string;
+    items: NewsItem[];
+    fetchedAt: string | null;
+    hasFirstPush: boolean;
+  };
 }
 
 const AgenticaRpcContext = createContext<AgenticaRpcContextType | null>(null);
@@ -55,6 +64,11 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     useState<Driver<IAgenticaKisRpcService, false>>();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const [newsCompany, setNewsCompany] = useState("");
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [newsFetchedAt, setNewsFetchedAt] = useState<string | null>(null);
+  const [hasFirstPush, setHasFirstPush] = useState(false);
 
   const pushMessage = useCallback(
     async (message: IAgenticaEventJson) =>
@@ -70,16 +84,23 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         setIsAuthenticating(true);
         const connector: WebSocketConnector<
           IKisAuthData,
-          IAgenticaRpcListener,
+          IClientEvents,
           IAgenticaKisRpcService
         > = new WebSocketConnector<
           IKisAuthData,
-          IAgenticaRpcListener,
+          IClientEvents,
           IAgenticaKisRpcService
         >(authData, {
           assistantMessage: pushMessage,
           describe: pushMessage,
-          userMessage: pushMessage
+          userMessage: pushMessage,
+
+          onNews: (payload: NewsPushPayload) => {
+            setNewsCompany(payload.company);
+            setNewsItems(payload.items ?? []);
+            setNewsFetchedAt(payload.fetchedAt);
+            setHasFirstPush(true);
+          },
         });
         await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
         const driver = connector.getDriver();
@@ -131,7 +152,21 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
 
   return (
     <AgenticaRpcContext.Provider
-      value={{ messages, conversate, isConnected, isError, authError, isAuthenticating, tryConnect }}
+      value={{
+        messages,
+        conversate,
+        isConnected,
+        isError,
+        authError,
+        isAuthenticating,
+        tryConnect,
+        news: {
+          company: newsCompany,
+          items: newsItems,
+          fetchedAt: newsFetchedAt,
+          hasFirstPush,
+        },
+      }}
     >
       {children}
     </AgenticaRpcContext.Provider>

@@ -24,10 +24,26 @@ export class NewsService {
    *     title: '삼성전자, 신제품 출시',
    *     pubDate: 'Wed, 07 Aug 2025 10:00:00 +0900',
    *     summary: '삼성전자가 새로운 스마트폰을 출시했다.',
-   *     sentiment: '긍정'
+   *     sentiment: '긍정',
+   *     originalLink: 뉴스 원문url
    *   }
    * ]
    */
+
+  private stripHtml(input: string) {
+    return (input ?? '').replace(/<[^>]*>/g, '').trim();
+  }
+  private toHttps(url?: string) {
+    if (!url) return url;
+    try {
+      const u = new URL(url);
+      if (u.protocol === 'http:') u.protocol = 'https:';
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
+
   public async fetchNewsSummaryAndSentiment(company: string) {
     const encodedCompany = encodeURIComponent(company);
     const naverUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodedCompany}&display=5`;
@@ -45,7 +61,7 @@ export class NewsService {
       data.items.map(async (item: any) => {
         const prompt = `
 다음 뉴스 내용을 간결하게 요약하고, 뉴스의 전반적인 감성(긍정/부정)을 판단해줘.
-뉴스 내용: ${item.description}
+뉴스 내용: ${this.stripHtml(item.description)}
 결과 형식:
 요약: ...
 감성: 긍정 또는 부정
@@ -59,11 +75,15 @@ export class NewsService {
         const output = completion.choices[0].message.content ?? '';
         const [summaryLine, sentimentLine] = output.split('\n').map((line) => line.replace(/^.*?:\s*/, ''));
 
+        const rawLink: string | undefined = item.originallink || item.link;
+        const originalLink = this.toHttps(rawLink);
+
         return {
           title: item.title.replace(/<[^>]*>/g, ''),
           pubDate: item.pubDate,
           summary: summaryLine,
           sentiment: sentimentLine,
+          originalLink,
         };
       }),
     );
