@@ -3,10 +3,12 @@ import PdfConversionResult, {
   ReportsJsonData,
 } from "@models/Reports";
 import { HttpService } from "@nestjs/axios";
-import { Injectable } from "@nestjs/common";
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from "fs";
 import * as path from "path";
+import fetch from 'node-fetch';
 
 import { MyGlobal } from "../../MyGlobal";
 
@@ -18,24 +20,20 @@ import { MyGlobal } from "../../MyGlobal";
  */
 @Injectable()
 export class PerplexityProvider {
-  private readonly perplexityApiUrl =
-    "https://api.perplexity.ai/chat/completions";
-  private readonly apiKey?: string;
+  private genAI: GoogleGenerativeAI;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.apiKey = MyGlobal.env.PERPLEXITY_API_KEY;
-    if (!this.apiKey) {
-      console.warn(
-        "PERPLEXITY_API_KEY not properly configured, PDF conversion will be disabled",
-      );
-    } else {
-      console.log(
-        `✅ PERPLEXITY_API_KEY 설정됨: ${this.apiKey.substring(0, 10)}...`,
-      );
+    const apiKey = MyGlobal.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      throw new InternalServerErrorException('Google API Key not found in configuration.');
     }
+    else {
+      console.log(`✅ GOOGLE_API_KEY 설정됨`);
+    }
+    this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
   /**
@@ -337,37 +335,11 @@ export class PerplexityProvider {
       content: string;
     }>,
   ) {
-    if (!this.apiKey) {
-      throw new Error("PERPLEXITY_API_KEY not configured");
-    }
-
     const summaryPrompt = this.createSummaryPrompt(fileContents);
-
-    const response = await fetch(this.perplexityApiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "sonar",
-        messages: [
-          {
-            role: "user",
-            content: summaryPrompt,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Perplexity API error: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
+    const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(summaryPrompt);
+    const response = await result.response;
+    return response.text();
   }
 
   /**
@@ -469,6 +441,8 @@ ${file.content.substring(0, 500)}...
     }
   }
 
+  private readonly tempDir = path.join(__dirname, '..', '..', 'temp_files');
+
   /**
    * URL에서 PDF를 직접 변환 (file_url 사용)
    */
@@ -477,15 +451,16 @@ ${file.content.substring(0, 500)}...
     pdfFileName: string,
     mdFolderPath: string,
   ): Promise<PdfConversionResult> {
+    let tempPdfPath: string | null = null;
     try {
       // API 키 확인
-      if (!this.apiKey) {
-        console.error("❌ PERPLEXITY_API_KEY not configured");
+      if (!this.genAI) {
+        console.error("❌ Gemini API not configured");
         return {
           markdown: "",
           fileName: "",
           success: false,
-          error: "PERPLEXITY_API_KEY not configured",
+          error: "Gemini API not configured",
         };
       }
 
@@ -495,65 +470,52 @@ ${file.content.substring(0, 500)}...
       const markdownFileName = `${pdfFileName.replace(".pdf", "")}.md`;
       const markdownFilePath = path.join(mdFolderPath, markdownFileName);
 
-      // Perplexity API에 file_url로 요청
-      console.log(`🌐 Perplexity API 호출 시작 (file_url)...`);
+      tempPdfPath = await this.downloadPdf(downloadUrl);
+      const pdfBuffer = fs.readFileSync(tempPdfPath);
+      const base64Pdf = pdfBuffer.toString("base64");
 
-      const response = await fetch(this.perplexityApiUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
+      const filePart = {
+        inlineData: {
+          mimeType: "application/pdf",
+          data: base64Pdf,
         },
-        body: JSON.stringify({
-          model: "sonar",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: `이 PDF 파일을 마크다운으로 변환해줘. 다음 조건을 지켜줘:
+      };
 
-1. 최대한 정보를 만들지 말고 모든 정보를 반영해서 마크다운 파일로 만들어줘
-2. 내용을 안 없애면 좋겠어
-3. 표 형식은 마크다운의 표 형식으로 변환하는 등 최대한 PDF 구조를 그대로 반영해줘
-4. 그래프 같은 것들이 있는 경우 각 그래프마다 간단하게 지표를 뽑아내거나 평가한 정보가 있으면 좋겠음
+      const prompt = `
+첨부된 PDF는 금융 보고서입니다.
 
-마크다운 형식으로만 응답해줘.`,
-                },
-                {
-                  type: "file_url",
-                  file_url: {
-                    url: downloadUrl,
-                  },
-                },
-              ],
-            },
-          ],
-        }),
-      });
+이 문서의 내용을 가능한 한 정확하고 자세하게 쓰되 요약하여 정리하십시오.
+보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.
+작성자의 해석이나 주관적 판단 없이, PDF에 포함된 내용을 기반으로 정리하십시오.
+형식은 마크다운을 계층형식으로 작성하십시오.
 
-      console.log(
-        `📡 API 응답 상태: ${response.status} ${response.statusText}`,
-      );
+그래프 같은 것 들이 있는 경우 각 그래프 마다 간단하게 지표를뽑아내거나 평가한정보가 있어야 함
+제목이나 항목 구분 하며 본문 내용을 작성하십시오.
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ API 에러 응답: ${errorText}`);
-        throw new Error(
-          `Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`,
-        );
-      }
+문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
+보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
 
-      const data = await response.json();
-      console.log(
-        `✅ API 응답 성공: ${data.choices ? data.choices.length : 0} choices`,
-      );
+결과는 아래 예시와 같이 **굵은 글씨**와 -을 활용한 리스트 형식으로 깔끔하게 정리하여야 함.
 
-      const markdownContent = data.choices[0].message.content;
-      console.log(
-        `📝 마크다운 내용 길이: ${markdownContent.length} characters`,
-      );
+## 전세계 주식시장의 이익동향
+
+    **전세계 12개월 선행 EPS** : 전월 대비 -0.1% 하락
+
+    - 신흥국: -0.6%
+
+    - 선진국: -0.01%
+
+    - 국가별 변화
+
+    - 상향 조정: 미국(+0.4%), 홍콩(+0.2%)
+
+    - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)
+            
+`;
+      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent([prompt, filePart]);
+      const response = result.response;
+      const markdownContent = response.text();
 
       // 마크다운 파일 저장
       fs.writeFileSync(markdownFilePath, markdownContent, "utf8");
@@ -572,6 +534,36 @@ ${file.content.substring(0, 500)}...
         success: false,
         error: error instanceof Error ? error.message : String(error),
       };
+    } finally {
+      if (tempPdfPath) {
+        try {
+          fs.unlinkSync(tempPdfPath);
+        } catch (err: any) {
+          console.error(`임시 파일 삭제 실패: ${tempPdfPath}`, err);
+        }
+      }
+    }
+  }
+
+  private async downloadPdf(url: string): Promise<string> {
+    const filename = `temp_document_${Date.now()}.pdf`;
+    const outputPath = path.join(this.tempDir, filename);
+
+    try {
+      console.log(`PDF 다운로드 중: ${url}`);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`HTTP 오류: ${response.status} ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      fs.writeFileSync(outputPath, Buffer.from(arrayBuffer));
+      console.log(`PDF 다운로드 완료: ${outputPath}`);
+      return outputPath;
+    } catch (error: any) {
+      console.error(`PDF 다운로드 중 오류 발생: ${error.message}`);
+      throw new InternalServerErrorException(`PDF 다운로드 실패: ${error.message}`);
     }
   }
 
