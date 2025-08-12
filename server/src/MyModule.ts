@@ -1,21 +1,26 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
-import { AppModule } from "./controllers/pdf/pdfModule";
+
 import { ChatModule } from "./controllers/chat/ChatModule";
-import { AppConfigModule } from "./controllers/pdf/config.module";
-import { PdfModule } from "./controllers/pdf/pdfServiceModule";
+import { KisModule } from "./controllers/kis/KisModule";
+import { NewsModule } from "./controllers/news/NewsModule";
+import { ReportsModule } from "./controllers/reports/ReportsModule";
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client"),
       serveRoot: "/",
     }),
-    AppModule,
     ChatModule,
-    AppConfigModule,
-    PdfModule,
+    KisModule,
+    NewsModule,
+    ReportsModule,
   ],
 })
-export class MyModule { }
+export class MyModule {}
