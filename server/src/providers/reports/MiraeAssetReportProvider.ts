@@ -9,32 +9,34 @@ import * as path from "path";
 @Injectable()
 export class MiraeAssetReportProvider {
   private readonly baseUrl = "https://securities.miraeasset.com";
-  private readonly reportsUrl =
+  private readonly reportsUrl_IS =
     "https://securities.miraeasset.com/bbs/board/message/list.do?categoryId=1527";
-
+  private readonly reportsUrl_IA =
+    "https://securities.miraeasset.com/bbs/board/message/list.do?categoryId=1525";
   /**
    * 미래에셋증권 보고서 스크래핑 및 다운로드 (동기화 포함)
    */
   public async scrapeAndSaveData(
     outputDir: string = "./downloads",
     syncWithExisting: boolean = true,
+    isInvestmentStrategy: boolean = true,
     keywords: string[] = [],
   ): Promise<{
     reports: MiraeAssetReport[];
   }> {
     try {
       // 1. 먼저 스크래핑으로 모든 보고서 가져오기
-      const allReports = await this.scrapeReportsFromWeb(keywords);
+      const allReports = await this.scrapeReportsFromWeb(keywords, isInvestmentStrategy);
 
       console.log(allReports);
 
       // 2. JSON 파일 기반 중복 제거
       const filteredReports = syncWithExisting
-        ? this.filterDuplicateReportsFromJson(allReports, outputDir)
+        ? this.filterDuplicateReportsFromJson(allReports, outputDir, isInvestmentStrategy)
         : allReports;
 
       // 3. 필터링된 새로운 보고서들만 JSON 파일에 추가
-      const reports = await this.saveReportsToJson(filteredReports, outputDir);
+      const reports = await this.saveReportsToJson(filteredReports, outputDir, isInvestmentStrategy);
 
       return {
         reports,
@@ -51,9 +53,11 @@ export class MiraeAssetReportProvider {
    */
   private async scrapeReportsFromWeb(
     keywords: string[],
+    isInvestmentStrategy: boolean
   ): Promise<MiraeAssetReport[]> {
     try {
-      const response = await axios.get(this.reportsUrl, {
+      const reportsUrl = isInvestmentStrategy ? this.reportsUrl_IS : this.reportsUrl_IA;
+      const response = await axios.get(reportsUrl, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -242,8 +246,10 @@ export class MiraeAssetReportProvider {
   private filterDuplicateReportsFromJson(
     reports: MiraeAssetReport[],
     outputDir: string,
+    isInvestmentStrategy: boolean
   ): MiraeAssetReport[] {
-    const jsonFilePath = path.join(outputDir, "reports.json");
+    const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
+    const jsonFilePath = path.join(outputDir, jsonPath);
     const existingIds = new Set<string>();
 
     // 기존 JSON 파일에서 ID들 읽기
@@ -288,9 +294,11 @@ export class MiraeAssetReportProvider {
   private async saveReportsToJson(
     newReports: MiraeAssetReport[],
     outputDir: string,
+    isInvestmentStrategy: boolean,
   ): Promise<MiraeAssetReport[]> {
     try {
-      const filePath = path.join(outputDir, "reports.json");
+      const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
+      const filePath = path.join(outputDir, jsonPath);
       let existingData: ReportsJsonData = {
         lastUpdated: new Date().toISOString(),
         reports: [],

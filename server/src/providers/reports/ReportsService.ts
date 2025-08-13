@@ -24,10 +24,34 @@ export class ReportsService {
   ) {}
 
   /**
+   * 모든 투자 전략 리포트 요청 전에 실행되는 동기화 메서드
+   * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
+   */
+  public async syncISReports(): Promise<{
+    message: string;
+    scrapedCount: number;
+    convertedCount: number;
+  }>{
+    return this.syncReports();
+  }
+
+  /**
+   * 모든 산업 분석 리포트 요청 전에 실행되는 동기화 메서드
+   * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
+   */
+  public async syncIAReports(): Promise<{
+    message: string;
+    scrapedCount: number;
+    convertedCount: number;
+  }>{
+    return this.syncReports(false);
+  }
+
+  /**
    * 모든 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
-  public async syncReports(): Promise<{
+  private async syncReports(isISReports: boolean = true): Promise<{
     message: string;
     scrapedCount: number;
     convertedCount: number;
@@ -40,6 +64,7 @@ export class ReportsService {
         await this.miraeAssetReportProvider.scrapeAndSaveData(
           "./downloads",
           true, // 동기화 활성화
+          isISReports,
         );
 
       let convertedCount: number = 0;
@@ -68,7 +93,7 @@ export class ReportsService {
    * 1) 최근 주식상황, 경제상황 요약 (유저용)
    *
    * 유저가 "최근 주식상황 어때?" 또는 "경제상황 어때?"라고 요청할 때 사용합니다.
-   * 최신 5개의 보고서를 요약해서 제공합니다.
+   * 최신 5개의 투자 전략 보고서를 요약해서 제공합니다.
    *
    * @param input 요약 조건
    * @returns 요약된 주식/경제 상황
@@ -114,16 +139,51 @@ export class ReportsService {
   }
 
   /**
-   * 2) 증권보고서 리스트 제공 (유저용)
+   * 2) 투자 전략 카테고리 증권보고서 리스트 제공 (유저용)
    *
    * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용합니다.
    * 혹은 보고서 머가있어? 라고 요청할 때 사용합니다.
-   * 최신 증권보고서들의 목록을 제공합니다.
+   * 최신 투자 전략 카테고리의 증권보고서들의 목록을 제공합니다.
    *
    * @param input 검색 조건
    * @returns 증권보고서 리스트
    */
-  public async getSecuritiesReportList(input: {
+  public async getSecuritiesISReportList(input:{
+    keywords?: string[];
+    limit?: number;
+  }){
+    return this.getSecuritiesReportList(input);
+  }
+
+  /**
+   * 2) 산업 분석 카테고리 증권보고서 리스트 제공 (유저용)
+   *
+   * 유저가 "요즘 살펴볼만한 분야 뭐가 있어?"라고 요청할 때 사용합니다.
+   * 최신 산업 분석 카테고리의 증권보고서들의 목록을 제공합니다.
+   *
+   * @param input 검색 조건
+   * @returns 증권보고서 리스트
+   */
+  public async getSecuritiesIAReportList(input:{
+    keywords?: string[];
+    limit?: number;
+  }){
+    return this.getSecuritiesReportList(input, false);
+  }
+
+
+  /**
+   * 2) 증권보고서 리스트 제공 (유저용)
+   *
+   * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용합니다.
+   * 혹은 보고서 머가있어? 라고 요청할 때 사용합니다.
+   * 최신 투자 전략 카테고리의 증권보고서들의 목록을 제공합니다.
+   *
+   * @param input 검색 조건
+   * @param isISReport true: 투자 전략 보고서, false: 산업 분석 보고서
+   * @returns 증권보고서 리스트
+   */
+  private async getSecuritiesReportList(input: {
     /**
      * 검색할 키워드들 (선택사항)
      * @example []
@@ -137,15 +197,16 @@ export class ReportsService {
      * @example 10
      */
     limit?: number;
-  }): Promise<{
+  }, isISReport: boolean = true
+  ): Promise<{
     message: string;
     reports: Array<MiraeAssetReport>;
   }> {
     // 동기화 먼저 실행
-    await this.syncReports();
+    await this.syncReports(isISReport);
 
     // JSON 파일에서 보고서 정보 읽기
-    const jsonFilePath = "./downloads/reports.json";
+    const jsonFilePath = isISReport ? "./downloads/reports.json" : "./downloads/reports_IA.json";
     if (!require("fs").existsSync(jsonFilePath)) {
       return {
         message: "보고서 정보를 찾을 수 없습니다.",
@@ -170,14 +231,14 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 증권보고서 내용 보기 (유저용)
+   * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
    *
-   * 유저가 특정 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
+   * 유저가 특정 투자 전략 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
    *
    * @param input 보고서 정보
    * @returns 보고서 내용
    */
-  public async getSpecificReportContent(input: {
+  public async getSpecificISReportContent(input: {
     /**
      * 보고서 제목
      * @example "주식시장 동향 분석"
@@ -191,13 +252,69 @@ export class ReportsService {
     content: string;
     success: boolean;
     error?: string;
+  }>{
+    return this.getSpecificReportContent(input);
+  }
+
+  /**
+   * 3) 특정 산업 분석 증권보고서 내용 보기 (유저용)
+   *
+   * 유저가 특정 산업 분석 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
+   *
+   * @param input 보고서 정보
+   * @returns 보고서 내용
+   */
+  public async getSpecificIAReportContent(input: {
+    /**
+     * 보고서 제목
+     * @example "주식시장 동향 분석"
+     */
+    title: string;
+  }): Promise<{
+    message: string;
+    title: string;
+    date: string;
+    author: string;
+    content: string;
+    success: boolean;
+    error?: string;
+  }>{
+    return this.getSpecificReportContent(input, false);
+  }
+
+
+  /**
+   * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
+   *
+   * 유저가 특정 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
+   *
+   * @param input 보고서 정보
+   * @param isISReport true: 투자 전략 카테고리 보고서, false: 산업 분석 카테고리 보고서
+   * @returns 보고서 내용
+   */
+  private async getSpecificReportContent(input: {
+    /**
+     * 보고서 제목
+     * @example "주식시장 동향 분석"
+     */
+    title: string;
+  },
+    isISReport: boolean = true,
+  ): Promise<{
+    message: string;
+    title: string;
+    date: string;
+    author: string;
+    content: string;
+    success: boolean;
+    error?: string;
   }> {
     // 동기화 먼저 실행
     await this.syncReports();
 
     try {
       // JSON 파일에서 보고서 정보 읽기
-      const jsonFilePath = "./downloads/reports.json";
+      const jsonFilePath = isISReport ? "./downloads/reports.json" : "./downloads/reports_IA.json";
       if (!require("fs").existsSync(jsonFilePath)) {
         return {
           message: "보고서 정보를 찾을 수 없습니다.",
@@ -293,8 +410,15 @@ export class ReportsService {
         await this.miraeAssetReportProvider.scrapeAndSaveData(
           "./downloads",
           true, // 동기화 활성화
+          true, //투자 전략 보고서
           input.keywords || [], // 키워드가 없으면 모든 보고서
         );
+      await this.miraeAssetReportProvider.scrapeAndSaveData(
+        "./downloads",
+        true, // 동기화 활성화
+        false, //산업 분석 보고서
+        input.keywords || [], // 키워드가 없으면 모든 보고서
+      );
 
       let convertedCount: number = 0;
       if (scrapeResult.reports.length > 0) {
