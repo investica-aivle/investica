@@ -1,10 +1,13 @@
 import { TypedBody, TypedRoute } from "@nestia/core";
-import { Controller, HttpCode, HttpStatus, Logger } from "@nestjs/common";
+import { Controller, HttpCode, HttpStatus, Logger, UseGuards } from "@nestjs/common";
 
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
 import { SessionManager } from "../../providers/session/SessionManager";
 import { MaskingUtil } from "../../utils/MaskingUtil";
 import { IKisAuthRequestDto, IKisAuthResponseDto } from "./dto/KisAuthDto";
+import { SessionGuard } from "../../guards/SessionGuard";
+import { Session } from "../../decorators/session.decorators";
+import { ISessionData } from "../../providers/session/SessionManager";
 
 /**
  * KIS (Korea Investment Securities) REST API Controller
@@ -92,6 +95,59 @@ export class KisController {
       };
     }
   }
+  /**
+   * 로그아웃을 수행합니다.
+   *
+   * Authorization 헤더의 Bearer 토큰(세션 키)을 검증하고,
+   * 해당 세션을 제거하여 로그아웃을 처리합니다.
+   *
+   * @summary 로그아웃
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 로그아웃 결과
+   */
+  @TypedRoute.Post("logout")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async logout(@Session() session: ISessionData): Promise<{
+    success: boolean;
+    message: string;
+    loggedOutAt: string;
+  }> {
+    const maskedSessionKey = MaskingUtil.maskSessionKey(session.sessionKey);
+    const maskedAccountNumber = MaskingUtil.maskAccountNumber(session.kisSessionData.accountNumber);
+
+    this.logger.log(`=== 로그아웃 요청 시작 ===`);
+    this.logger.log(`세션 키: ${maskedSessionKey}`);
+    this.logger.log(`계좌번호: ${maskedAccountNumber}`);
+
+    try {
+      // 세션 제거
+      const removed = this.sessionManager.removeSession(session.id);
+
+      if (!removed) {
+        this.logger.warn(`=== 세션 제거 실패 ===`);
+        this.logger.warn(`세션이 이미 제거되었거나 존재하지 않음: ${session.id}`);
+      }
+
+      const loggedOutAt = new Date().toISOString();
+
+      this.logger.log(`=== 로그아웃 완료 ===`);
+      this.logger.log(`세션 키: ${maskedSessionKey}`);
+      this.logger.log(`로그아웃 시간: ${loggedOutAt}`);
+
+      return {
+        success: true,
+        message: "로그아웃이 완료되었습니다.",
+        loggedOutAt,
+      };
+    } catch (error) {
+      this.logger.error(`=== 로그아웃 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      throw error;
+    }
+  }
+
 
   /**
    * 계좌번호로 계좌 타입을 결정합니다.
