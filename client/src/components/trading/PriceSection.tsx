@@ -151,8 +151,7 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
         onStockSelect(foundStock);
       } else {
         // 직접 입력된 종목명으로 처리
-        const newStock = { symbol: '', name: searchValue };
-        onStockSelect(newStock);
+        onStockSelect({ symbol: '', name: searchValue });
       }
     }
   };
