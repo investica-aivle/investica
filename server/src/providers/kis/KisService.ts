@@ -1,8 +1,8 @@
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
 import { tags } from "typia";
 
-import { StockBalanceProvider } from "../stockBalance/StockBalanceProvider";
-import { StocksProvider } from "../stocks/StocksProvider";
+import { KisBalanceProvider } from "./KisBalanceProvider";
+import { KisPriceProvider } from "./KisPriceProvider";
 import { KisTradingProvider } from "./KisTradingProvider";
 
 /**
@@ -20,10 +20,10 @@ import { KisTradingProvider } from "./KisTradingProvider";
  */
 export class KisService {
   constructor(
-    private readonly kisTradingProvider: KisTradingProvider,
+    private readonly tradingProvider: KisTradingProvider,
     private readonly sessionData: IKisSessionData,
-    private readonly stocksService: StocksProvider,
-    private readonly stockBalanceProvider: StockBalanceProvider,
+    private readonly priceProvider: KisPriceProvider,
+    private readonly balanceProvider: KisBalanceProvider,
   ) {}
 
   /**
@@ -81,7 +81,7 @@ export class KisService {
     }
 
     // Execute the buy order using stored session data
-    return await this.kisTradingProvider.executeStockOrder(this.sessionData, {
+    return await this.tradingProvider.executeStockOrder(this.sessionData, {
       stockCode: input.stockCode,
       orderType: "buy",
       quantity: input.quantity,
@@ -145,7 +145,7 @@ export class KisService {
     }
 
     // Execute the sell order using stored session data
-    return await this.kisTradingProvider.executeStockOrder(this.sessionData, {
+    return await this.tradingProvider.executeStockOrder(this.sessionData, {
       stockCode: input.stockCode,
       orderType: "sell",
       quantity: input.quantity,
@@ -167,7 +167,7 @@ export class KisService {
     message: string;
     data: Record<string, any>;
   }> {
-    const result = await this.stocksService.fetchStockPrice(
+    const result = await this.priceProvider.fetchStockPrice(
       { company: input.company },
       this.sessionData,
     );
@@ -192,7 +192,7 @@ export class KisService {
     message: string;
     data: Record<string, any>[];
   }> {
-    const result = await this.stocksService.fetchStockTrades(
+    const result = await this.priceProvider.fetchStockTrades(
       { company: input.company },
       this.sessionData,
     );
@@ -229,7 +229,7 @@ export class KisService {
     message: string;
     data: Record<string, any>[];
   }> {
-    const result = await this.stocksService.fetchStockDailyPrices(
+    const result = await this.priceProvider.fetchStockDailyPrices(
       {
         company: input.company,
         periodCode: input.periodCode ?? "D",
@@ -299,6 +299,6 @@ export class KisService {
     }>;
   }> {
     // Execute balance inquiry using stored session data
-    return await this.stockBalanceProvider.getStockBalance(this.sessionData);
+    return await this.balanceProvider.getStockBalance(this.sessionData);
   }
 }

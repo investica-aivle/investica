@@ -48,7 +48,7 @@ const flngClsCodeMap: Record<string, string> = {
 };
 
 @Injectable()
-export class StocksProvider {
+export class KisPriceProvider {
   private readonly KIS_BASE_URL =
     "https://openapivts.koreainvestment.com:29443";
   private readonly openai: OpenAI;
