@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { IKisSessionData } from "@models/KisTrading";
 import { randomUUID } from "crypto";
+import { MaskingUtil } from "../../utils/MaskingUtil";
 
 export interface ISessionData {
   id: string;
@@ -44,7 +45,7 @@ export class SessionManager {
     this.sessions.set(sessionId, sessionData);
     this.sessionKeys.set(sessionKey, sessionId);
 
-    this.logger.log(`세션 생성: ${sessionId} (키: ${sessionKey.substring(0, 8)}..., 계좌: ${this.maskAccountNumber(kisSessionData.accountNumber)})`);
+    this.logger.log(`세션 생성: ${sessionId} (키: ${MaskingUtil.maskSessionKey(sessionKey)}, 계좌: ${MaskingUtil.maskAccountNumber(kisSessionData.accountNumber)})`);
     return { sessionId, sessionKey };
   }
 
@@ -99,7 +100,7 @@ export class SessionManager {
     this.sessions.delete(sessionId);
     this.sessionKeys.delete(session.sessionKey);
 
-    this.logger.log(`세션 제거: ${sessionId} (키: ${session.sessionKey.substring(0, 8)}..., 계좌: ${this.maskAccountNumber(session.kisSessionData.accountNumber)})`);
+    this.logger.log(`세션 제거: ${sessionId} (키: ${MaskingUtil.maskSessionKey(session.sessionKey)}, 계좌: ${MaskingUtil.maskAccountNumber(session.kisSessionData.accountNumber)})`);
     return true;
   }
 
@@ -131,10 +132,10 @@ export class SessionManager {
   }
 
   /**
-   * 세션 ID 생성
+   * 세션 ID 생성 (내부용)
    */
   private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return randomUUID();
   }
 
   /**
@@ -142,12 +143,5 @@ export class SessionManager {
    */
   private generateSessionKey(): string {
     return randomUUID().replace(/-/g, '');
-  }
-
-  /**
-   * 계좌번호 마스킹
-   */
-  private maskAccountNumber(accountNumber: string): string {
-    return accountNumber.replace(/(\d{4})\d+(\d{2})/, "$1****$2");
   }
 }
