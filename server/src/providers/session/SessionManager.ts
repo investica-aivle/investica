@@ -53,10 +53,22 @@ export class SessionManager {
    * 세션 키로 세션 조회
    */
   getSessionByKey(sessionKey: string): ISessionData | null {
+    this.logger.debug(`세션 키로 조회 시도: ${MaskingUtil.maskSessionKey(sessionKey)}`);
+    this.logger.debug(`현재 저장된 세션 키 개수: ${this.sessionKeys.size}`);
+    this.logger.debug(`현재 저장된 세션 개수: ${this.sessions.size}`);
+
     const sessionId = this.sessionKeys.get(sessionKey);
     if (!sessionId) {
+      this.logger.error(`세션 키를 찾을 수 없음: ${MaskingUtil.maskSessionKey(sessionKey)}`);
+
+      // 디버깅을 위해 저장된 세션 키들 출력 (마스킹된 형태로)
+      const storedKeys = Array.from(this.sessionKeys.keys()).map(key => MaskingUtil.maskSessionKey(key));
+      this.logger.debug(`저장된 세션 키들: [${storedKeys.join(', ')}]`);
+
       return null;
     }
+
+    this.logger.debug(`세션 ID 발견: ${sessionId}`);
     return this.getSession(sessionId);
   }
 
