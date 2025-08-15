@@ -1,8 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export function TradingSection() {
+interface TargetStock {
+  symbol: string;
+  name: string;
+}
+
+interface TradingSectionProps {
+  targetStock: TargetStock | null;
+}
+
+export function TradingSection({ targetStock }: TradingSectionProps) {
   const [stockInput, setStockInput] = useState('');
   const [quantity, setQuantity] = useState('');
+
+  // 타겟 주식이 변경될 때 입력 필드 업데이트
+  useEffect(() => {
+    if (targetStock) {
+      setStockInput(targetStock.name);
+    }
+  }, [targetStock]);
 
   const handleBuy = () => {
     if (!stockInput || !quantity) {
