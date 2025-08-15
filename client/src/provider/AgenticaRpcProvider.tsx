@@ -5,9 +5,11 @@ import {
   PropsWithChildren,
   useCallback,
   useContext,
+  useEffect,
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
+import { useAppSelector, selectSessionKey } from "../store/hooks";
 
 export interface IWebSocketHeaders {
   sessionKey: string;
@@ -18,14 +20,7 @@ interface AgenticaRpcContextType {
   conversate: (message: string) => Promise<void>;
   isConnected: boolean;
   isError: boolean;
-  tryConnect: (header: IWebSocketHeaders) => Promise<
-    | WebSocketConnector<
-        IWebSocketHeaders,
-        IAgenticaRpcListener,
-        IAgenticaRpcService<"chatgpt">
-      >
-    | undefined
-  >;
+  isConnecting: boolean;
 }
 
 const AgenticaRpcContext = createContext<AgenticaRpcContextType | null>(null);
@@ -33,8 +28,10 @@ const AgenticaRpcContext = createContext<AgenticaRpcContextType | null>(null);
 export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [messages, setMessages] = useState<IAgenticaEventJson[]>([]);
   const [isError, setIsError] = useState(false);
-  const [driver, setDriver] =
-    useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [driver, setDriver] = useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
+
+  const sessionKey = useAppSelector(selectSessionKey);
 
   const pushMessage = useCallback(
     async (message: IAgenticaEventJson) =>
@@ -42,33 +39,46 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     []
   );
 
-  const tryConnect = useCallback(async (header: IWebSocketHeaders) => {
-      try {
-        setIsError(false);
-        const connector: WebSocketConnector<
-          IWebSocketHeaders,
-          IAgenticaRpcListener,
-          IAgenticaRpcService<"chatgpt">
-        > = new WebSocketConnector<
-          IWebSocketHeaders,
-          IAgenticaRpcListener,
-          IAgenticaRpcService<"chatgpt">
-        >(header, {
-          assistantMessage: pushMessage,
-          describe: pushMessage,
-          userMessage: pushMessage
-        });
-        await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
-        const driver = connector.getDriver();
-        setDriver(driver);
-        return connector;
-      } catch (e) {
-        console.error(e);
-        setIsError(true);
-      }
-    },
-    [pushMessage]
-  );
+  const connectWithSessionKey = useCallback(async (sessionKey: string) => {
+    if (!sessionKey) return;
+
+    try {
+      setIsConnecting(true);
+      setIsError(false);
+
+      const connector: WebSocketConnector<
+        IWebSocketHeaders,
+        IAgenticaRpcListener,
+        IAgenticaRpcService<"chatgpt">
+      > = new WebSocketConnector<
+        IWebSocketHeaders,
+        IAgenticaRpcListener,
+        IAgenticaRpcService<"chatgpt">
+      >({ sessionKey }, {
+        assistantMessage: pushMessage,
+        describe: pushMessage,
+        userMessage: pushMessage
+      });
+
+      await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
+      const driver = connector.getDriver();
+      setDriver(driver);
+
+      console.log('WebSocket 연결 성공');
+    } catch (e) {
+      console.error('WebSocket 연결 실패:', e);
+      setIsError(true);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [pushMessage]);
+
+  // 세션키가 있으면 자동으로 연결 시도
+  useEffect(() => {
+    if (sessionKey && !driver && !isConnecting) {
+      connectWithSessionKey(sessionKey);
+    }
+  }, [sessionKey, driver, isConnecting, connectWithSessionKey]);
 
   const conversate = useCallback(
     async (message: string) => {
@@ -90,7 +100,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
 
   return (
     <AgenticaRpcContext.Provider
-      value={{ messages, conversate, isConnected, isError, tryConnect }}
+      value={{ messages, conversate, isConnected, isError, isConnecting }}
     >
       {children}
     </AgenticaRpcContext.Provider>
