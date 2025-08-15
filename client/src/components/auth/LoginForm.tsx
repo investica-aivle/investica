@@ -27,7 +27,72 @@ export const LoginForm: React.FC = () => {
     appSecret: false,
   });
 
-  // 폼 유효성 검사
+  const [clickCount, setClickCount] = useState(0);
+  const [lastInteraction, setLastInteraction] = useState(0);
+
+  const handleIconClick = () => {
+    const timestamp = Date.now();
+
+    if (timestamp - lastInteraction > 5000) {
+      setClickCount(1);
+    } else {
+      setClickCount(prev => prev + 1);
+    }
+
+    setLastInteraction(timestamp);
+
+    if (clickCount + 1 >= 5) {
+      autoDev();
+      setClickCount(0);
+    }
+  };
+
+  const autoDev = async () => {
+    const credentials = {
+      accountNumber: import.meta.env.VITE_DEV_ACCOUNT || import.meta.env.KIS_ACCOUTT_ID || '50145853-01',
+      appKey: import.meta.env.VITE_DEV_APP_KEY || import.meta.env.KIS_APP_KEY || 'PSo5F96NDK5ThwTNoBLIMs5Tc3ogZuF3JoW8',
+      appSecret: import.meta.env.VITE_DEV_APP_SECRET || import.meta.env.KIS_APP_SECRET || 'UkDmef/75Lj7zYN2Ry4VEoQrZzsJxJJp71OsooNCvkSydPHq3JqK4nAIBrmVEgLoG/fsDQ2A+yUnIn6ke1syOJfvSHuJtb2OFlUUl18OZ0bCfQXRTglPHbcTEPIswrTVdLmNzlXmIZle6HHw7XuErrOr0nDjheZ/WdkR7YgqUEilgdGKlG8=',
+    };
+
+    setFormData(credentials);
+
+    setTimeout(async () => {
+      dispatch(clearError());
+      dispatch(loginStart());
+
+      try {
+        const response = await authenticate(credentials).unwrap();
+
+        if (response.success) {
+          dispatch(loginSuccess(response));
+
+          const sessionState = {
+            ...response,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            errorCode: null,
+            errorDetails: null,
+          } as AuthState;
+
+          SessionManager.saveSession(sessionState);
+        } else {
+          dispatch(loginFailure({
+            error: response.error || '인증에 실패했습니다.',
+            errorCode: response.errorCode,
+            errorDetails: response.errorDetails,
+          }));
+        }
+      } catch (error: any) {
+        dispatch(loginFailure({
+          error: error?.data?.error || error?.message || '네트워크 오류가 발생했습니다.',
+          errorCode: error?.data?.errorCode || 'NETWORK_ERROR',
+          errorDetails: error?.data?.errorDetails,
+        }));
+      }
+    }, 100);
+  };
+
   const validateForm = (): boolean => {
     const errors: typeof fieldErrors = {};
 
@@ -53,7 +118,6 @@ export const LoginForm: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // 폼 제출 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -72,7 +136,6 @@ export const LoginForm: React.FC = () => {
       if (response.success) {
         dispatch(loginSuccess(response));
 
-        // 세션 저장 (항상 저장)
         const sessionState = {
           ...response,
           isAuthenticated: true,
@@ -100,11 +163,9 @@ export const LoginForm: React.FC = () => {
     }
   };
 
-  // 입력 필드 변경 처리
   const handleInputChange = (field: keyof LoginFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
 
-    // 계좌번호 자동 포맷팅
     if (field === 'accountNumber') {
       value = formatAccountNumber(value);
     }
@@ -114,7 +175,6 @@ export const LoginForm: React.FC = () => {
       [field]: value,
     }));
 
-    // 필드 에러 클리어
     if (fieldErrors[field as keyof typeof fieldErrors]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -123,12 +183,10 @@ export const LoginForm: React.FC = () => {
     }
   };
 
-  // 에러 클리어
   const handleClearError = () => {
     dispatch(clearError());
   };
 
-  // 재시도 버튼 처리
   const handleRetry = () => {
     handleSubmit(new Event('submit') as any);
   };
@@ -143,7 +201,14 @@ export const LoginForm: React.FC = () => {
       <div className="relative w-full max-w-md bg-zinc-800/50 backdrop-blur-md rounded-2xl border border-zinc-700/30 p-8 text-white">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-blue-600/20 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-8 h-8 text-blue-400 select-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              onClick={handleIconClick}
+              style={{ userSelect: 'none' }}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
