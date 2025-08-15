@@ -23,11 +23,7 @@ import { KisSessionService } from "../../providers/kis/KisSessionService";
  * WebSocket 연결 헤더 정의 (쿠키 포함)
  */
 export interface IWebSocketHeaders {
-  /**
-   * HTTP Cookie 헤더
-   * @example "sessionKey=abc123def456; otherCookie=value"
-   */
-  cookie?: string;
+  sessionKey: string;
 }
 
 
@@ -57,24 +53,13 @@ export class MyChatController {
     try {
       // WebSocket 헤더에서 쿠키 추출
       const headers = acceptor.header;
-      const cookieString = headers.cookie || '';
+      const sessionKey = headers.sessionKey || '';
       
-      if (!cookieString) {
-        this.logger.error(`=== 쿠키 누락 ===`);
-        this.logger.error(`WebSocket 헤더에 쿠키가 없습니다.`);
+      if (!sessionKey) {
         throw new Error("인증이 필요합니다. 쿠키를 포함해주세요.");
       }
 
-      // 쿠키에서 세션 키 추출
-      const sessionKey = CookieUtil.get(cookieString, 'sessionKey');
-
-      if (!sessionKey) {
-        this.logger.error(`=== 세션 키 누락 ===`);
-        this.logger.error(`쿠키에서 sessionKey를 찾을 수 없습니다.`);
-        throw new Error("인증이 필요합니다. 먼저 로그인해주세요.");
-      }
-
-      this.logger.log(`=== 쿠키에서 세션 키 추출 성공 ===`);
+      this.logger.log(`=== 세션 키 추출 성공 ===`);
       const maskedSessionKey = sessionKey.substring(0, 8) + "...";
       this.logger.log(`세션 키: ${maskedSessionKey}`);
 
