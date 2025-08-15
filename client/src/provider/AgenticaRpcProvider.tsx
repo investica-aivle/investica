@@ -9,24 +9,8 @@ import {
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
 
-export interface IKisAuthData {
-  accountNumber: string;
-  appKey: string;
-  appSecret: string;
-}
-
-/**
- * KIS 세션 데이터를 포함한 Agentica RPC 서비스 인터페이스 (클라이언트용)
- */
-export interface IAgenticaKisRpcService extends IAgenticaRpcService<"chatgpt"> {
-  kisSessionData?: {
-    accountNumber: string;
-    appKey: string;
-    appSecret: string;
-    accessToken: string;
-    tokenType: string;
-    expiresIn: number;
-  };
+export interface IWebSocketHeaders {
+  sessionKey: string;
 }
 
 interface AgenticaRpcContextType {
@@ -34,13 +18,11 @@ interface AgenticaRpcContextType {
   conversate: (message: string) => Promise<void>;
   isConnected: boolean;
   isError: boolean;
-  authError: string | null;
-  isAuthenticating: boolean;
-  tryConnect: (authData: IKisAuthData) => Promise<
+  tryConnect: (header: IWebSocketHeaders) => Promise<
     | WebSocketConnector<
-        IKisAuthData,
+        IWebSocketHeaders,
         IAgenticaRpcListener,
-        IAgenticaKisRpcService
+        IAgenticaRpcService<"chatgpt">
       >
     | undefined
   >;
@@ -52,9 +34,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [messages, setMessages] = useState<IAgenticaEventJson[]>([]);
   const [isError, setIsError] = useState(false);
   const [driver, setDriver] =
-    useState<Driver<IAgenticaKisRpcService, false>>();
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+    useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
 
   const pushMessage = useCallback(
     async (message: IAgenticaEventJson) =>
@@ -62,21 +42,18 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     []
   );
 
-  const tryConnect = useCallback(
-    async (authData: IKisAuthData) => {
+  const tryConnect = useCallback(async (header: IWebSocketHeaders) => {
       try {
         setIsError(false);
-        setAuthError(null);
-        setIsAuthenticating(true);
         const connector: WebSocketConnector<
-          IKisAuthData,
+          IWebSocketHeaders,
           IAgenticaRpcListener,
-          IAgenticaKisRpcService
+          IAgenticaRpcService<"chatgpt">
         > = new WebSocketConnector<
-          IKisAuthData,
+          IWebSocketHeaders,
           IAgenticaRpcListener,
-          IAgenticaKisRpcService
-        >(authData, {
+          IAgenticaRpcService<"chatgpt">
+        >(header, {
           assistantMessage: pushMessage,
           describe: pushMessage,
           userMessage: pushMessage
@@ -88,13 +65,6 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
       } catch (e) {
         console.error(e);
         setIsError(true);
-        if (e instanceof Error) {
-          setAuthError(e.message);
-        } else {
-          setAuthError("KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.");
-        }
-      } finally {
-        setIsAuthenticating(false);
       }
     },
     [pushMessage]
@@ -116,22 +86,11 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     [driver]
   );
 
-  // 자동 연결 제거 - 사용자가 수동으로 인증 정보를 입력해야 함
-  // useEffect(() => {
-  //   (async () => {
-  //     const connector = await tryConnect();
-  //     return () => {
-  //       connector?.close();
-  //       setDriver(undefined);
-  //     };
-  //   })();
-  // }, [tryConnect]);
-
   const isConnected = !!driver;
 
   return (
     <AgenticaRpcContext.Provider
-      value={{ messages, conversate, isConnected, isError, authError, isAuthenticating, tryConnect }}
+      value={{ messages, conversate, isConnected, isError, tryConnect }}
     >
       {children}
     </AgenticaRpcContext.Provider>
