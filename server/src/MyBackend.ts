@@ -28,6 +28,19 @@ export class MyBackend {
       }
     });
 
+    // CORS 설정 추가
+    console.log(`[STARTUP] Enabling CORS...`);
+    this.application_.enableCors({
+      origin: [
+        'http://localhost:5173', // Vite 개발 서버 기본 포트
+        'http://localhost:3000', // React 개발 서버 포트
+        'http://localhost:4173', // Vite preview 포트
+      ],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    });
+
     console.log(`[STARTUP] Upgrading WebSocket adaptor...`);
     await WebSocketAdaptor.upgrade(this.application_);
 
@@ -53,9 +66,6 @@ export class MyBackend {
     });
 
     // DO OPEN
-    console.log(`[STARTUP] Enabling CORS...`);
-    this.application_.enableCors();
-
     const port = MyConfiguration.API_PORT();
     console.log(`[STARTUP] Starting server on port ${port}...`);
     await this.application_.listen(port, "0.0.0.0");
