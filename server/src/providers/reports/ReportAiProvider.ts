@@ -33,6 +33,12 @@ export class ReportAiProvider {
       console.log(`✅ GOOGLE_API_KEY 설정됨`);
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
+
+    // temp_files 디렉토리 생성
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+      console.log(`📁 임시 파일 디렉토리 생성: ${this.tempDir}`);
+    }
   }
 
   /**
