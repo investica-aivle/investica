@@ -161,23 +161,13 @@ export class StockCodeService implements OnModuleInit {
       return null;
     }
 
-    // 종목명 유효성 검사
-    if (!name || name.length < 2) {
+    // 종목명 기본 유효성 검사만 수행
+    if (!name || name.trim().length === 0) {
       return null;
     }
 
-    // 한글이 포함된 종목명만 허용
-    if (!/[가-힣]/.test(name)) {
-      return null;
-    }
-
-    // 특수문자 정리
-    const cleanName = name.replace(/[^\w가-힣\s\(\)\-\.&]/g, '').trim();
-
-    // 최종 검증
-    if (cleanName.length < 2 || /^\d+$/.test(cleanName)) {
-      return null;
-    }
+    // 종목명 정리 (앞뒤 공백 제거)
+    const cleanName = name.trim();
 
     return {
       code,
