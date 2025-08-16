@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import PdfConversionResult, {
   MiraeAssetReport,
   ReportsJsonData,
@@ -5,35 +6,68 @@ import PdfConversionResult, {
 import { HttpService } from "@nestjs/axios";
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from "fs";
 import * as path from "path";
-import fetch from 'node-fetch';
-
-import { MyGlobal } from "../../MyGlobal";
 
 /**
- * Perplexity PDF Converter Provider
+ * Report AI Provider
  *
- * Perplexity AI API를 직접 사용하여 변환하는 기능을 제공합니다.
+ * Google Gemini AI를 사용하여 PDF를 마크다운으로 변환하는 기능을 제공합니다.
  * 내부적으로 사용되는 Provider입니다.
  */
 @Injectable()
-export class PerplexityProvider {
+export class ReportAiProvider {
   private genAI: GoogleGenerativeAI;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    const apiKey = MyGlobal.env.GOOGLE_API_KEY;
+    const apiKey = this.configService.get<string>("GOOGLE_API_KEY");
     if (!apiKey) {
-      throw new InternalServerErrorException('Google API Key not found in configuration.');
-    }
-    else {
+      throw new InternalServerErrorException(
+        "Google API Key not found in configuration.",
+      );
+    } else {
       console.log(`✅ GOOGLE_API_KEY 설정됨`);
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
+  }
+
+  /**
+   * 최신 마크다운 파일들을 확인
+   */
+  public async checkLatestMarkdownFiles(
+    jsonFilePath: string = "./downloads/reports.json",
+    limit: number = 5,
+    options: {
+      contentLengthLimit?: number;
+      shouldLimitLength?: boolean;
+    } = {},
+  ): Promise<{
+    limitedFiles: any[];
+    fileContents: any[];
+  }> {
+    // 1. 마크다운 파일들 읽기 및 정렬
+    const sortedFiles = this.getMarkdownFilesFromJson(jsonFilePath);
+
+    if (sortedFiles.length === 0) {
+      return {
+        limitedFiles: [],
+        fileContents: [],
+      };
+    }
+
+    // 2. limit만큼 자르기
+    const limitedFiles = sortedFiles.slice(0, limit);
+
+    // 3. 파일 내용 읽기
+    const fileContents = this.readLatestMarkdownFiles(limitedFiles, options);
+
+    return {
+      limitedFiles,
+      fileContents,
+    };
   }
 
   /**
@@ -54,26 +88,13 @@ export class PerplexityProvider {
   }> {
     try {
       console.log("summarizeLatestMarkdownFiles");
-      // 1. 마크다운 파일들 읽기 및 정렬
-      const sortedFiles = this.getMarkdownFilesFromJson(jsonFilePath);
 
-      if (sortedFiles.length === 0) {
-        return {
-          message: "요약할 마크다운 파일이 없습니다.",
-          summary: "",
-          referencedFiles: [],
-        };
-      }
-
-      // 2. limit만큼 자르기
-      const limitedFiles = sortedFiles.slice(0, limit);
-
-      // 3. 파일 내용 읽기
-      const fileContents = this.readMarkdownFileContents(limitedFiles);
+      const { limitedFiles, fileContents } =
+        await this.checkLatestMarkdownFiles(jsonFilePath, limit);
 
       if (fileContents.length === 0) {
         return {
-          message: "마크다운 파일을 읽을 수 없습니다.",
+          message: "마크다운 파일이 없습니다.",
           summary: "",
           referencedFiles: [],
         };
@@ -166,83 +187,6 @@ export class PerplexityProvider {
     }
   }
 
-  // /**
-  //  * PDF 파일이 있는데 MD 파일이 없는 경우에만 변환
-  //  */
-  // public async convertDownloadedPdfToMarkdown(
-  //   pdfFolderPath: string,
-  //   mdFolderPath: string = "./downloads/markdown",
-  // ): Promise<PdfConversionResult[]> {
-  //   console.log(`🔄 PDF→마크다운 변환 시작`);
-  //   console.log(`📁 PDF 폴더: ${pdfFolderPath}`);
-  //   console.log(`📁 마크다운 폴더: ${mdFolderPath}`);
-
-  //   const results: PdfConversionResult[] = [];
-
-  //   // PDF는 있지만 MD가 없는 파일들 찾기
-  //   const missingMarkdownFiles = this.findMissingMarkdownFiles(
-  //     pdfFolderPath,
-  //     mdFolderPath,
-  //   );
-
-  //   console.log(`📋 변환할 파일 개수: ${missingMarkdownFiles.length}`);
-
-  //   // 누락된 파일들 변환
-  //   for (const pdfFile of missingMarkdownFiles) {
-  //     console.log(`\n🔄 변환 중: ${pdfFile}.pdf`);
-  //     const pdfFilePath = path.join(pdfFolderPath, `${pdfFile}.pdf`);
-  //     const result = await this.convertPdfToMarkdown(pdfFilePath, mdFolderPath);
-
-  //     if (result.success) {
-  //       console.log(`✅ 변환 성공: ${result.fileName}`);
-  //     } else {
-  //       console.log(`❌ 변환 실패: ${result.error}`);
-  //     }
-
-  //     results.push(result);
-  //   }
-
-  //   const successCount = results.filter((r) => r.success).length;
-  //   console.log(
-  //     `\n📊 변환 결과: ${results.length}개 중 ${successCount}개 성공`,
-  //   );
-
-  //   return results;
-  // }
-  /**
-   * PDF는 있지만 MD가 없는 파일들 찾기
-   */
-  // private findMissingMarkdownFiles(
-  //   pdfFolderPath: string,
-  //   mdFolderPath: string,
-  // ): string[] {
-  //   // PDF 파일들 읽기
-  //   const pdfFiles = fs
-  //     .readdirSync(pdfFolderPath)
-  //     .filter((file) => file.endsWith(".pdf"))
-  //     .map((file) => path.basename(file, ".pdf"));
-
-  //   // MD 파일들 읽기
-  //   const mdFiles = fs.existsSync(mdFolderPath)
-  //     ? fs
-  //         .readdirSync(mdFolderPath)
-  //         .filter((file) => file.endsWith(".md"))
-  //         .map((file) => path.basename(file, ".md"))
-  //     : [];
-
-  //   // PDF는 있지만 MD가 없는 파일들 찾기
-  //   const missingFiles: string[] = [];
-  //   for (const pdfFile of pdfFiles) {
-  //     if (!mdFiles.includes(pdfFile)) {
-  //       missingFiles.push(pdfFile);
-  //     } else {
-  //       console.log(`Markdown already exists for: ${pdfFile}.pdf, skipping...`);
-  //     }
-  //   }
-
-  //   return missingFiles;
-  // }
-
   /**
    * JSON을 이용해서 마크다운 날짜순 정렬해서 리턴
    */
@@ -278,32 +222,18 @@ export class PerplexityProvider {
       return [];
     }
   }
-  // /**
-  //  * 마크다운 파일들 읽기 및 날짜순 정렬
-  //  */
-  // private readAndSortMarkdownFiles(markdownDir: string, limit: number) {
-  //   if (!fs.existsSync(markdownDir)) {
-  //     return [];
-  //   }
-
-  //   return fs
-  //     .readdirSync(markdownDir)
-  //     .filter((file) => file.endsWith(".md"))
-  //     .map((file) => ({
-  //       fileName: file,
-  //       filePath: path.join(markdownDir, file),
-  //       date: this.extractDateFromFileName(file),
-  //       title: this.extractTitleFromFileName(file),
-  //     }))
-  //     .filter((file) => file.date !== null) // 날짜 추출 실패한 파일 제외
-  //     .sort((a, b) => b.date!.getTime() - a.date!.getTime()) // 최신순 정렬
-  //     .slice(0, limit); // 최근 n개만 선택
-  // }
 
   /**
    * 마크다운 파일 내용 읽기
    */
-  private readMarkdownFileContents(sortedFiles: MiraeAssetReport[]) {
+  public readLatestMarkdownFiles(
+    sortedFiles: MiraeAssetReport[],
+    options: {
+      contentLengthLimit?: number;
+      shouldLimitLength?: boolean;
+    } = {},
+  ) {
+    const { contentLengthLimit = 2000, shouldLimitLength = true } = options;
     const fileContents = [];
 
     for (const file of sortedFiles) {
@@ -312,11 +242,13 @@ export class PerplexityProvider {
 
         const filePath = `./downloads/markdown/${file.mdFileName}`;
         const content = fs.readFileSync(filePath, "utf8");
-        const truncatedContent = content.substring(0, 2000); // 내용 길이 제한
+        const finalContent = shouldLimitLength
+          ? content.substring(0, contentLengthLimit)
+          : content;
 
         fileContents.push({
           fileName: file.mdFileName,
-          content: truncatedContent,
+          content: finalContent,
         });
       } catch (error) {
         console.error(`Error reading file ${file.mdFileName}:`, error);
@@ -362,7 +294,7 @@ ${file.content.substring(0, 500)}...
   )
   .join("\n")}
 
-위 보고서들의 주요 내용을 종합적으로 요약해주세요. 다음 사항들을 포함해주세요:
+위 보고서들의 주요 내용을 종합적으로 요약해줘. 다음 사항들을 포함해주세요:
 1. 전체적인 시장 동향
 2. 주요 투자 포인트
 3. 리스크 요인
@@ -441,7 +373,7 @@ ${file.content.substring(0, 500)}...
     }
   }
 
-  private readonly tempDir = path.join(__dirname, '..', '..', 'temp_files');
+  private readonly tempDir = path.join(__dirname, "..", "..", "temp_files");
 
   /**
    * URL에서 PDF를 직접 변환 (file_url 사용)
@@ -512,7 +444,9 @@ ${file.content.substring(0, 500)}...
     - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)
             
 `;
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = this.genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+      });
       const result = await model.generateContent([prompt, filePart]);
       const response = result.response;
       const markdownContent = response.text();
@@ -551,19 +485,24 @@ ${file.content.substring(0, 500)}...
 
     try {
       console.log(`PDF 다운로드 중: ${url}`);
-      const response = await fetch(url);
 
-      if (!response.ok) {
+      // httpService 사용
+      const response = await this.httpService.axiosRef.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      if (response.status !== 200) {
         throw new Error(`HTTP 오류: ${response.status} ${response.statusText}`);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      fs.writeFileSync(outputPath, Buffer.from(arrayBuffer));
+      fs.writeFileSync(outputPath, Buffer.from(response.data));
       console.log(`PDF 다운로드 완료: ${outputPath}`);
       return outputPath;
     } catch (error: any) {
       console.error(`PDF 다운로드 중 오류 발생: ${error.message}`);
-      throw new InternalServerErrorException(`PDF 다운로드 실패: ${error.message}`);
+      throw new InternalServerErrorException(
+        `PDF 다운로드 실패: ${error.message}`,
+      );
     }
   }
 
@@ -610,181 +549,4 @@ ${file.content.substring(0, 500)}...
       console.error(`❌ JSON 파일 업데이트 실패:`, error);
     }
   }
-
-  /**
-   * JSON 파일에서 마크다운 변환 상태 업데이트 (더 이상 사용하지 않음)
-   */
-  /*
-  private async updateReportsJson(
-    pdfFolderPath: string,
-    conversionResults: PdfConversionResult[],
-  ): Promise<void> {
-    try {
-      const jsonFilePath = path.join(pdfFolderPath, "reports.json");
-
-      if (!fs.existsSync(jsonFilePath)) {
-        console.log(`📄 JSON 파일이 없어서 업데이트 건너뜀: ${jsonFilePath}`);
-        return;
-      }
-
-      const jsonContent = fs.readFileSync(jsonFilePath, "utf8");
-      const reportsData: ReportsJsonData = JSON.parse(jsonContent);
-
-      // 성공한 변환 결과들로 마크다운 상태 업데이트
-      const successfulConversions = conversionResults.filter((r) => r.success);
-
-      for (const conversion of successfulConversions) {
-        const fileName = conversion.fileName.replace(".md", "");
-
-        // reports 배열에서 해당 파일 찾아서 markdownFileName 업데이트
-        const reportIndex = reportsData.reports.findIndex(
-          (report) => report.pdfFileName === fileName,
-        );
-
-        if (reportIndex !== -1) {
-          reportsData.reports[reportIndex].markdownFileName =
-            conversion.fileName;
-        }
-      }
-
-      // 마크다운 변환 완료 시간 업데이트
-      reportsData.lastMarkdownUpdate = new Date().toISOString();
-
-      // JSON 파일 다시 저장
-      fs.writeFileSync(
-        jsonFilePath,
-        JSON.stringify(reportsData, null, 2),
-        "utf8",
-      );
-      console.log(
-        `📄 JSON 파일 업데이트 완료: ${successfulConversions.length}개 마크다운 상태 반영`,
-      );
-    } catch (error) {
-      console.error(`❌ JSON 파일 업데이트 실패:`, error);
-    }
-  }
-  */
-
-  //   /**
-  //    * PDF 파일을 마크다운으로 변환 (직접 API 사용)
-  //    */
-  //   private async convertPdfToMarkdown(
-  //     pdfFilePath: string,
-  //     mdFolderPath: string = "./downloads/markdown",
-  //   ): Promise<PdfConversionResult> {
-  //     try {
-  //       // API 키 확인
-  //       if (!this.apiKey) {
-  //         console.error("❌ PERPLEXITY_API_KEY not configured");
-  //         return {
-  //           markdown: "",
-  //           fileName: "",
-  //           success: false,
-  //           error: "PERPLEXITY_API_KEY not configured",
-  //         };
-  //       }
-
-  //       // 출력 디렉토리 생성
-  //       if (!fs.existsSync(mdFolderPath)) {
-  //         fs.mkdirSync(mdFolderPath, { recursive: true });
-  //       }
-
-  //       console.log(`🔄 변환 시작: ${pdfFilePath}`);
-
-  //       // PDF 파일 읽기
-  //       const pdfBuffer = fs.readFileSync(pdfFilePath);
-  //       const fileName = path.basename(pdfFilePath, ".pdf");
-  //       const markdownFileName = `${fileName}.md`;
-  //       const markdownFilePath = path.join(mdFolderPath, markdownFileName);
-
-  //       console.log(`📄 PDF 크기: ${pdfBuffer.length} bytes`);
-  //       console.log(`📝 마크다운 파일명: ${markdownFileName}`);
-
-  //       // PDF를 base64로 인코딩
-  //       const pdfBase64 = pdfBuffer.toString("base64");
-  //       console.log(`🔢 Base64 인코딩 완료: ${pdfBase64.length} characters`);
-
-  //       // Perplexity API에 파일 업로드하여 변환 요청
-  //       console.log(`🌐 Perplexity API 호출 시작...`);
-
-  //       const response = await fetch(this.perplexityApiUrl, {
-  //         method: "POST",
-  //         headers: {
-  //           Authorization: `Bearer ${this.apiKey}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           model: "llama-3.1-sonar-large-128k-online",
-  //           messages: [
-  //             {
-  //               role: "user",
-  //               content: [
-  //                 {
-  //                   type: "text",
-  //                   text: `이 PDF 파일을 마크다운으로 변환해줘. 다음 조건을 지켜줘:
-
-  // 1. 최대한 정보를 만들지 말고 모든 정보를 반영해서 마크다운 파일로 만들어줘
-  // 2. 내용을 안 없애면 좋겠어
-  // 3. 표 형식은 마크다운의 표 형식으로 변환하는 등 최대한 PDF 구조를 그대로 반영해줘
-  // 4. 그래프 같은 것들이 있는 경우 각 그래프마다 간단하게 지표를 뽑아내거나 평가한 정보가 있으면 좋겠음
-
-  // 마크다운 형식으로만 응답해줘.`,
-  //                 },
-  //                 {
-  //                   type: "file",
-  //                   file: {
-  //                     data: pdfBase64,
-  //                     mime_type: "application/pdf",
-  //                     name: `${fileName}.pdf`,
-  //                   },
-  //                 },
-  //               ],
-  //             },
-  //           ],
-  //           max_tokens: 4000,
-  //           temperature: 0.1,
-  //         }),
-  //       });
-
-  //       console.log(
-  //         `📡 API 응답 상태: ${response.status} ${response.statusText}`,
-  //       );
-
-  //       if (!response.ok) {
-  //         const errorText = await response.text();
-  //         console.error(`❌ API 에러 응답: ${errorText}`);
-  //         throw new Error(
-  //           `Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`,
-  //         );
-  //       }
-
-  //       const data = await response.json();
-  //       console.log(
-  //         `✅ API 응답 성공: ${data.choices ? data.choices.length : 0} choices`,
-  //       );
-
-  //       const markdownContent = data.choices[0].message.content;
-  //       console.log(
-  //         `📝 마크다운 내용 길이: ${markdownContent.length} characters`,
-  //       );
-
-  //       // 마크다운 파일 저장
-  //       fs.writeFileSync(markdownFilePath, markdownContent, "utf8");
-  //       console.log(`💾 마크다운 파일 저장 완료: ${markdownFilePath}`);
-
-  //       return {
-  //         markdown: markdownContent,
-  //         fileName: markdownFileName,
-  //         success: true,
-  //       };
-  //     } catch (error) {
-  //       console.error(`❌ PDF 변환 실패 (${pdfFilePath}):`, error);
-  //       return {
-  //         markdown: "",
-  //         fileName: "",
-  //         success: false,
-  //         error: error instanceof Error ? error.message : String(error),
-  //       };
-  //     }
-  //   }
 }
