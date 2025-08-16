@@ -7,5 +7,4 @@ packages/api/lib/
 
 .env
 package-lock.json
-pnpm-lock.yaml
 .DS_Store
