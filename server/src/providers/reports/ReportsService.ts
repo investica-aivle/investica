@@ -152,7 +152,7 @@ export class ReportsService {
     keywords?: string[];
     limit?: number;
   }) {
-    return this.getSecuritiesReportList(input);
+    return this.getSecuritiesReportList({ ...input, isISReport: true });
   }
 
   /**
@@ -168,7 +168,7 @@ export class ReportsService {
     keywords?: string[];
     limit?: number;
   }) {
-    return this.getSecuritiesReportList(input, false);
+    return this.getSecuritiesReportList({ ...input, isISReport: false });
   }
 
   /**
@@ -182,34 +182,38 @@ export class ReportsService {
    * @param isISReport true: 투자 전략 보고서, false: 산업 분석 보고서
    * @returns 증권보고서 리스트
    */
-  public async getSecuritiesReportList(
-    input: {
-      /**
-       * 검색할 키워드들 (선택사항)
-       * @example []
-       */
-      keywords?: string[];
+  public async getSecuritiesReportList(input: {
+    /**
+     * 검색할 키워드들 (선택사항)
+     * @example []
+     */
+    keywords?: string[];
 
-      /**
-       * 가져올 보고서 개수 (기본값: 10)
-       * @minimum 1
-       * @maximum 50
-       * @example 10
-       */
-      limit?: number;
-    },
-    isISReport: boolean = true,
-  ): Promise<{
+    /**
+     * 가져올 보고서 개수 (기본값: 10)
+     * @minimum 1
+     * @maximum 50
+     * @example 10
+     */
+    limit?: number;
+
+    /**
+     * 보고서 타입 (기본값: true - 투자 전략 보고서)
+     * @example true
+     */
+    isISReport?: boolean;
+  }): Promise<{
     message: string;
     reports: Array<MiraeAssetReport>;
   }> {
     // 동기화 먼저 실행
-    await this.syncReports(isISReport);
+    await this.syncReports(input.isISReport ?? true);
 
     // JSON 파일에서 보고서 정보 읽기
-    const jsonFilePath = isISReport
-      ? "./downloads/reports.json"
-      : "./downloads/reports_IA.json";
+    const jsonFilePath =
+      (input.isISReport ?? true)
+        ? "./downloads/reports.json"
+        : "./downloads/reports_IA.json";
     if (!require("fs").existsSync(jsonFilePath)) {
       return {
         message: "보고서 정보를 찾을 수 없습니다.",
@@ -282,7 +286,7 @@ export class ReportsService {
     success: boolean;
     error?: string;
   }> {
-    return this.getSpecificReportContent(input, false);
+    return this.getSpecificReportContent({ ...input, isISReport: false });
   }
 
   /**
@@ -294,16 +298,19 @@ export class ReportsService {
    * @param isISReport true: 투자 전략 카테고리 보고서, false: 산업 분석 카테고리 보고서
    * @returns 보고서 내용
    */
-  public async getSpecificReportContent(
-    input: {
-      /**
-       * 보고서 제목
-       * @example "주식시장 동향 분석"
-       */
-      title: string;
-    },
-    isISReport: boolean = true,
-  ): Promise<{
+  public async getSpecificReportContent(input: {
+    /**
+     * 보고서 제목
+     * @example "주식시장 동향 분석"
+     */
+    title: string;
+
+    /**
+     * 보고서 타입 (기본값: true - 투자 전략 보고서)
+     * @example true
+     */
+    isISReport?: boolean;
+  }): Promise<{
     message: string;
     title: string;
     date: string;
@@ -317,9 +324,10 @@ export class ReportsService {
 
     try {
       // JSON 파일에서 보고서 정보 읽기
-      const jsonFilePath = isISReport
-        ? "./downloads/reports.json"
-        : "./downloads/reports_IA.json";
+      const jsonFilePath =
+        (input.isISReport ?? true)
+          ? "./downloads/reports.json"
+          : "./downloads/reports_IA.json";
       if (!require("fs").existsSync(jsonFilePath)) {
         return {
           message: "보고서 정보를 찾을 수 없습니다.",

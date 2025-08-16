@@ -77,9 +77,7 @@ export class MyChatController {
     try {
       // KIS 인증 수행 - 실패 시 연결 거부
       this.logger.log(`=== KIS 인증 시작 ===`);
-      this.logger.log(
-        `KIS 인증 진행 중... 계좌: ${maskedAccountNumber}`,
-      );
+      this.logger.log(`KIS 인증 진행 중... 계좌: ${maskedAccountNumber}`);
 
       const authStartTime = Date.now();
       const kisSessionData = await this.kisAuthProvider.authenticate({
@@ -92,7 +90,9 @@ export class MyChatController {
       this.logger.log(`=== KIS 인증 성공 ===`);
       this.logger.log(`계좌번호: ${maskedAccountNumber}`);
       this.logger.log(`인증 소요시간: ${authEndTime - authStartTime}ms`);
-      this.logger.log(`토큰 만료시간: ${kisSessionData.expiresAt.toISOString()}`);
+      this.logger.log(
+        `토큰 만료시간: ${kisSessionData.expiresAt.toISOString()}`,
+      );
 
       this.logger.log(`=== Agentica 에이전트 초기화 시작 ===`);
       const agentStartTime = Date.now();
@@ -134,7 +134,9 @@ export class MyChatController {
       });
 
       const agentEndTime = Date.now();
-      this.logger.log(`Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`);
+      this.logger.log(
+        `Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`,
+      );
       this.logger.log(`컨트롤러 등록: KIS, News, Reports`);
 
       this.logger.log(`=== RPC 서비스 생성 및 웹소켓 연결 수락 ===`);
@@ -153,7 +155,6 @@ export class MyChatController {
       this.logger.log(`계좌: ${maskedAccountNumber}`);
       this.logger.log(`총 소요시간: ${Date.now() - authStartTime}ms`);
       this.logger.log(`연결 상태: 활성`);
-
     } catch (error) {
       // KIS 인증 실패 시 연결 거부
       const errorMessage =

@@ -24,6 +24,7 @@ export class ReportAiProvider {
     private readonly configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>("GOOGLE_API_KEY");
+    console.log(apiKey);
     if (!apiKey) {
       throw new InternalServerErrorException(
         "Google API Key not found in configuration.",

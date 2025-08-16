@@ -26,17 +26,28 @@ export class MiraeAssetReportProvider {
   }> {
     try {
       // 1. 먼저 스크래핑으로 모든 보고서 가져오기
-      const allReports = await this.scrapeReportsFromWeb(keywords, isInvestmentStrategy);
+      const allReports = await this.scrapeReportsFromWeb(
+        keywords,
+        isInvestmentStrategy,
+      );
 
       console.log(allReports);
 
       // 2. JSON 파일 기반 중복 제거
       const filteredReports = syncWithExisting
-        ? this.filterDuplicateReportsFromJson(allReports, outputDir, isInvestmentStrategy)
+        ? this.filterDuplicateReportsFromJson(
+            allReports,
+            outputDir,
+            isInvestmentStrategy,
+          )
         : allReports;
 
       // 3. 필터링된 새로운 보고서들만 JSON 파일에 추가
-      const reports = await this.saveReportsToJson(filteredReports, outputDir, isInvestmentStrategy);
+      const reports = await this.saveReportsToJson(
+        filteredReports,
+        outputDir,
+        isInvestmentStrategy,
+      );
 
       return {
         reports,
@@ -53,10 +64,12 @@ export class MiraeAssetReportProvider {
    */
   private async scrapeReportsFromWeb(
     keywords: string[],
-    isInvestmentStrategy: boolean
+    isInvestmentStrategy: boolean,
   ): Promise<MiraeAssetReport[]> {
     try {
-      const reportsUrl = isInvestmentStrategy ? this.reportsUrl_IS : this.reportsUrl_IA;
+      const reportsUrl = isInvestmentStrategy
+        ? this.reportsUrl_IS
+        : this.reportsUrl_IA;
       const response = await axios.get(reportsUrl, {
         headers: {
           "User-Agent":
@@ -246,7 +259,7 @@ export class MiraeAssetReportProvider {
   private filterDuplicateReportsFromJson(
     reports: MiraeAssetReport[],
     outputDir: string,
-    isInvestmentStrategy: boolean
+    isInvestmentStrategy: boolean,
   ): MiraeAssetReport[] {
     const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
     const jsonFilePath = path.join(outputDir, jsonPath);
@@ -297,7 +310,9 @@ export class MiraeAssetReportProvider {
     isInvestmentStrategy: boolean,
   ): Promise<MiraeAssetReport[]> {
     try {
-      const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
+      const jsonPath = isInvestmentStrategy
+        ? "reports.json"
+        : "reports_IA.json";
       const filePath = path.join(outputDir, jsonPath);
       let existingData: ReportsJsonData = {
         lastUpdated: new Date().toISOString(),
