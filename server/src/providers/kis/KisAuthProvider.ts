@@ -7,6 +7,7 @@ import {
 } from "@models/KisTrading";
 import { Injectable, Logger } from "@nestjs/common";
 
+import { MaskingUtil } from "../../utils/MaskingUtil";
 import { KisConstants } from "./KisConstants";
 
 @Injectable()
@@ -19,11 +20,8 @@ export class KisAuthProvider {
   public async authenticate(
     request: IKisAuthRequest,
   ): Promise<IKisSessionData> {
-    const maskedAppKey = request.appKey.substring(0, 8) + "***";
-    const maskedAccountNumber = request.accountNumber.replace(
-      /(\d{4})\d+(\d{2})/,
-      "$1****$2",
-    );
+    const maskedAppKey = MaskingUtil.maskAppKey(request.appKey);
+    const maskedAccountNumber = MaskingUtil.maskAccountNumber(request.accountNumber);
 
     this.logger.log(
       `Starting KIS authentication for account: ${maskedAccountNumber}, appKey: ${maskedAppKey}`,
@@ -162,7 +160,7 @@ export class KisAuthProvider {
     }
 
     this.logger.log(
-      `Token expired, refreshing for account: ${sessionData.accountNumber.replace(/(\d{4})\d+(\d{2})/, "$1****$2")}`,
+      `Token expired, refreshing for account: ${MaskingUtil.maskAccountNumber(sessionData.accountNumber)}`,
     );
 
     return await this.authenticate({

@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
 import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
-import { StocksProvider } from "../../providers/stocks/StocksProvider";
-import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
+import { KisPriceProvider } from "../../providers/kis/KisPriceProvider";
+import { KisBalanceProvider } from "../../providers/kis/KisBalanceProvider";
 import { HttpModule } from "@nestjs/axios";
 import { ConfigModule } from "@nestjs/config";
+import { KisController } from "./KisController";
+import { SessionManager } from "../../providers/session/SessionManager";
 
 /**
  * KIS (Korea Investment Securities) Module
@@ -17,7 +19,8 @@ import { ConfigModule } from "@nestjs/config";
     HttpModule,
     ConfigModule, // 둘 다 주입에 필요
   ],
-  providers: [KisTradingProvider, KisAuthProvider, StocksProvider, StockBalanceProvider],
-  exports: [KisTradingProvider, KisAuthProvider, StocksProvider, StockBalanceProvider],
+  providers: [KisTradingProvider, KisAuthProvider, KisPriceProvider, KisBalanceProvider, SessionManager],
+  controllers: [KisController],
+  exports: [KisTradingProvider, KisAuthProvider, KisPriceProvider, KisBalanceProvider, SessionManager],
 })
 export class KisModule {}

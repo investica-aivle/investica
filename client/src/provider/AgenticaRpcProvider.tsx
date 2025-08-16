@@ -5,30 +5,16 @@ import {
   PropsWithChildren,
   useCallback,
   useContext,
+  useEffect,
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
 import { IClientEvents } from "../types/agentica";
 import { NewsItem, NewsPushPayload } from "../types/news";
+import { useAppSelector, selectSessionKey } from "../store/hooks";
 
-export interface IKisAuthData {
-  accountNumber: string;
-  appKey: string;
-  appSecret: string;
-}
-
-/**
- * KIS 세션 데이터를 포함한 Agentica RPC 서비스 인터페이스 (클라이언트용)
- */
-export interface IAgenticaKisRpcService extends IAgenticaRpcService<"chatgpt"> {
-  kisSessionData?: {
-    accountNumber: string;
-    appKey: string;
-    appSecret: string;
-    accessToken: string;
-    tokenType: string;
-    expiresIn: number;
-  };
+export interface IWebSocketHeaders {
+  sessionKey: string;
 }
 
 interface AgenticaRpcContextType {
@@ -36,17 +22,7 @@ interface AgenticaRpcContextType {
   conversate: (message: string) => Promise<void>;
   isConnected: boolean;
   isError: boolean;
-  authError: string | null;
-  isAuthenticating: boolean;
-  tryConnect: (authData: IKisAuthData) => Promise<
-    | WebSocketConnector<
-        IKisAuthData,
-        IClientEvents,
-        IAgenticaKisRpcService
-      >
-    | undefined
-  >;
-
+  isConnecting: boolean;
   news: {
     company: string;
     items: NewsItem[];
@@ -60,10 +36,10 @@ const AgenticaRpcContext = createContext<AgenticaRpcContextType | null>(null);
 export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [messages, setMessages] = useState<IAgenticaEventJson[]>([]);
   const [isError, setIsError] = useState(false);
-  const [driver, setDriver] =
-    useState<Driver<IAgenticaKisRpcService, false>>();
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [driver, setDriver] = useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
+
+  const sessionKey = useAppSelector(selectSessionKey);
 
   const [newsCompany, setNewsCompany] = useState("");
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
@@ -76,50 +52,52 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     []
   );
 
-  const tryConnect = useCallback(
-    async (authData: IKisAuthData) => {
-      try {
-        setIsError(false);
-        setAuthError(null);
-        setIsAuthenticating(true);
-        const connector: WebSocketConnector<
-          IKisAuthData,
-          IClientEvents,
-          IAgenticaKisRpcService
-        > = new WebSocketConnector<
-          IKisAuthData,
-          IClientEvents,
-          IAgenticaKisRpcService
-        >(authData, {
-          assistantMessage: pushMessage,
-          describe: pushMessage,
-          userMessage: pushMessage,
+  const connectWithSessionKey = useCallback(async (sessionKey: string) => {
+    if (!sessionKey) return;
 
-          onNews: (payload: NewsPushPayload) => {
-            setNewsCompany(payload.company);
-            setNewsItems(payload.items ?? []);
-            setNewsFetchedAt(payload.fetchedAt);
-            setHasFirstPush(true);
-          },
-        });
-        await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
-        const driver = connector.getDriver();
-        setDriver(driver);
-        return connector;
-      } catch (e) {
-        console.error(e);
-        setIsError(true);
-        if (e instanceof Error) {
-          setAuthError(e.message);
-        } else {
-          setAuthError("KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.");
+    try {
+      setIsConnecting(true);
+      setIsError(false);
+
+      const connector: WebSocketConnector<
+        IWebSocketHeaders,
+        IAgenticaRpcListener,
+        IAgenticaRpcService<"chatgpt">
+      > = new WebSocketConnector<
+        IWebSocketHeaders,
+        IAgenticaRpcListener,
+        IAgenticaRpcService<"chatgpt">
+      >({ sessionKey }, {
+        assistantMessage: pushMessage,
+        describe: pushMessage,
+        userMessage: pushMessage,
+        onNews: (payload: NewsPushPayload) => {
+          setNewsCompany(payload.company);
+          setNewsItems(payload.items ?? []);
+          setNewsFetchedAt(payload.fetchedAt);
+          setHasFirstPush(true);
         }
-      } finally {
-        setIsAuthenticating(false);
-      }
-    },
-    [pushMessage]
-  );
+      });
+
+      await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
+      const driver = connector.getDriver();
+      setDriver(driver);
+
+      console.log('WebSocket 연결 성공');
+    } catch (e) {
+      console.error('WebSocket 연결 실패:', e);
+      setIsError(true);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [pushMessage]);
+
+  // 세션키가 있으면 자동으로 연결 시도
+  useEffect(() => {
+    if (sessionKey && !driver && !isConnecting) {
+      connectWithSessionKey(sessionKey);
+    }
+  }, [sessionKey, driver, isConnecting, connectWithSessionKey]);
 
   const conversate = useCallback(
     async (message: string) => {
@@ -137,17 +115,6 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     [driver]
   );
 
-  // 자동 연결 제거 - 사용자가 수동으로 인증 정보를 입력해야 함
-  // useEffect(() => {
-  //   (async () => {
-  //     const connector = await tryConnect();
-  //     return () => {
-  //       connector?.close();
-  //       setDriver(undefined);
-  //     };
-  //   })();
-  // }, [tryConnect]);
-
   const isConnected = !!driver;
 
   return (
@@ -157,9 +124,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         conversate,
         isConnected,
         isError,
-        authError,
-        isAuthenticating,
-        tryConnect,
+        isConnecting,
         news: {
           company: newsCompany,
           items: newsItems,
