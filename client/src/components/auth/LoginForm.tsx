@@ -49,9 +49,9 @@ export const LoginForm: React.FC = () => {
 
   const autoDev = async () => {
     const credentials = {
-      accountNumber: import.meta.env.VITE_KIS_ACCOUNT_ID,
-      appKey: import.meta.env.VITE_KIS_APP_KEY,
-      appSecret: import.meta.env.VITE_KIS_APP_SECRET,
+      accountNumber: import.meta.env.VITE_KIS_ACCOUNT_ID || '',
+      appKey: import.meta.env.VITE_KIS_APP_KEY || '',
+      appSecret: import.meta.env.VITE_KIS_APP_SECRET || '',
     };
 
     setFormData(credentials);
