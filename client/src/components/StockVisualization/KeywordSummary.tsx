@@ -66,8 +66,8 @@ const KeywordSummary = () => {
       {keywordData && keywordData.keywords && (
         <div className="space-y-3">
           {keywordData.keywords?.map((keyword: Keyword, index: number) => (
-            <div key={index} className={`p-3 rounded-xl ${getImpactBgColor(keyword.impact)}`}>
-              <div className="flex items-center gap-2 mb-1">
+            <div key={index} className={`px-4 py-2 rounded-xl ${getImpactBgColor(keyword.impact)}`}>
+              <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-lg">{keyword.icon}</span>
                 <span className={`text-sm font-semibold ${getImpactColor(keyword.impact)}`}>
                   {keyword.keyword}
