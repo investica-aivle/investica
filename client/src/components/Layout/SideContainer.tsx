@@ -2,9 +2,12 @@ import { BrainIcon, DollarSignIcon, NewspaperIcon, PieChartIcon, TrendingUpIcon,
 import { useState } from 'react';
 import KospiOverview from '../StockVisualization/KospiOverview';
 import StockTreemap from '../StockVisualization/Treemap';
+import { useAgenticaRpc } from '../../provider/AgenticaRpcProvider';
+import NewsPanel from '../news/NewsPanel';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
+  const { news, conversate, isConnected } = useAgenticaRpc();
   const onClose = () => {
     setShowSideContainer(false);
   };
@@ -67,44 +70,13 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
         
         {activeTab === 'kospi' && <KospiOverview />}
         
-        {activeTab === 'news' && (
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg text-gray-100">주요 뉴스</h3>
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-zinc-700/30 p-3 rounded-2xl backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-blue-300">삼성전자</span>
-                    <span className="text-xs bg-green-800/50 text-green-200 px-2 py-0.5 rounded-full">
-                      긍정
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-medium mb-1 text-gray-100">
-                    삼성전자, 신형 반도체 생산라인 확장 계획 발표
-                  </h4>
-                  <p className="text-xs text-gray-400">
-                    2023년 하반기 매출 상승세 전망. 반도체 시장 점유율 확대 예상...
-                  </p>
-                </div>
-              ))}
-              {[1, 2].map(i => (
-                <div key={i} className="bg-zinc-700/30 p-3 rounded-2xl backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-blue-300">현대차</span>
-                    <span className="text-xs bg-red-900/50 text-red-200 px-2 py-0.5 rounded-full">
-                      부정
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-medium mb-1 text-gray-100">
-                    현대차, 글로벌 공급망 이슈로 생산 차질 예상
-                  </h4>
-                  <p className="text-xs text-gray-400">
-                    원자재 가격 상승과 공급망 문제로 3분기 생산량 감소 전망...
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+        {activeTab === "news" && (
+          <NewsPanel
+            company={news.company}
+            items={news.items}
+            fetchedAt={news.fetchedAt ?? undefined}
+            loading={!news.hasFirstPush || !isConnected}
+          />
         )}
         
         {activeTab === 'trading' && (
