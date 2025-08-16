@@ -38,12 +38,12 @@ export class KisSessionService {
    */
   public async buyStock(input: {
     /**
-     * Stock code (6 digits)
-     * @example "005930" Samsung Electronics
-     * @example "035720" Kakao
-     * @example "035420" NAVER
+     * Stock name (Korean)
+     * @example "삼성전자" Samsung Electronics
+     * @example "카카오" Kakao
+     * @example "네이버" NAVER
      */
-    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
+    stockName: string;
 
     /**
      * Order quantity (number of shares)
@@ -86,12 +86,12 @@ export class KisSessionService {
    */
   public async sellStock(input: {
     /**
-     * Stock code (6 digits)
-     * @example "005930" Samsung Electronics
-     * @example "035720" Kakao
-     * @example "035420" NAVER
+     * Stock name (Korean)
+     * @example "삼성전자" Samsung Electronics
+     * @example "카카오" Kakao
+     * @example "네이버" NAVER
      */
-    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
+    stockName: string;
 
     /**
      * Order quantity (number of shares)
@@ -131,10 +131,10 @@ export class KisSessionService {
    */
   public async getStockPrice(input: {
     /**
-     * Company name
+     * Stock name (Korean)
      * @example "삼성전자"
      */
-    company: string;
+    stockName: string;
   }): Promise<{
     message: string;
     data: Record<string, any>;
@@ -156,10 +156,10 @@ export class KisSessionService {
    */
   public async getStockTrades(input: {
     /**
-     * Company name
+     * Stock name (Korean)
      * @example "카카오"
      */
-    company: string;
+    stockName: string;
   }): Promise<{
     message: string;
     data: Record<string, any>[];
@@ -181,10 +181,10 @@ export class KisSessionService {
    */
   public async getStockDailyPrices(input: {
     /**
-     * Company name
+     * Stock name (Korean)
      * @example "네이버"
      */
-    company: string;
+    stockName: string;
 
     /**
      * Period type (D: Daily, W: Weekly, M: Monthly)

@@ -163,7 +163,7 @@ export class KisController {
   @HttpCode(HttpStatus.OK)
   public async getStockDailyPrices(
     @TypedBody() body: {
-      company: string;
+      stockName: string;
       periodCode?: "D" | "W" | "M";
       adjustPrice?: 0 | 1;
     },
@@ -173,7 +173,7 @@ export class KisController {
     data: Record<string, any>[];
   }> {
     this.logger.log(`=== 주식 일자별 가격 조회 요청 ===`);
-    this.logger.log(`기업명: ${body.company}`);
+    this.logger.log(`종목명: ${body.stockName}`);
     this.logger.log(`기간 구분: ${body.periodCode || 'D'}`);
     this.logger.log(`수정주가: ${body.adjustPrice ?? 1}`);
 
@@ -181,7 +181,7 @@ export class KisController {
       const result = await this.kisService.getStockDailyPrices(
         session.kisSessionData,
         {
-          company: body.company,
+          stockName: body.stockName,
           periodCode: body.periodCode,
           adjustPrice: body.adjustPrice,
         }
