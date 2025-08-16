@@ -2,6 +2,7 @@ import { TypedBody, TypedRoute } from "@nestia/core";
 import { Controller, HttpCode, HttpStatus, Logger, UseGuards } from "@nestjs/common";
 
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
+import { KisService } from "../../providers/kis/KisService";
 import { SessionManager } from "../../providers/session/SessionManager";
 import { MaskingUtil } from "../../utils/MaskingUtil";
 import { IKisAuthRequestDto, IKisAuthResponseDto } from "./dto/KisAuthDto";
@@ -20,6 +21,7 @@ export class KisController {
 
   constructor(
     private readonly kisAuthProvider: KisAuthProvider,
+    private readonly kisService: KisService,
     private readonly sessionManager: SessionManager,
   ) {}
 
@@ -148,6 +150,54 @@ export class KisController {
     }
   }
 
+  /**
+   * 국내 주식 일자별 가격을 조회합니다.
+   *
+   * @summary 주식 일자별 가격 조회
+   * @param body 일자별 가격 조회 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 일자별 가격 데이터
+   */
+  @TypedRoute.Post("daily-prices")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getStockDailyPrices(
+    @TypedBody() body: {
+      company: string;
+      periodCode?: "D" | "W" | "M";
+      adjustPrice?: 0 | 1;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    this.logger.log(`=== 주식 일자별 가격 조회 요청 ===`);
+    this.logger.log(`기업명: ${body.company}`);
+    this.logger.log(`기간 구분: ${body.periodCode || 'D'}`);
+    this.logger.log(`수정주가: ${body.adjustPrice ?? 1}`);
+
+    try {
+      const result = await this.kisService.getStockDailyPrices(
+        session.kisSessionData,
+        {
+          company: body.company,
+          periodCode: body.periodCode,
+          adjustPrice: body.adjustPrice,
+        }
+      );
+
+      this.logger.log(`=== 주식 일자별 가격 조회 성공 ===`);
+      this.logger.log(`조회된 데이터 수: ${result.data.length}개`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 주식 일자별 가격 조회 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      throw error;
+    }
+  }
 
   /**
    * 계좌번호로 계좌 타입을 결정합니다.

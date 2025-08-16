@@ -4,6 +4,7 @@ import KospiOverview from '../StockVisualization/KospiOverview';
 import StockTreemap from '../StockVisualization/Treemap';
 import { useAgenticaRpc } from '../../provider/AgenticaRpcProvider';
 import NewsPanel from '../news/NewsPanel';
+import { TradingTab } from '../trading/TradingTab.tsx';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
@@ -80,51 +81,7 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
         )}
         
         {activeTab === 'trading' && (
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg text-gray-100">매매 기능</h3>
-            <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
-              <h4 className="text-sm font-medium mb-3 text-gray-100">간편 매매</h4>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">
-                    종목 코드/이름
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-zinc-800/50 border border-zinc-600/30 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    placeholder="예: 삼성전자, 005930"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">
-                    수량
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full bg-zinc-800/50 border border-zinc-600/30 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    placeholder="수량 입력"
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <button className="flex-1 bg-green-700/50 hover:bg-green-600/50 text-white py-2 rounded-xl text-sm transition-colors">
-                    매수
-                  </button>
-                  <button className="flex-1 bg-red-700/50 hover:bg-red-600/50 text-white py-2 rounded-xl text-sm transition-colors">
-                    매도
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
-              <h4 className="text-sm font-medium mb-3 text-gray-100">자동 투자</h4>
-              <div className="text-xs text-gray-400 mb-3">
-                AI 기반 자동 매매 전략을 설정하세요
-              </div>
-              <button className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-xl text-sm transition-colors">
-                자동 투자 설정
-              </button>
-            </div>
-          </div>
+          <TradingTab />
         )}
         
         {activeTab === 'ai' && (

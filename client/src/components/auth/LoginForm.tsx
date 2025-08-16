@@ -49,9 +49,9 @@ export const LoginForm: React.FC = () => {
 
   const autoDev = async () => {
     const credentials = {
-      accountNumber: import.meta.env.VITE_DEV_ACCOUNT || import.meta.env.KIS_ACCOUTT_ID || '50145853-01',
-      appKey: import.meta.env.VITE_DEV_APP_KEY || import.meta.env.KIS_APP_KEY || 'PSo5F96NDK5ThwTNoBLIMs5Tc3ogZuF3JoW8',
-      appSecret: import.meta.env.VITE_DEV_APP_SECRET || import.meta.env.KIS_APP_SECRET || 'UkDmef/75Lj7zYN2Ry4VEoQrZzsJxJJp71OsooNCvkSydPHq3JqK4nAIBrmVEgLoG/fsDQ2A+yUnIn6ke1syOJfvSHuJtb2OFlUUl18OZ0bCfQXRTglPHbcTEPIswrTVdLmNzlXmIZle6HHw7XuErrOr0nDjheZ/WdkR7YgqUEilgdGKlG8=',
+      accountNumber: import.meta.env.VITE_KIS_ACCOUNT_ID,
+      appKey: import.meta.env.VITE_KIS_APP_KEY,
+      appSecret: import.meta.env.VITE_KIS_APP_SECRET,
     };
 
     setFormData(credentials);

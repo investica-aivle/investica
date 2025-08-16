@@ -69,7 +69,7 @@ const authSlice = createSlice({
     },
 
     // 로그아웃
-    logout: (state) => {
+    logout: () => {
       return initialState;
     },
 
