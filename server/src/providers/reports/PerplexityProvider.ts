@@ -441,7 +441,7 @@ ${file.content.substring(0, 500)}...
     }
   }
 
-  private readonly tempDir = path.join(__dirname, '..', '..', 'temp_files');
+  private readonly tempDir = path.join(__dirname, '..', '..', '..', 'temp_files');
 
   /**
    * URL에서 PDF를 직접 변환 (file_url 사용)
@@ -467,6 +467,8 @@ ${file.content.substring(0, 500)}...
       console.log(`🔄 URL에서 변환 시작: ${pdfFileName}`);
       console.log(`🌐 다운로드 URL: ${downloadUrl}`);
 
+      //pdf 다운로드 필요
+      //현재 로컬에 다운되어있는 pdf를 찾는중
       const markdownFileName = `${pdfFileName.replace(".pdf", "")}.md`;
       const markdownFilePath = path.join(mdFolderPath, markdownFileName);
 
