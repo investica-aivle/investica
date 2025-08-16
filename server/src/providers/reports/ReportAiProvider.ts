@@ -35,9 +35,9 @@ export class ReportAiProvider {
   }
 
   /**
-   * 최신 마크다운 파일들을 확인
+   * 최신 마크다운 파일들을 가져오기
    */
-  public async checkLatestMarkdownFiles(
+  public async getLatestMarkdownFiles(
     jsonFilePath: string = "./downloads/reports.json",
     limit: number = 5,
     options: {
@@ -89,8 +89,10 @@ export class ReportAiProvider {
     try {
       console.log("summarizeLatestMarkdownFiles");
 
-      const { limitedFiles, fileContents } =
-        await this.checkLatestMarkdownFiles(jsonFilePath, limit);
+      const { limitedFiles, fileContents } = await this.getLatestMarkdownFiles(
+        jsonFilePath,
+        limit,
+      );
 
       if (fileContents.length === 0) {
         return {
