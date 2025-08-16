@@ -37,28 +37,28 @@ function App() {
 
   // 인증된 경우 메인 앱 표시
   return (
-    <AppInitializer>
-      <div className="relative min-h-screen">
-        {/* Shared Background */}
-        <div className="fixed inset-0 bg-gradient-to-br from-zinc-900 via-slate-900 to-neutral-900" />
-        <div className="fixed inset-0 opacity-[0.07] bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px]" />
+    <AgenticaRpcProvider>
+      <AppInitializer>
+        <div className="relative min-h-screen">
+          {/* Shared Background */}
+          <div className="fixed inset-0 bg-gradient-to-br from-zinc-900 via-slate-900 to-neutral-900" />
+          <div className="fixed inset-0 opacity-[0.07] bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px]" />
 
-        {/* Content */}
-        <div className="relative w-full min-h-screen flex flex-col">
-          <Header setShowSideContainer={setShowSideContainer} />
-          <div className="flex flex-1">
-            {showSideContainer &&
-              <div className="hidden lg:flex md:flex-1">
-                <SideContainer setShowSideContainer={setShowSideContainer} />
-              </div>
-            }
-            <AgenticaRpcProvider>
-              <Chat />
-            </AgenticaRpcProvider>
+          {/* Content */}
+          <div className="relative w-full min-h-screen flex flex-col">
+            <Header setShowSideContainer={setShowSideContainer} />
+            <div className="flex flex-1">
+              {showSideContainer &&
+                <div className="hidden lg:flex md:flex-1">
+                  <SideContainer setShowSideContainer={setShowSideContainer} />
+                </div>
+              }
+                <Chat />
+            </div>
           </div>
         </div>
-      </div>
-    </AppInitializer>
+      </AppInitializer>
+    </AgenticaRpcProvider>
   );
 }
 
