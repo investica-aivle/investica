@@ -2,8 +2,9 @@ import { HttpModule } from "@nestjs/axios";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
+import { ReportsController } from "../../controllers/reports/ReportsController";
 import { MiraeAssetReportProvider } from "../../providers/reports/MiraeAssetReportProvider";
-import { PerplexityProvider } from "../../providers/reports/PerplexityProvider";
+import { ReportAiProvider } from "../../providers/reports/ReportAiProvider";
 import { ReportsService } from "../../providers/reports/ReportsService";
 
 /**
@@ -14,7 +15,8 @@ import { ReportsService } from "../../providers/reports/ReportsService";
  */
 @Module({
   imports: [HttpModule, ConfigModule],
-  providers: [MiraeAssetReportProvider, PerplexityProvider, ReportsService],
-  exports: [MiraeAssetReportProvider, PerplexityProvider, ReportsService],
+  providers: [MiraeAssetReportProvider, ReportAiProvider, ReportsService],
+  exports: [MiraeAssetReportProvider, ReportAiProvider, ReportsService],
+  controllers: [ReportsController],
 })
 export class ReportsModule {}

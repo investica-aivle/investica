@@ -2,7 +2,7 @@ import { MiraeAssetReport } from "@models/Reports";
 import { Injectable } from "@nestjs/common";
 
 import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
-import { PerplexityProvider } from "./PerplexityProvider";
+import { ReportAiProvider } from "./ReportAiProvider";
 
 /**
  * Reports Service for Agentica Class Protocol
@@ -20,18 +20,18 @@ import { PerplexityProvider } from "./PerplexityProvider";
 export class ReportsService {
   constructor(
     private readonly miraeAssetReportProvider: MiraeAssetReportProvider,
-    private readonly perplexityProvider: PerplexityProvider,
+    private readonly reportAiProvider: ReportAiProvider,
   ) {}
 
   /**
    * 모든 투자 전략 리포트 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
-  public async syncISReports(): Promise<{
+  private async syncISReports(): Promise<{
     message: string;
     scrapedCount: number;
     convertedCount: number;
-  }>{
+  }> {
     return this.syncReports();
   }
 
@@ -39,11 +39,11 @@ export class ReportsService {
    * 모든 산업 분석 리포트 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
-  public async syncIAReports(): Promise<{
+  private async syncIAReports(): Promise<{
     message: string;
     scrapedCount: number;
     convertedCount: number;
-  }>{
+  }> {
     return this.syncReports(false);
   }
 
@@ -70,7 +70,7 @@ export class ReportsService {
       let convertedCount: number = 0;
       // 2. PDF를 마크다운으로 변환 (URL 기반)
       const conversionResults: { success: boolean; error?: string }[] =
-        await this.perplexityProvider.convertReportsFromJson(
+        await this.reportAiProvider.convertReportsFromJson(
           "./downloads/reports.json",
           "./downloads/markdown",
         );
@@ -121,7 +121,7 @@ export class ReportsService {
       await this.syncReports();
 
       // 최신 마크다운 파일들 요약
-      const result = await this.perplexityProvider.summarizeLatestMarkdownFiles(
+      const result = await this.reportAiProvider.summarizeLatestMarkdownFiles(
         "./downloads/reports.json",
         input.limit || 5,
       );
@@ -148,10 +148,10 @@ export class ReportsService {
    * @param input 검색 조건
    * @returns 증권보고서 리스트
    */
-  public async getSecuritiesISReportList(input:{
+  public async getSecuritiesISReportList(input: {
     keywords?: string[];
     limit?: number;
-  }){
+  }) {
     return this.getSecuritiesReportList(input);
   }
 
@@ -164,13 +164,12 @@ export class ReportsService {
    * @param input 검색 조건
    * @returns 증권보고서 리스트
    */
-  public async getSecuritiesIAReportList(input:{
+  public async getSecuritiesIAReportList(input: {
     keywords?: string[];
     limit?: number;
-  }){
+  }) {
     return this.getSecuritiesReportList(input, false);
   }
-
 
   /**
    * 2) 증권보고서 리스트 제공 (유저용)
@@ -183,21 +182,23 @@ export class ReportsService {
    * @param isISReport true: 투자 전략 보고서, false: 산업 분석 보고서
    * @returns 증권보고서 리스트
    */
-  private async getSecuritiesReportList(input: {
-    /**
-     * 검색할 키워드들 (선택사항)
-     * @example []
-     */
-    keywords?: string[];
+  public async getSecuritiesReportList(
+    input: {
+      /**
+       * 검색할 키워드들 (선택사항)
+       * @example []
+       */
+      keywords?: string[];
 
-    /**
-     * 가져올 보고서 개수 (기본값: 10)
-     * @minimum 1
-     * @maximum 50
-     * @example 10
-     */
-    limit?: number;
-  }, isISReport: boolean = true
+      /**
+       * 가져올 보고서 개수 (기본값: 10)
+       * @minimum 1
+       * @maximum 50
+       * @example 10
+       */
+      limit?: number;
+    },
+    isISReport: boolean = true,
   ): Promise<{
     message: string;
     reports: Array<MiraeAssetReport>;
@@ -206,7 +207,9 @@ export class ReportsService {
     await this.syncReports(isISReport);
 
     // JSON 파일에서 보고서 정보 읽기
-    const jsonFilePath = isISReport ? "./downloads/reports.json" : "./downloads/reports_IA.json";
+    const jsonFilePath = isISReport
+      ? "./downloads/reports.json"
+      : "./downloads/reports_IA.json";
     if (!require("fs").existsSync(jsonFilePath)) {
       return {
         message: "보고서 정보를 찾을 수 없습니다.",
@@ -216,7 +219,7 @@ export class ReportsService {
 
     // JSON에서 마크다운 파일들 가져오기
     const markdownFiles: MiraeAssetReport[] =
-      this.perplexityProvider.getMarkdownFilesFromJson(jsonFilePath);
+      this.reportAiProvider.getMarkdownFilesFromJson(jsonFilePath);
 
     // limit 적용
     const limitedReports: MiraeAssetReport[] = markdownFiles.slice(
@@ -252,7 +255,7 @@ export class ReportsService {
     content: string;
     success: boolean;
     error?: string;
-  }>{
+  }> {
     return this.getSpecificReportContent(input);
   }
 
@@ -278,10 +281,9 @@ export class ReportsService {
     content: string;
     success: boolean;
     error?: string;
-  }>{
+  }> {
     return this.getSpecificReportContent(input, false);
   }
-
 
   /**
    * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
@@ -292,13 +294,14 @@ export class ReportsService {
    * @param isISReport true: 투자 전략 카테고리 보고서, false: 산업 분석 카테고리 보고서
    * @returns 보고서 내용
    */
-  private async getSpecificReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
-    title: string;
-  },
+  public async getSpecificReportContent(
+    input: {
+      /**
+       * 보고서 제목
+       * @example "주식시장 동향 분석"
+       */
+      title: string;
+    },
     isISReport: boolean = true,
   ): Promise<{
     message: string;
@@ -314,7 +317,9 @@ export class ReportsService {
 
     try {
       // JSON 파일에서 보고서 정보 읽기
-      const jsonFilePath = isISReport ? "./downloads/reports.json" : "./downloads/reports_IA.json";
+      const jsonFilePath = isISReport
+        ? "./downloads/reports.json"
+        : "./downloads/reports_IA.json";
       if (!require("fs").existsSync(jsonFilePath)) {
         return {
           message: "보고서 정보를 찾을 수 없습니다.",
@@ -329,7 +334,7 @@ export class ReportsService {
 
       // JSON에서 마크다운 파일들 가져오기
       const markdownFiles: MiraeAssetReport[] =
-        this.perplexityProvider.getMarkdownFilesFromJson(jsonFilePath);
+        this.reportAiProvider.getMarkdownFilesFromJson(jsonFilePath);
 
       // 제목으로 보고서 찾기
       const targetReport: MiraeAssetReport | undefined = markdownFiles.find(
@@ -382,91 +387,4 @@ export class ReportsService {
       };
     }
   }
-
-  /**
-   * 동기화 강제 실행 (관리자용)
-   *
-   * 수동으로 동기화를 실행할 때 사용합니다.
-   *
-   * @param input 동기화 조건
-   * @returns 동기화 결과
-   */
-  public async forceSyncReports(input: {
-    /**
-     * 검색할 키워드들 (기본값: ["주식시장", "증권시장", "시장동향", "주식분석", "증권", "분석", "리포트", "보고서"])
-     * @example ["증권", "주식시장"]
-     */
-    keywords?: string[];
-  }): Promise<{
-    message: string;
-    scrapedCount: number;
-    convertedCount: number;
-  }> {
-    try {
-      console.log("🔄 강제 동기화 시작");
-
-      // 1. 최신 보고서 스크래핑 및 데이터 저장
-      const scrapeResult =
-        await this.miraeAssetReportProvider.scrapeAndSaveData(
-          "./downloads",
-          true, // 동기화 활성화
-          true, //투자 전략 보고서
-          input.keywords || [], // 키워드가 없으면 모든 보고서
-        );
-      await this.miraeAssetReportProvider.scrapeAndSaveData(
-        "./downloads",
-        true, // 동기화 활성화
-        false, //산업 분석 보고서
-        input.keywords || [], // 키워드가 없으면 모든 보고서
-      );
-
-      let convertedCount: number = 0;
-      if (scrapeResult.reports.length > 0) {
-        // 2. PDF를 마크다운으로 변환
-        const conversionResults: { success: boolean; error?: string }[] =
-          await this.perplexityProvider.convertReportsFromJson(
-            "./downloads/reports.json",
-            "./downloads/markdown",
-          );
-
-        convertedCount = conversionResults.filter((r) => r.success).length;
-      }
-
-      return {
-        message: `동기화 완료: ${scrapeResult.reports.length}개 스크래핑, ${convertedCount}개 변환`,
-        scrapedCount: scrapeResult.reports.length,
-        convertedCount,
-      };
-    } catch (error) {
-      throw new Error(
-        `동기화 중 오류: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
-  // /**
-  //  * 보고서에서 파일명 추출 (내부용)
-  //  */
-  // private extractFileNameFromReport(report: MiraeAssetReport): string {
-  //   // attachmentId 추출
-  //   const urlParams = new URLSearchParams(
-  //     report.downloadUrl.split("?")[1] || "",
-  //   );
-  //   const attachmentId = urlParams.get("attachmentId") || "unknown";
-
-  //   // 날짜를 yyyymmdd 형식으로 변환
-  //   const dateObj = new Date(report.date);
-  //   const formattedDate =
-  //     dateObj.getFullYear().toString() +
-  //     (dateObj.getMonth() + 1).toString().padStart(2, "0") +
-  //     dateObj.getDate().toString().padStart(2, "0");
-
-  //   // 제목에서 특수문자 제거 및 공백을 언더스코어로 변경
-  //   const cleanTitle = report.title
-  //     .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
-  //     .replace(/\s+/g, "_") // 공백을 언더스코어로 변경
-  //     .substring(0, 50); // 길이 제한
-
-  //   return `${formattedDate}_${cleanTitle}_${attachmentId}`;
-  // }
 }
