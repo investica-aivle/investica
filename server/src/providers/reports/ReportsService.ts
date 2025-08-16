@@ -24,30 +24,6 @@ export class ReportsService {
   ) {}
 
   /**
-   * 모든 투자 전략 리포트 요청 전에 실행되는 동기화 메서드
-   * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
-   */
-  private async syncISReports(): Promise<{
-    message: string;
-    scrapedCount: number;
-    convertedCount: number;
-  }> {
-    return this.syncReports();
-  }
-
-  /**
-   * 모든 산업 분석 리포트 요청 전에 실행되는 동기화 메서드
-   * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
-   */
-  private async syncIAReports(): Promise<{
-    message: string;
-    scrapedCount: number;
-    convertedCount: number;
-  }> {
-    return this.syncReports(false);
-  }
-
-  /**
    * 모든 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
@@ -59,27 +35,43 @@ export class ReportsService {
     try {
       console.log("🔄 보고서 동기화 시작");
 
-      // 1. 최신 보고서 스크래핑 및 데이터 저장
-      const scrapeResult =
-        await this.miraeAssetReportProvider.scrapeAndSaveData(
+      // JSON 파일 업데이트 시간 확인하여 스크래핑 필요 여부 판단
+      const shouldScrape = this.miraeAssetReportProvider.shouldScrapeReports(
+        isISReports,
+        6, // 6시간 임계값
+      );
+
+      let scrapeResult: { reports: any[] } = { reports: [] };
+
+      if (shouldScrape) {
+        // 1. 최신 보고서 스크래핑 및 데이터 저장
+        scrapeResult = await this.miraeAssetReportProvider.scrapeAndSaveData(
           "./downloads",
           true, // 동기화 활성화
           isISReports,
         );
+      }
 
       let convertedCount: number = 0;
       // 2. PDF를 마크다운으로 변환 (URL 기반)
+      const jsonFilePath = isISReports
+        ? "./downloads/reports.json"
+        : "./downloads/reports_IA.json";
       const conversionResults: { success: boolean; error?: string }[] =
         await this.reportAiProvider.convertReportsFromJson(
-          "./downloads/reports.json",
+          jsonFilePath,
           "./downloads/markdown",
         );
 
       convertedCount = conversionResults.filter((r) => r.success).length;
 
+      const syncMessage = shouldScrape
+        ? `동기화 완료: ${scrapeResult.reports.length}개 스크래핑, ${convertedCount}개 변환`
+        : `동기화 완료: 스크래핑 건너뛰기, ${convertedCount}개 변환`;
+
       return {
-        message: `동기화 완료: ${scrapeResult.reports.length}개 스크래핑, ${convertedCount}개 변환`,
-        scrapedCount: scrapeResult.reports.length,
+        message: syncMessage,
+        scrapedCount: shouldScrape ? scrapeResult.reports.length : 0,
         convertedCount,
       };
     } catch (error) {
