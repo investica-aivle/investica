@@ -14,6 +14,7 @@
     "@agentica/rpc": "^0.30.5",
     "@tailwindcss/vite": "^4.1.11",
     "@types/prismjs": "^1.26.5",
+    "axios": "^1.11.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^0.539.0",
     "prismjs": "^1.30.0",
