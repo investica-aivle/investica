@@ -1,5 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import PdfConversionResult, {
+  Keyword,
+  KeywordCacheData,
+  KeywordSummaryResult,
   MiraeAssetReport,
   ReportsJsonData,
 } from "@models/Reports";
@@ -122,6 +125,62 @@ export class ReportAiProvider {
       return {
         message: `요약 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`,
         summary: "",
+        referencedFiles: [],
+      };
+    }
+  }
+
+  /**
+   * 키워드 기반 짧은 요약 생성
+   */
+  public async generateKeywordSummary(
+    jsonFilePath: string = "./downloads/reports.json",
+    limit: number = 5,
+  ): Promise<KeywordSummaryResult> {
+    try {
+      console.log("generateKeywordSummary");
+
+      const { limitedFiles, fileContents } = await this.getLatestMarkdownFiles(
+        jsonFilePath,
+        limit,
+        { contentLengthLimit: 3000, shouldLimitLength: true },
+      );
+
+      if (fileContents.length === 0) {
+        return {
+          message: "마크다운 파일이 없습니다.",
+          keywords: [],
+          referencedFiles: [],
+        };
+      }
+
+      // 캐시 확인
+      const cacheResult = this.checkKeywordCache(limitedFiles);
+      if (cacheResult.isValid) {
+        console.log("✅ 캐시된 키워드 요약 사용");
+        return {
+          message: `${fileContents.length}개의 최신 마크다운 파일에서 키워드를 추출했습니다. (캐시됨)`,
+          keywords: cacheResult.keywords,
+          referencedFiles: limitedFiles,
+        };
+      }
+
+      // AI 키워드 요약 요청
+      const keywordData = await this.requestAIKeywordSummary(fileContents);
+
+      // 캐시 저장
+      await this.saveKeywordCache(keywordData, limitedFiles);
+
+      return {
+        message: `${fileContents.length}개의 최신 마크다운 파일에서 키워드를 추출했습니다.`,
+        keywords: keywordData,
+        referencedFiles: limitedFiles,
+      };
+    } catch (error) {
+      console.error("Error generating keyword summary:", error);
+      return {
+        message: `키워드 요약 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`,
+        keywords: [],
         referencedFiles: [],
       };
     }
@@ -284,6 +343,24 @@ export class ReportAiProvider {
   }
 
   /**
+   * AI 키워드 요약 요청
+   */
+  private async requestAIKeywordSummary(
+    fileContents: Array<{
+      fileName: string;
+      content: string;
+    }>,
+  ) {
+    const keywordPrompt = this.createKeywordPrompt(fileContents);
+    const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(keywordPrompt);
+    const response = await result.response;
+    const responseText = response.text();
+
+    return this.parseKeywordResponse(responseText);
+  }
+
+  /**
    * 요약 프롬프트 생성
    */
   private createSummaryPrompt(
@@ -310,6 +387,190 @@ ${file.content.substring(0, 500)}...
 4. 향후 전망
 
 간결하고 명확하게 요약해주세요.`;
+  }
+
+  /**
+   * 키워드 요약 프롬프트 생성
+   */
+  private createKeywordPrompt(
+    fileContents: Array<{
+      fileName: string;
+      content: string;
+    }>,
+  ) {
+    const formatInstructions = this.getKeywordFormatInstructions();
+
+    return `다음 ${fileContents.length}개의 최신 증권보고서들에서 주식시장에 영향을 줄 핵심 키워드를 추출해줘:
+
+${fileContents
+  .map(
+    (file, index) => `
+**${index + 1}. ${file.fileName}**
+${file.content.substring(0, 500)}...
+`,
+  )
+  .join("\n")}
+
+위 보고서들에서 주식시장에 직접적인 영향을 줄 수 있는 핵심 키워드 3-8개를 추출해주세요.
+
+${formatInstructions}
+
+각 키워드는 구체적이고 임팩트 있는 것들로 추출해주세요.`;
+  }
+
+  /**
+   * 키워드 응답 파싱
+   */
+  private parseKeywordResponse(responseText: string): Keyword[] {
+    try {
+      // JSON 블록 추출
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (!jsonMatch) {
+        console.warn(
+          "JSON 블록을 찾을 수 없습니다. 전체 텍스트에서 JSON 추출 시도...",
+        );
+        // JSON 블록이 없으면 전체 텍스트에서 JSON 배열 찾기
+        const arrayMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (!arrayMatch) {
+          console.error("유효한 JSON 배열을 찾을 수 없습니다.");
+          return [];
+        }
+        const jsonStr = arrayMatch[0];
+        const parsed = JSON.parse(jsonStr);
+        return this.validateKeywordArray(parsed);
+      }
+
+      const jsonStr = jsonMatch[1];
+      const parsed = JSON.parse(jsonStr);
+      return this.validateKeywordArray(parsed);
+    } catch (error) {
+      console.error("키워드 응답 파싱 실패:", error);
+      return [];
+    }
+  }
+
+  /**
+   * 키워드 배열 검증
+   */
+  private validateKeywordArray(parsed: any): Keyword[] {
+    if (!Array.isArray(parsed)) {
+      console.error("파싱된 데이터가 배열이 아닙니다.");
+      return [];
+    }
+
+    return parsed
+      .filter((item) => {
+        return (
+          item &&
+          typeof item === "object" &&
+          typeof item.icon === "string" &&
+          typeof item.keyword === "string" &&
+          typeof item.description === "string" &&
+          ["positive", "negative", "neutral"].includes(item.impact)
+        );
+      })
+      .map((item) => ({
+        icon: item.icon,
+        keyword: item.keyword,
+        description: item.description,
+        impact: item.impact as "positive" | "negative" | "neutral",
+      }));
+  }
+
+  /**
+   * 키워드 캐시 확인
+   */
+  private checkKeywordCache(files: MiraeAssetReport[]): {
+    isValid: boolean;
+    keywords: Keyword[];
+  } {
+    try {
+      const cachePath = "./downloads/summary/keyword_cache.json";
+
+      if (!fs.existsSync(cachePath)) {
+        return { isValid: false, keywords: [] };
+      }
+
+      const cacheContent = fs.readFileSync(cachePath, "utf8");
+      const cache = JSON.parse(cacheContent);
+
+      // 현재 파일 ID들
+      const currentFileIds = files.map((f) => f.id);
+
+      // 캐시된 파일 ID들
+      const cachedFileIds = cache.referencedFiles.map((f: any) => f.id);
+
+      // 현재 파일들이 모두 캐시에 포함되어 있는지 확인
+      const allFilesInCache = currentFileIds.every((id) =>
+        cachedFileIds.includes(id),
+      );
+
+      if (!allFilesInCache) {
+        console.log("🔄 새로운 파일이 포함되어 있어 캐시 무효화");
+        return { isValid: false, keywords: [] };
+      }
+
+      console.log("✅ 모든 파일이 캐시에 포함되어 있어 캐시 사용");
+      return { isValid: true, keywords: cache.keywords };
+    } catch (error) {
+      console.error("캐시 확인 중 오류:", error);
+      return { isValid: false, keywords: [] };
+    }
+  }
+
+  /**
+   * 키워드 캐시 저장
+   */
+  private async saveKeywordCache(
+    keywords: Keyword[],
+    files: MiraeAssetReport[],
+  ): Promise<void> {
+    try {
+      const summaryDir = "./downloads/summary";
+      const cachePath = `${summaryDir}/keyword_cache.json`;
+
+      // summary 디렉토리 생성
+      if (!fs.existsSync(summaryDir)) {
+        fs.mkdirSync(summaryDir, { recursive: true });
+        console.log(`📁 요약 디렉토리 생성: ${summaryDir}`);
+      }
+
+      // 기존 캐시 읽기 (있다면)
+      let existingCache: KeywordCacheData = {
+        keywords: [],
+        referencedFiles: [],
+        updatedAt: "",
+      };
+      if (fs.existsSync(cachePath)) {
+        try {
+          const cacheContent = fs.readFileSync(cachePath, "utf8");
+          existingCache = JSON.parse(cacheContent);
+        } catch (error) {
+          console.warn("기존 캐시 읽기 실패, 새로 생성합니다.");
+        }
+      }
+
+      // 기존 파일들과 새 파일들 병합 (중복 제거)
+      const existingFileIds = new Set(
+        existingCache.referencedFiles.map((f: any) => f.id),
+      );
+      const newFiles = files.filter((f) => !existingFileIds.has(f.id));
+
+      const allFiles = [...existingCache.referencedFiles, ...newFiles];
+
+      const cacheData: KeywordCacheData = {
+        keywords,
+        referencedFiles: allFiles,
+        updatedAt: new Date().toISOString().split("T")[0],
+      };
+
+      fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), "utf8");
+      console.log(
+        `💾 키워드 캐시 저장 완료: ${cachePath} (총 ${allFiles.length}개 파일)`,
+      );
+    } catch (error) {
+      console.error("캐시 저장 중 오류:", error);
+    }
   }
 
   /**
@@ -366,20 +627,44 @@ ${file.content.substring(0, 500)}...
   }
 
   /**
-   * 파일명에서 제목 추출 (yyyymmdd_title_id 형식)
+   * 키워드 스키마의 format_instructions 생성 (Pydantic parser와 유사)
    */
-  private extractTitleFromFileName(fileName: string): string {
-    try {
-      // yyyymmdd_title_id.md 형식에서 제목 부분 추출
-      const match = fileName.match(/^\d{8}_(.+?)_\d+\.md$/);
-      if (match) {
-        return match[1].replace(/_/g, " "); // 언더스코어를 공백으로 변경
+  private getKeywordFormatInstructions(): string {
+    return `The output should be formatted as a JSON array that conforms to the following schema:
+
+{
+  "type": "array",
+  "items": {
+    "type": "object", 
+    "properties": {
+      "icon": { "type": "string", "description": "적절한 이모지 아이콘" },
+      "keyword": { "type": "string", "description": "주식시장에 영향을 주는 핵심 키워드" },
+      "description": { "type": "string", "description": "키워드에 대한 한두 줄 설명" },
+      "impact": { 
+        "type": "string", 
+        "enum": ["positive", "negative", "neutral"],
+        "description": "키워드가 주식시장에 미치는 영향"
       }
-      return fileName.replace(".md", ""); // 매치되지 않으면 확장자만 제거
-    } catch (error) {
-      console.error(`Error extracting title from filename ${fileName}:`, error);
-      return fileName;
-    }
+    },
+    "required": ["icon", "keyword", "description", "impact"]
+  }
+}
+
+Example output:
+[
+  {
+    "icon": "🚨",
+    "keyword": "트럼프 관세 35% 선언",
+    "description": "미국 대선 후보 트럼프가 중국산 수입품에 35% 관세 부과를 선언하여 무역 긴장 고조",
+    "impact": "negative"
+  },
+  {
+    "icon": "📈",
+    "keyword": "반도체 수요 급증", 
+    "description": "AI 서버 수요 증가로 인한 메모리 반도체 가격 상승 전망",
+    "impact": "positive"
+  }
+]`;
   }
 
   private readonly tempDir = path.join(__dirname, "..", "..", "temp_files");

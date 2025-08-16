@@ -1,6 +1,9 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 
-import type { MiraeAssetReport } from "../../models/Reports";
+import type {
+  KeywordSummaryResult,
+  MiraeAssetReport,
+} from "../../models/Reports";
 import { ReportAiProvider } from "../../providers/reports/ReportAiProvider";
 import { ReportsService } from "../../providers/reports/ReportsService";
 
@@ -41,6 +44,19 @@ export class ReportsController {
     return await this.reportsService.getRecentMarketSummary({
       limit: limit || 5,
     });
+  }
+
+  /**
+   * 키워드 기반 짧은 요약
+   */
+  @Get("keywords")
+  async getKeywordSummary(
+    @Query("limit") limit?: number,
+  ): Promise<KeywordSummaryResult> {
+    return await this.reportAiProvider.generateKeywordSummary(
+      "./downloads/reports.json",
+      limit || 5,
+    );
   }
 
   /**

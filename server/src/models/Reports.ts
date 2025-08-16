@@ -33,6 +33,34 @@ export interface ReportsJsonData {
   reports: MiraeAssetReport[];
 }
 
+/**
+ * 키워드 정보
+ */
+export interface Keyword {
+  icon: string;
+  keyword: string;
+  description: string;
+  impact: "positive" | "negative" | "neutral";
+}
+
+/**
+ * 키워드 캐시 데이터
+ */
+export interface KeywordCacheData {
+  keywords: Keyword[];
+  referencedFiles: MiraeAssetReport[];
+  updatedAt: string;
+}
+
+/**
+ * 키워드 요약 결과
+ */
+export interface KeywordSummaryResult {
+  message: string;
+  keywords: Keyword[];
+  referencedFiles: MiraeAssetReport[];
+}
+
 // 사용하지 않는 모델들 (주석 처리)
 /*
 export interface ReportSearchInput {
