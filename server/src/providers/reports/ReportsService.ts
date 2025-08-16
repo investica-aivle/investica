@@ -69,9 +69,11 @@ export class ReportsService {
 
       let convertedCount: number = 0;
       // 2. PDF를 마크다운으로 변환 (URL 기반)
+      const jsonPath = isISReports ? "./downloads/reports.json" : "./downloads/reports_IA.json";
+
       const conversionResults: { success: boolean; error?: string }[] =
         await this.perplexityProvider.convertReportsFromJson(
-          "./downloads/reports.json",
+          jsonPath,
           "./downloads/markdown",
         );
 
