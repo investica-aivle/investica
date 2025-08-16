@@ -28,20 +28,12 @@ export class StocksOverviewController {
   /**
    * 상위 시가총액 기업의 주식 정보 조회
    */
-  @Get("top-market-cap")
+  @Get("top")
   async getTopMarketCapStocks(
     @Query("limit") limit?: number,
   ): Promise<StocksOverviewResponse> {
     const limitNumber = limit ? parseInt(limit.toString()) : 10;
     return await this.stocksOverviewProvider.getTopMarketCapStocks(limitNumber);
-  }
-
-  /**
-   * 상위 10개 시가총액 기업의 주식 정보 조회 (기본값)
-   */
-  @Get()
-  async getDefaultTopMarketCapStocks(): Promise<StocksOverviewResponse> {
-    return await this.stocksOverviewProvider.getTopMarketCapStocks(10);
   }
 
   /**

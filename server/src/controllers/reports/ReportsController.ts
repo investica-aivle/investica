@@ -49,7 +49,7 @@ export class ReportsController {
   /**
    * 키워드 기반 짧은 요약
    */
-  @Get("keywords")
+  @Get("summary/keyword")
   async getKeywordSummary(
     @Query("limit") limit?: number,
   ): Promise<KeywordSummaryResult> {

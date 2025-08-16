@@ -7,11 +7,12 @@ interface TopMarketCapStock {
   rank: number;
   stockCode: string;
   stockName: string;
-  marketCap: number; // 시가총액 (단위: 백만원)
+  marketCap: number; // 시가총액
   changeRate: number; // 전일대비등락율 (%)
   currentPrice: number; // 현재가
   changeAmount: number; // 전일대비
   marketCategory: string; // 시장구분
+  date: string; // 기준일자 (yyyymmdd)
 }
 
 @Injectable()
@@ -44,29 +45,91 @@ export class StocksOverviewProvider {
     try {
       console.log("🔄 상위 시가총액 주식 정보 조회 시작");
 
-      // 공공데이터포털 API 호출 - 시가총액 30,000,000 이상, 코스피 시장만
+      // 7일 전 날짜를 yyyymmdd 형식으로 생성
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+
+      const beginBasDt =
+        sevenDaysAgo.getFullYear().toString() +
+        (sevenDaysAgo.getMonth() + 1).toString().padStart(2, "0") +
+        sevenDaysAgo.getDate().toString().padStart(2, "0");
+
+      console.log(`📅 7일 전 날짜: ${beginBasDt}`);
+
+      // 공공데이터포털 API 호출 - 7일 전부터 데이터 요청
       const response = await firstValueFrom(
         this.httpService.get<StockPriceResponse>(this.baseUrl, {
           params: {
             serviceKey: this.serviceKey,
-            numOfRows: 100, // 충분한 데이터 가져오기
+            numOfRows: 200, // 더 많은 데이터 가져오기
             pageNo: 1,
             resultType: "json",
-            beginMrktTotAmt: "30000000", // 시가총액 30,000,000 이상
+            beginBasDt: beginBasDt, // 7일 전부터
+            beginMrktTotAmt: "20000000000000", // 시가총액 30,000,000 이상
             mrktCtg: "KOSPI", // 코스피 시장만
           },
         }),
       );
+      console.log(
+        response?.data,
+        response?.data?.response?.body?.items?.item?.length ?? "0" + "개",
+      );
 
-      if (response.data.header.resultCode !== "00") {
-        throw new Error(`API 호출 실패: ${response.data.header.resultMsg}`);
+      console.log(JSON.stringify(response.data, null, 2));
+      // 응답 구조 확인 및 에러 처리 개선
+      if (
+        !response.data ||
+        !response.data.response ||
+        !response.data.response.header
+      ) {
+        throw new Error("API 응답 구조가 올바르지 않습니다.");
       }
 
-      const stocks = response.data.body.items.item;
+      if (response.data.response.header.resultCode !== "00") {
+        throw new Error(
+          `API 호출 실패: ${response.data.response.header.resultMsg || "알 수 없는 오류"}`,
+        );
+      }
+
+      // 응답 데이터 구조 확인
+      if (!response.data.response.body || !response.data.response.body.items) {
+        throw new Error("주식 데이터가 없습니다.");
+      }
+
+      const stocks = response.data.response.body.items.item;
+      if (!stocks || !Array.isArray(stocks)) {
+        throw new Error("주식 데이터 형식이 올바르지 않습니다.");
+      }
+
       console.log(`📊 총 ${stocks.length}개 종목 데이터 수신`);
 
+      // 가장 최근 날짜 찾기
+      const latestDate = stocks.reduce(
+        (latest: string, stock: StockPriceInfo) => {
+          return stock.basDt > latest ? stock.basDt : latest;
+        },
+        stocks[0]?.basDt || "",
+      );
+
+      console.log(`📅 가장 최근 날짜: ${latestDate}`);
+
+      // 가장 최근 날짜의 데이터만 필터링
+      const latestStocks = stocks.filter(
+        (stock: StockPriceInfo) => stock.basDt === latestDate,
+      );
+      console.log(`📊 최근 날짜 데이터: ${latestStocks.length}개 종목`);
+
+      // 첫 번째 종목의 등락 정보 확인
+      if (latestStocks.length > 0) {
+        const firstStock = latestStocks[0];
+        console.log(
+          `📈 샘플 데이터 - ${firstStock.itmsNm}: 등락율=${firstStock.fltRt}%, 대비=${firstStock.vs}`,
+        );
+      }
+
       // 시가총액 내림차순 정렬 후 상위 10개 선택
-      const filteredStocks = stocks
+      const filteredStocks = latestStocks
         .sort((a: StockPriceInfo, b: StockPriceInfo) => {
           // 시가총액 내림차순 정렬
           return b.mrktTotAmt - a.mrktTotAmt;
@@ -76,11 +139,12 @@ export class StocksOverviewProvider {
           rank: index + 1,
           stockCode: stock.srtnCd,
           stockName: stock.itmsNm,
-          marketCap: stock.mrktTotAmt / 1000000, // 백만원 단위로 변환
+          marketCap: stock.mrktTotAmt,
           changeRate: stock.fltRt,
-          currentPrice: parseInt(stock.clpr),
+          currentPrice: parseFloat(stock.clpr),
           changeAmount: stock.vs,
           marketCategory: stock.mrktCtg,
+          date: stock.basDt,
         }));
 
       console.log(
@@ -122,16 +186,18 @@ interface StockPriceInfo {
 }
 
 interface StockPriceResponse {
-  header: {
-    resultCode: string;
-    resultMsg: string;
-  };
-  body: {
-    numOfRows: string;
-    pageNo: string;
-    items: {
-      item: StockPriceInfo[];
+  response: {
+    header: {
+      resultCode: string;
+      resultMsg: string;
     };
-    totalCount: string;
+    body: {
+      numOfRows: string;
+      pageNo: string;
+      items: {
+        item: StockPriceInfo[];
+      };
+      totalCount: string;
+    };
   };
 }
