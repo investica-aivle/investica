@@ -1,7 +1,6 @@
 import { BrainIcon, DollarSignIcon, NewspaperIcon, PieChartIcon, TrendingUpIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import KospiOverview from '../StockVisualization/KospiOverview';
-import StockTreemap from '../StockVisualization/Treemap';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
@@ -50,7 +49,6 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
         {activeTab === 'portfolio' && (
           <div className="space-y-4">
             <h3 className="font-medium text-lg text-gray-100">내 포트폴리오</h3>
-            <StockTreemap />
             <div className="mt-6 bg-zinc-700/30 rounded-2xl p-4 backdrop-blur-md">
               <h4 className="font-medium mb-2 text-gray-100">포트폴리오 요약</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
