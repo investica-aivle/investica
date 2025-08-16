@@ -7,7 +7,7 @@ import NewsPanel from '../news/NewsPanel';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
-  const { news, conversate, isConnected } = useAgenticaRpc();
+  const { news, isConnected } = useAgenticaRpc();
   const onClose = () => {
     setShowSideContainer(false);
   };

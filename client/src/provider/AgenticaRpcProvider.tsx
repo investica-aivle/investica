@@ -1,5 +1,5 @@
 import { IAgenticaEventJson } from "@agentica/core";
-import { IAgenticaRpcListener, IAgenticaRpcService } from "@agentica/rpc";
+import { IAgenticaRpcService } from "@agentica/rpc";
 import {
   createContext,
   PropsWithChildren,
@@ -61,11 +61,11 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
 
       const connector: WebSocketConnector<
         IWebSocketHeaders,
-        IAgenticaRpcListener,
+        IClientEvents,
         IAgenticaRpcService<"chatgpt">
       > = new WebSocketConnector<
         IWebSocketHeaders,
-        IAgenticaRpcListener,
+        IClientEvents,
         IAgenticaRpcService<"chatgpt">
       >({ sessionKey }, {
         assistantMessage: pushMessage,
