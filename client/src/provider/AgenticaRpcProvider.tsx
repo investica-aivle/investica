@@ -9,9 +9,10 @@ import {
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
-import { IClientEvents } from "../types/agentica";
+import { IClientEvents, StockInfo } from "../types/agentica";
 import { NewsItem, NewsPushPayload } from "../types/news";
-import { useAppSelector, selectSessionKey } from "../store/hooks";
+import { useAppSelector, useAppDispatch, selectSessionKey } from "../store/hooks";
+import { setTargetStock } from "../store/slices/tradingSlice";
 
 export interface IWebSocketHeaders {
   sessionKey: string;
@@ -40,6 +41,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [driver, setDriver] = useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
 
   const sessionKey = useAppSelector(selectSessionKey);
+  const dispatch = useAppDispatch();
 
   const [newsCompany, setNewsCompany] = useState("");
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
@@ -76,6 +78,10 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
           setNewsItems(payload.items ?? []);
           setNewsFetchedAt(payload.fetchedAt);
           setHasFirstPush(true);
+        },
+        onStockFocus: (payload: StockInfo) => {
+          console.log('주식 포커스 변경:', payload);
+          dispatch(setTargetStock(payload));
         }
       });
 
@@ -90,7 +96,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     } finally {
       setIsConnecting(false);
     }
-  }, [pushMessage]);
+  }, [pushMessage, dispatch]);
 
   // 세션키가 있으면 자동으로 연결 시도
   useEffect(() => {
