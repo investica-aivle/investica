@@ -153,11 +153,11 @@ export class StockCodeService implements OnModuleInit {
   }
 
   private createStockFromParsedData(shortCode: string, standardCode: string, name: string, market: string): StockInfo | null {
-    // 단축코드에서 종목코드 추출 (숫자만)
-    const code = shortCode.replace(/[^\d]/g, '').padStart(6, '0');
+    // 단축코드에서 종목코드 추출 (공백 제거만)
+    const code = shortCode.trim();
 
-    // 종목코드 유효성 검사
-    if (!code || !/^\d{6}$/.test(code)) {
+    // 종목코드 유효성 검사 - 비어있지 않으면 OK
+    if (!code) {
       return null;
     }
 
