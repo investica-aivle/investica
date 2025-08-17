@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SessionManager } from '../../utils/sessionManager';
 import { StockSearchInput } from './StockSearchInput';
+import { StockInfo } from '../../types/agentica';
 
 interface TargetStock {
   symbol: string;
@@ -9,8 +10,8 @@ interface TargetStock {
 }
 
 interface PriceSectionProps {
-  targetStock: TargetStock | null;
-  onStockSelect: (stock: TargetStock) => void;
+  targetStock: StockInfo | null;
+  onStockSelect: (stock: StockInfo) => void;
 }
 
 interface ChartData {
@@ -18,7 +19,7 @@ interface ChartData {
   price: number;
 }
 
-interface StockInfo {
+interface LocalStockInfo {
   currentPrice: number;
   change: number;
   changePercent: number;
@@ -27,7 +28,7 @@ interface StockInfo {
 export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) {
   const [searchValue, setSearchValue] = useState('');
   const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [stockInfo, setStockInfo] = useState<StockInfo | null>(null);
+  const [stockInfo, setStockInfo] = useState<LocalStockInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [periodCode, setPeriodCode] = useState<'D' | 'W' | 'M'>('D');
 
@@ -42,7 +43,11 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
   // 컴포넌트 초기 로드 시 기본 주식(삼성전자) 설정
   useEffect(() => {
     if (!targetStock) {
-      const defaultStock = { symbol: '005930', name: '삼성전자' };
+      const defaultStock: StockInfo = {
+        code: '005930',
+        name: '삼성전자',
+        market: 'KOSPI'
+      };
       onStockSelect(defaultStock);
       setSearchValue(defaultStock.name);
     }
@@ -128,16 +133,22 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
   };
 
   const handleStockButtonClick = (stock: TargetStock) => {
-    onStockSelect(stock);
+    const stockInfo: StockInfo = {
+      code: stock.symbol,
+      name: stock.name,
+      market: 'KOSPI' // 기본값으로 KOSPI 설정
+    };
+    onStockSelect(stockInfo);
     setSearchValue(stock.name);
   };
 
   const handleStockSearch = (selectedStock: { code: string; name: string }) => {
-    const stock: TargetStock = {
-      symbol: selectedStock.code,
-      name: selectedStock.name
+    const stockInfo: StockInfo = {
+      code: selectedStock.code,
+      name: selectedStock.name,
+      market: 'KOSPI' // 기본값으로 KOSPI 설정
     };
-    onStockSelect(stock);
+    onStockSelect(stockInfo);
   };
 
   const handleSearchButtonClick = () => {
@@ -147,9 +158,19 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
       );
 
       if (foundStock) {
-        onStockSelect(foundStock);
+        const stockInfo: StockInfo = {
+          code: foundStock.symbol,
+          name: foundStock.name,
+          market: 'KOSPI' // 기본값으로 KOSPI 설정
+        };
+        onStockSelect(stockInfo);
       } else {
-        onStockSelect({ symbol: '', name: searchValue });
+        const stockInfo: StockInfo = {
+          code: '',
+          name: searchValue,
+          market: 'KOSPI' // 기본값으로 KOSPI 설정
+        };
+        onStockSelect(stockInfo);
       }
     }
   };
@@ -211,7 +232,7 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
               key={stock.symbol}
               onClick={() => handleStockButtonClick(stock)}
               className={`px-3 py-1 rounded-lg text-xs transition-colors ${
-                targetStock?.symbol === stock.symbol
+                targetStock?.code === stock.symbol
                   ? 'bg-blue-600/50 text-white'
                   : 'bg-zinc-800/50 text-gray-400 hover:bg-zinc-800/70'
               }`}
@@ -226,7 +247,7 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
           <div className="bg-zinc-800/30 rounded-xl p-3">
             <div className="flex justify-between items-center">
               <h5 className="text-sm font-medium text-gray-100">
-                {targetStock.name} {targetStock.symbol && `(${targetStock.symbol})`}
+                {targetStock.name} {targetStock.code && `(${targetStock.code})`}
               </h5>
               <div className="flex items-center space-x-4">
                 <span className="text-lg font-bold text-white">

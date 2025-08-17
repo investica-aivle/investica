@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
 import { SessionManager } from '../../utils/sessionManager';
 import { OrderConfirmation } from './OrderConfirmation';
-
-interface TargetStock {
-  symbol: string;
-  name: string;
-}
+import { StockInfo } from '../../types/agentica';
 
 interface TradingSectionProps {
-  targetStock: TargetStock | null;
+  targetStock: StockInfo | null;
 }
 
 export function TradingSection({ targetStock }: TradingSectionProps) {

@@ -1,17 +1,15 @@
-import { useState } from 'react';
 import { TradingSection } from './TradingSection';
 import { PriceSection } from './PriceSection';
-
-interface TargetStock {
-  symbol: string;
-  name: string;
-}
+import { useAppSelector, useAppDispatch, selectTargetStock } from '../../store/hooks';
+import { setTargetStock } from '../../store/slices/tradingSlice';
+import { StockInfo } from '../../types/agentica';
 
 export function TradingTab() {
-  const [targetStock, setTargetStock] = useState<TargetStock | null>(null);
+  const targetStock = useAppSelector(selectTargetStock);
+  const dispatch = useAppDispatch();
 
-  const handleStockSelect = (stock: TargetStock) => {
-    setTargetStock(stock);
+  const handleStockSelect = (stock: StockInfo) => {
+    dispatch(setTargetStock(stock));
   };
 
   return (
