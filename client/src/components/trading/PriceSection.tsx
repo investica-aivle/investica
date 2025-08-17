@@ -39,6 +39,15 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
     { symbol: '051910', name: 'LG화학' },
   ];
 
+  // 컴포넌트 초기 로드 시 기본 주식(삼성전자) 설정
+  useEffect(() => {
+    if (!targetStock) {
+      const defaultStock = { symbol: '005930', name: '삼성전자' };
+      onStockSelect(defaultStock);
+      setSearchValue(defaultStock.name);
+    }
+  }, []);
+
   // 타겟 주식이나 기간이 변경될 때 차트 데이터 로드
   useEffect(() => {
     if (targetStock) {
