@@ -95,7 +95,7 @@ export class MyChatController {
         controllers: [
           typia.llm.controller<KisSessionService, "chatgpt">(
             "kis",
-            new KisSessionService(this.kisService, existingSession.kisSessionData),
+            new KisSessionService(this.kisService, existingSession.kisSessionData, listener),
           ),
           typia.llm.controller<NewsAgentService, "chatgpt">(
             "news",
