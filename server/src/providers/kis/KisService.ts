@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
 import { tags } from "typia";
+import { IClientEvents } from "../../types/agentica";
 
 import { KisBalanceProvider } from "./KisBalanceProvider";
 import { KisPriceProvider } from "./KisPriceProvider";
@@ -27,7 +28,7 @@ export class KisService {
    * @param stockName Korean stock name
    * @returns Stock code or null if not found
    */
-  private async convertStockNameToCode(stockName: string): Promise<{ success: true; stockCode: string } | { success: false; error: IKisStock.IOrderResponse }> {
+  private async convertStockNameToCode(stockName: string): Promise<{ success: true; stockCode: string } | { success: false, error: IKisStock.IOrderResponse }> {
     const searchResults = this.stockCodeService.searchStocks(stockName, 1);
     if (searchResults.length === 0) {
       return {
@@ -56,7 +57,8 @@ export class KisService {
       quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
       orderCondition: "market" | "limit";
       price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
-    }
+    },
+    listener?: IClientEvents
   ): Promise<IKisStock.IOrderResponse> {
     // Validate limit order has price
     if (input.orderCondition === "limit" && !input.price) {
@@ -72,6 +74,9 @@ export class KisService {
     if (!conversionResult.success) {
       return conversionResult.error;
     }
+
+    // Notify client about stock focus
+    await this.notifyStockFocus(input.stockName, conversionResult.stockCode, listener);
 
     // Execute the buy order using provided session data
     return await this.tradingProvider.executeStockOrder(sessionData, {
@@ -93,7 +98,8 @@ export class KisService {
       quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
       orderCondition: "market" | "limit";
       price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
-    }
+    },
+    listener?: IClientEvents
   ): Promise<IKisStock.IOrderResponse> {
     // Validate limit order has price
     if (input.orderCondition === "limit" && !input.price) {
@@ -109,6 +115,9 @@ export class KisService {
     if (!conversionResult.success) {
       return conversionResult.error;
     }
+
+    // Notify client about stock focus
+    await this.notifyStockFocus(input.stockName, conversionResult.stockCode, listener);
 
     // Execute the sell order using provided session data
     return await this.tradingProvider.executeStockOrder(sessionData, {
@@ -127,7 +136,8 @@ export class KisService {
     sessionData: IKisSessionData,
     input: {
       stockName: string;
-    }
+    },
+    listener?: IClientEvents
   ): Promise<{
     message: string;
     data: Record<string, any>;
@@ -137,6 +147,9 @@ export class KisService {
     if (!conversionResult.success) {
       throw new Error(`Stock not found: ${input.stockName}`);
     }
+
+    // Notify client about stock focus
+    await this.notifyStockFocus(input.stockName, conversionResult.stockCode, listener);
 
     const result = await this.priceProvider.fetchStockPrice(
       { stockCode: conversionResult.stockCode },
@@ -185,7 +198,8 @@ export class KisService {
       stockName: string;
       periodCode?: "D" | "W" | "M";
       adjustPrice?: 0 | 1;
-    }
+    },
+    listener?: IClientEvents
   ): Promise<{
     message: string;
     data: Record<string, any>[];
@@ -195,6 +209,9 @@ export class KisService {
     if (!conversionResult.success) {
       throw new Error(`Stock not found: ${input.stockName}`);
     }
+
+    // Notify client about stock focus
+    await this.notifyStockFocus(input.stockName, conversionResult.stockCode, listener);
 
     const result = await this.priceProvider.fetchStockDailyPrices(
       {
@@ -225,5 +242,26 @@ export class KisService {
   }> {
     // Execute balance inquiry using provided session data
     return await this.balanceProvider.getStockBalance(sessionData);
+  }
+
+  /**
+   * Notify client about stock focus change
+   */
+  private async notifyStockFocus(stockName: string, stockCode: string, listener?: IClientEvents): Promise<void> {
+    if (listener && listener.onStockFocus) {
+      try {
+        // StockCodeService에서 주식 정보를 조회하여 market 정보도 포함
+        const searchResults = this.stockCodeService.searchStocks(stockName, 1);
+        const stockInfo = searchResults.length > 0 ? searchResults[0] : null;
+
+        await listener.onStockFocus({
+          code: stockCode,
+          name: stockName,
+          market: stockInfo?.market || 'KOSPI' // 기본값으로 KOSPI 설정
+        });
+      } catch (error) {
+        console.error('Failed to notify stock focus:', error);
+      }
+    }
   }
 }

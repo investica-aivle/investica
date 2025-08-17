@@ -1,5 +1,6 @@
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
 import { tags } from "typia";
+import { IClientEvents } from "../../types/agentica";
 
 import { KisService } from "./KisService";
 
@@ -19,6 +20,7 @@ export class KisSessionService {
   constructor(
     private readonly kisService: KisService,
     private readonly sessionData: IKisSessionData,
+    private readonly listener?: IClientEvents,
   ) {}
 
   /**
@@ -66,7 +68,7 @@ export class KisSessionService {
      */
     price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
   }): Promise<IKisStock.IOrderResponse> {
-    return await this.kisService.buyStock(this.sessionData, input);
+    return await this.kisService.buyStock(this.sessionData, input, this.listener);
   }
 
   /**
@@ -114,7 +116,7 @@ export class KisSessionService {
      */
     price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
   }): Promise<IKisStock.IOrderResponse> {
-    return await this.kisService.sellStock(this.sessionData, input);
+    return await this.kisService.sellStock(this.sessionData, input, this.listener);
   }
 
   /**
@@ -139,7 +141,7 @@ export class KisSessionService {
     message: string;
     data: Record<string, any>;
   }> {
-    return await this.kisService.getStockPrice(this.sessionData, input);
+    return await this.kisService.getStockPrice(this.sessionData, input, this.listener);
   }
 
   /**
@@ -201,7 +203,7 @@ export class KisSessionService {
     message: string;
     data: Record<string, any>[];
   }> {
-    return await this.kisService.getStockDailyPrices(this.sessionData, input);
+    return await this.kisService.getStockDailyPrices(this.sessionData, input, this.listener);
   }
 
   /**
