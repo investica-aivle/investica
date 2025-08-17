@@ -200,6 +200,134 @@ export class KisController {
   }
 
   /**
+   * 주식 매수 주문을 실행합니다.
+   *
+   * @summary 주식 매수
+   * @param body 매수 주문 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 매수 주문 실행 결과
+   */
+  @TypedRoute.Post("buy")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async buyStock(
+    @TypedBody() body: {
+      stockName: string;
+      quantity: number;
+      orderCondition: "market" | "limit";
+      price?: number;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    orderData?: any;
+    errorCode?: string;
+  }> {
+    this.logger.log(`=== 주식 매수 주문 요청 ===`);
+    this.logger.log(`종목명: ${body.stockName}`);
+    this.logger.log(`수량: ${body.quantity}`);
+    this.logger.log(`주문조건: ${body.orderCondition}`);
+    this.logger.log(`가격: ${body.price || '시장가'}`);
+
+    try {
+      const result = await this.kisService.buyStock(
+        session.kisSessionData,
+        {
+          stockName: body.stockName,
+          quantity: body.quantity,
+          orderCondition: body.orderCondition,
+          price: body.price,
+        }
+      );
+
+      this.logger.log(`=== 주식 매수 주문 결과 ===`);
+      this.logger.log(`성공 여부: ${result.success}`);
+      this.logger.log(`메시지: ${result.message}`);
+
+      return {
+        success: result.success,
+        message: result.message,
+        orderData: result.success ? result : undefined,
+        errorCode: result.success ? undefined : result.errorCode,
+      };
+    } catch (error) {
+      this.logger.error(`=== 주식 매수 주문 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      return {
+        success: false,
+        message: "매수 주문 처리 중 오류가 발생했습니다.",
+        errorCode: "ORDER_PROCESSING_ERROR",
+      };
+    }
+  }
+
+  /**
+   * 주식 매도 주문을 실행합니다.
+   *
+   * @summary 주식 매도
+   * @param body 매도 주문 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 매도 주문 실행 결과
+   */
+  @TypedRoute.Post("sell")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async sellStock(
+    @TypedBody() body: {
+      stockName: string;
+      quantity: number;
+      orderCondition: "market" | "limit";
+      price?: number;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    orderData?: any;
+    errorCode?: string;
+  }> {
+    this.logger.log(`=== 주식 매도 주문 요청 ===`);
+    this.logger.log(`종목명: ${body.stockName}`);
+    this.logger.log(`수량: ${body.quantity}`);
+    this.logger.log(`주문조건: ${body.orderCondition}`);
+    this.logger.log(`가격: ${body.price || '시장가'}`);
+
+    try {
+      const result = await this.kisService.sellStock(
+        session.kisSessionData,
+        {
+          stockName: body.stockName,
+          quantity: body.quantity,
+          orderCondition: body.orderCondition,
+          price: body.price,
+        }
+      );
+
+      this.logger.log(`=== 주식 매도 주문 결과 ===`);
+      this.logger.log(`성공 여부: ${result.success}`);
+      this.logger.log(`메시지: ${result.message}`);
+
+      return {
+        success: result.success,
+        message: result.message,
+        orderData: result.success ? result : undefined,
+        errorCode: result.success ? undefined : result.errorCode,
+      };
+    } catch (error) {
+      this.logger.error(`=== 주식 매도 주문 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      return {
+        success: false,
+        message: "매도 주문 처리 중 오류가 발생했습니다.",
+        errorCode: "ORDER_PROCESSING_ERROR",
+      };
+    }
+  }
+
+  /**
    * 계좌번호로 계좌 타입을 결정합니다.
    */
   private determineAccountType(accountNumber: string): "REAL" | "VIRTUAL" {
