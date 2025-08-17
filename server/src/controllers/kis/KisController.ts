@@ -5,7 +5,7 @@ import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
 import { KisService } from "../../providers/kis/KisService";
 import { SessionManager } from "../../providers/session/SessionManager";
 import { MaskingUtil } from "../../utils/MaskingUtil";
-import { IKisAuthRequestDto, IKisAuthResponseDto } from "./dto/KisAuthDto";
+import { IKisAuthRequestDto, IKisAuthResponseDto, IKisWebSocketKeyResponseDto } from "./dto/KisAuthDto";
 import { SessionGuard } from "../../guards/SessionGuard";
 import { Session } from "../../decorators/session.decorators";
 import { ISessionData } from "../../providers/session/SessionManager";
@@ -323,6 +323,65 @@ export class KisController {
         success: false,
         message: "매도 주문 처리 중 오류가 발생했습니다.",
         errorCode: "ORDER_PROCESSING_ERROR",
+      };
+    }
+  }
+
+  /**
+   * 웹소켓 접속키를 발급받습니다.
+   *
+   * 실시간 데이터 구독을 위한 웹소켓 연결에 필요한 접속키를 발급받습니다.
+   * 발급받은 접속키는 웹소켓 연결 시 인증에 사용됩니다.
+   *
+   * @summary 웹소켓 접속키 발급
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 웹소켓 접속키 발급 결과
+   */
+  @TypedRoute.Post("websocket-key")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getWebSocketKey(
+    @Session() session: ISessionData,
+  ): Promise<IKisWebSocketKeyResponseDto> {
+    const maskedSessionKey = MaskingUtil.maskSessionKey(session.sessionKey);
+    const maskedAccountNumber = MaskingUtil.maskAccountNumber(session.kisSessionData.accountNumber);
+
+    this.logger.log(`=== 웹소켓 접속키 발급 요청 ===`);
+    this.logger.log(`세션 키: ${maskedSessionKey}`);
+    this.logger.log(`계좌번호: ${maskedAccountNumber}`);
+
+    try {
+      // 토큰 만료 여부 확인 및 필요시 재발급
+      const refreshedSession = await this.kisAuthProvider.refreshTokenIfNeeded(session.kisSessionData);
+
+      // 세션이 갱신된 경우 SessionManager에 업데이트
+      if (refreshedSession !== session.kisSessionData) {
+        this.sessionManager.updateSession(session.id, refreshedSession);
+        this.logger.log(`토큰이 갱신되었습니다. 새 만료시간: ${refreshedSession.expiresAt.toISOString()}`);
+      }
+
+      // 웹소켓 접속키 발급
+      const approvalKey = await this.kisAuthProvider.getWebSocketApprovalKey(refreshedSession);
+
+      const issuedAt = new Date().toISOString();
+
+      this.logger.log(`=== 웹소켓 접속키 발급 성공 ===`);
+      this.logger.log(`발급 시간: ${issuedAt}`);
+      this.logger.log(`접속키 길이: ${approvalKey.length}자`);
+
+      return {
+        success: true,
+        approvalKey,
+        issuedAt,
+      };
+    } catch (error) {
+      this.logger.error(`=== 웹소켓 접속키 발급 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "웹소켓 접속키 발급에 실패했습니다.",
+        errorCode: "WEBSOCKET_KEY_FAILED",
       };
     }
   }

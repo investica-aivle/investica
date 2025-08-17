@@ -101,6 +101,25 @@ export class SessionManager {
   }
 
   /**
+   * 세션의 KIS 세션 데이터 업데이트
+   */
+  updateSession(sessionId: string, newKisSessionData: IKisSessionData): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      this.logger.warn(`업데이트할 세션을 찾을 수 없음: ${sessionId}`);
+      return false;
+    }
+
+    // KIS 세션 데이터와 만료 시간 업데이트
+    session.kisSessionData = newKisSessionData;
+    session.expiresAt = new Date(newKisSessionData.expiresAt);
+    session.lastAccessedAt = new Date();
+
+    this.logger.log(`세션 업데이트: ${sessionId} (계좌: ${MaskingUtil.maskAccountNumber(newKisSessionData.accountNumber)}, 새 만료시간: ${newKisSessionData.expiresAt.toISOString()})`);
+    return true;
+  }
+
+  /**
    * 세션 제거
    */
   removeSession(sessionId: string): boolean {
