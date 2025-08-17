@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SessionManager } from '../../utils/sessionManager';
+import { StockSearchInput } from './StockSearchInput';
 
 interface TargetStock {
   symbol: string;
@@ -48,7 +49,6 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
   const fetchChartData = async (stockName: string) => {
     setIsLoading(true);
     try {
-      // 세션에서 sessionKey 가져오기
       const session = SessionManager.restoreSession();
       if (!session || !session.sessionKey) {
         console.error('인증 세션이 없습니다.');
@@ -73,7 +73,6 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
 
       const result = await response.json();
 
-      // API 응답 데이터를 차트 형식으로 변환
       const chartData: ChartData[] = result.data.map((item: any) => ({
         date: item.stck_bsop_date || item['주식 영업 일자'],
         price: parseInt(item.stck_clpr || item['주식 종가'])
@@ -81,7 +80,6 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
 
       setChartData(chartData);
 
-      // 마지막(최신) 데이터에서 전일 대비 정보 파싱
       if (result.data && result.data.length > 0) {
         const latestData = result.data[0];
         const currentPrice = parseInt(latestData.stck_clpr || latestData['주식 종가'] || '0');
@@ -109,9 +107,16 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
     setSearchValue(stock.name);
   };
 
-  const handleSearch = () => {
+  const handleStockSearch = (selectedStock: { code: string; name: string }) => {
+    const stock: TargetStock = {
+      symbol: selectedStock.code,
+      name: selectedStock.name
+    };
+    onStockSelect(stock);
+  };
+
+  const handleSearchButtonClick = () => {
     if (searchValue.trim()) {
-      // 검색어로 주식 찾기 (간단한 매칭)
       const foundStock = popularStocks.find(stock =>
         stock.name.includes(searchValue) || stock.symbol.includes(searchValue)
       );
@@ -119,15 +124,8 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
       if (foundStock) {
         onStockSelect(foundStock);
       } else {
-        // 직접 입력된 종목명으로 처리
         onStockSelect({ symbol: '', name: searchValue });
       }
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
     }
   };
 
@@ -136,7 +134,6 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
       <div className="flex justify-between items-center mb-3">
         <h4 className="text-sm font-medium text-gray-100">실시간 시세</h4>
 
-        {/* 기간 선택 버튼들을 헤더 우측으로 이동 */}
         {targetStock && (
           <div className="flex space-x-1">
             {[
@@ -161,22 +158,20 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
       </div>
 
       <div className="space-y-4">
-        {/* 종목 검색 */}
+        {/* 종목 검색 with 자동완성 */}
         <div>
           <label className="text-xs text-gray-400 block mb-1">
             종목 조회
           </label>
           <div className="flex space-x-2">
-            <input
-              type="text"
+            <StockSearchInput
               value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1 bg-zinc-800/50 border border-zinc-600/30 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20"
+              onChange={setSearchValue}
+              onStockSelect={handleStockSearch}
               placeholder="종목명 또는 코드 입력"
             />
             <button
-              onClick={handleSearch}
+              onClick={handleSearchButtonClick}
               className="px-4 py-2 bg-blue-600/50 hover:bg-blue-600/70 text-white rounded-xl text-sm transition-colors"
             >
               검색
@@ -201,58 +196,77 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
           ))}
         </div>
 
-        {/* 선택된 종목 정보 및 차트 */}
-        {targetStock ? (
-          <div className="space-y-3">
+        {/* 현재 주가 정보 */}
+        {targetStock && stockInfo && (
+          <div className="bg-zinc-800/30 rounded-xl p-3">
             <div className="flex justify-between items-center">
-              <div>
-                <h5 className="font-medium text-gray-100">{targetStock.name}</h5>
-                {targetStock.symbol && (
-                  <p className="text-xs text-gray-400">{targetStock.symbol}</p>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-gray-100">
-                  {isLoading ? '로딩 중...' : stockInfo ? `₩${stockInfo.currentPrice.toLocaleString()}` : '₩-'}
-                </div>
-                <div className="text-sm">
-                  {stockInfo ? (
-                    <span className={stockInfo.change >= 0 ? 'text-green-400' : 'text-red-400'}>
-                      {stockInfo.change >= 0 ? '+' : ''}{stockInfo.change.toLocaleString()} ({stockInfo.changePercent >= 0 ? '+' : ''}{stockInfo.changePercent.toFixed(2)}%)
-                    </span>
-                  ) : '-'}
+              <h5 className="text-sm font-medium text-gray-100">
+                {targetStock.name} {targetStock.symbol && `(${targetStock.symbol})`}
+              </h5>
+              <div className="flex items-center space-x-4">
+                <span className="text-lg font-bold text-white">
+                  {stockInfo.currentPrice.toLocaleString()}원
+                </span>
+                <div className={`flex items-center space-x-1 ${
+                  stockInfo.change > 0 ? 'text-red-400' : 
+                  stockInfo.change < 0 ? 'text-blue-400' : 'text-gray-400'
+                }`}>
+                  <span className="text-sm">
+                    {stockInfo.change > 0 ? '+' : ''}{stockInfo.change.toLocaleString()}
+                  </span>
+                  <span className="text-sm">
+                    ({stockInfo.change > 0 ? '+' : ''}{stockInfo.changePercent.toFixed(2)}%)
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* 차트 영역 - 높이 더 증가 */}
-            <div className="h-80 w-full">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-gray-400">차트 로딩 중...</div>
+        {/* 차트 영역 */}
+        {targetStock && (
+          <div className="bg-zinc-800/30 rounded-xl p-3">
+            {isLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-400">데이터 로딩 중...</p>
                 </div>
-              ) : chartData.length > 0 ? (
+              </div>
+            ) : chartData.length > 0 ? (
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis
                       dataKey="date"
-                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                      tickLine={{ stroke: '#6B7280' }}
+                      stroke="#9CA3AF"
+                      fontSize={10}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                      tickLine={{ stroke: '#6B7280' }}
-                      domain={['dataMin - 1000', 'dataMax + 1000']}
+                      stroke="#9CA3AF"
+                      fontSize={10}
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#374151',
-                        border: '1px solid #6B7280',
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
                         borderRadius: '8px',
-                        color: '#F3F4F6'
+                        color: '#F9FAFB'
                       }}
-                      formatter={(value: number) => [`₩${value.toLocaleString()}`, '주가']}
+                      labelFormatter={(value) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString('ko-KR');
+                      }}
+                      formatter={(value: number) => [
+                        `${value.toLocaleString()}원`,
+                        '종가'
+                      ]}
                     />
                     <Line
                       type="monotone"
@@ -264,18 +278,12 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-gray-400">차트 데이터가 없습니다</div>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-zinc-800/30 p-3 rounded-xl">
-            <div className="text-center text-gray-400 text-sm">
-              종목을 검색하여 실시간 시세를 확인하세요
-            </div>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center">
+                <p className="text-sm text-gray-400">차트 데이터가 없습니다.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
