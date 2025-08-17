@@ -1,4 +1,5 @@
 import { IAgenticaRpcListener } from "@agentica/rpc";
+import { StockInfo } from "./stock.types";
 
 export interface NewsItem {
   title: string;
@@ -15,4 +16,5 @@ export interface NewsPushPayload {
 
 export interface IClientEvents extends IAgenticaRpcListener {
   onNews(payload: NewsPushPayload): Promise<void> | void;
+  onStockFocus(payload: StockInfo): Promise<void> | void;
 }
