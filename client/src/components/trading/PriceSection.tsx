@@ -45,7 +45,7 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
     }
   }, [targetStock, periodCode]);
 
-  const fetchChartData = async (companyName: string) => {
+  const fetchChartData = async (stockName: string) => {
     setIsLoading(true);
     try {
       // 세션에서 sessionKey 가져오기
@@ -58,11 +58,11 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/kis/daily-prices`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': `Bearer ${session.sessionKey}`
         },
         body: JSON.stringify({
-          company: companyName,
+          stockName: stockName,
           periodCode: periodCode
         })
       });
@@ -73,49 +73,20 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
 
       const result = await response.json();
 
-      // API 응답 디버깅용 콘솔 로그
-      console.log('=== API 응답 전체 ===');
-      console.log(result);
-      console.log('=== 응답 데이터 타입 ===');
-      console.log('result.data 타입:', typeof result.data);
-      console.log('result.data 길이:', result.data?.length);
-      console.log('=== 첫 번째 데이터 항목 ===');
-      console.log(result.data?.[0]);
-      console.log('=== 모든 키 확인 ===');
-      if (result.data?.[0]) {
-        console.log('첫 번째 항목의 키들:', Object.keys(result.data[0]));
-      }
-
       // API 응답 데이터를 차트 형식으로 변환
       const chartData: ChartData[] = result.data.map((item: any) => ({
-        date: item.stck_bsop_date || item['주식 영업 일자'], // API 응답에 따라 키 조정
-        price: parseInt(item.stck_clpr || item['주식 종가']) // 종가 데이터
-      })).reverse(); // 날짜 순으로 정렬
-
-      console.log('=== 변환된 차트 데이터 ===');
-      console.log('차트 데이터 길이:', chartData.length);
-      console.log('첫 번째 차트 데이터:', chartData[0]);
-      console.log('마지막 차트 데이터:', chartData[chartData.length - 1]);
+        date: item.stck_bsop_date || item['주식 영업 일자'],
+        price: parseInt(item.stck_clpr || item['주식 종가'])
+      })).reverse();
 
       setChartData(chartData);
 
       // 마지막(최신) 데이터에서 전일 대비 정보 파싱
       if (result.data && result.data.length > 0) {
-        const latestData = result.data[0]; // 첫 번째가 최신 데이터 (reverse 전)
-
-        console.log('=== 최신 데이터로 전일 대비 정보 파싱 ===');
-        console.log('최신 데이터:', latestData);
-
-        // KIS API 응답에서 전일 대비 정보 추출
+        const latestData = result.data[0];
         const currentPrice = parseInt(latestData.stck_clpr || latestData['주식 종가'] || '0');
         const change = parseInt(latestData.prdy_vrss || latestData['전일 대비'] || '0');
         const changePercent = parseFloat(latestData.prdy_ctrt || latestData['전일 대비율'] || '0');
-
-        console.log('파싱된 정보:', {
-          currentPrice,
-          change,
-          changePercent
-        });
 
         setStockInfo({
           currentPrice,
@@ -127,8 +98,6 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
       }
     } catch (error) {
       console.error('차트 데이터 로드 실패:', error);
-
-      // 에러 발생 시 빈 배열로 설정
       setChartData([]);
     } finally {
       setIsLoading(false);
