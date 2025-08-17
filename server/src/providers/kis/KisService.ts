@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
 import { tags } from "typia";
-import { IClientEvents } from "../../types/agentica";
+import { IClientEvents, TradingConfirmationRequest } from "../../types/agentica";
+import { randomUUID } from "crypto";
 
 import { KisBalanceProvider } from "./KisBalanceProvider";
 import { KisPriceProvider } from "./KisPriceProvider";
@@ -48,6 +49,78 @@ export class KisService {
   }
 
   /**
+   * Request trading confirmation from client
+   */
+  private async requestTradingConfirmation(
+    stockName: string,
+    stockCode: string,
+    orderType: 'buy' | 'sell',
+    input: {
+      quantity: number;
+      orderCondition: "market" | "limit";
+      price?: number;
+    },
+    listener?: IClientEvents
+  ): Promise<boolean> {
+    if (!listener || !listener.onTradingConfirmationRequest) {
+      console.log('[KisService] No listener available for trading confirmation, proceeding without confirmation');
+      return true;
+    }
+
+    try {
+      // Get stock info for confirmation
+      const searchResults = this.stockCodeService.searchStocks(stockName, 1);
+      const stockInfo = searchResults.length > 0 ? searchResults[0] : {
+        code: stockCode,
+        name: stockName,
+        market: 'KOSPI' as const
+      };
+
+      // Calculate estimated amount for market orders (approximate)
+      let estimatedAmount: number | undefined;
+      if (input.orderCondition === 'limit' && input.price) {
+        estimatedAmount = input.price * input.quantity;
+      }
+
+      const confirmationRequest: TradingConfirmationRequest = {
+        id: randomUUID(),
+        type: orderType,
+        stockInfo,
+        quantity: input.quantity,
+        orderCondition: input.orderCondition,
+        price: input.price,
+        estimatedAmount
+      };
+
+      console.log('[KisService] Sending trading confirmation request to client:', {
+        id: confirmationRequest.id,
+        type: orderType,
+        stockName: stockName,
+        stockCode: stockCode,
+        quantity: input.quantity,
+        orderCondition: input.orderCondition,
+        price: input.price,
+        estimatedAmount
+      });
+
+      const response = await listener.onTradingConfirmationRequest(confirmationRequest);
+
+      console.log('[KisService] Received trading confirmation response from client:', {
+        id: response.id,
+        confirmed: response.confirmed,
+        orderType: orderType,
+        stockName: stockName
+      });
+
+      return response.confirmed;
+    } catch (error) {
+      console.error('[KisService] Failed to request trading confirmation:', error);
+      // If confirmation fails, proceed for safety
+      return true;
+    }
+  }
+
+  /**
    * Execute stock buy order
    */
   public async buyStock(
@@ -77,6 +150,23 @@ export class KisService {
 
     // Notify client about stock focus
     await this.notifyStockFocus(input.stockName, conversionResult.stockCode, listener);
+
+    // Request confirmation from client
+    const confirmed = await this.requestTradingConfirmation(
+      input.stockName,
+      conversionResult.stockCode,
+      'buy',
+      input,
+      listener
+    );
+
+    if (!confirmed) {
+      return {
+        success: false,
+        message: "매수 주문이 사용자에 의해 취소되었습니다.",
+        errorCode: "USER_CANCELLED",
+      };
+    }
 
     // Execute the buy order using provided session data
     return await this.tradingProvider.executeStockOrder(sessionData, {
@@ -118,6 +208,23 @@ export class KisService {
 
     // Notify client about stock focus
     await this.notifyStockFocus(input.stockName, conversionResult.stockCode, listener);
+
+    // Request confirmation from client
+    const confirmed = await this.requestTradingConfirmation(
+      input.stockName,
+      conversionResult.stockCode,
+      'sell',
+      input,
+      listener
+    );
+
+    if (!confirmed) {
+      return {
+        success: false,
+        message: "매도 주문이 사용자에 의해 취소되었습니다.",
+        errorCode: "USER_CANCELLED",
+      };
+    }
 
     // Execute the sell order using provided session data
     return await this.tradingProvider.executeStockOrder(sessionData, {
