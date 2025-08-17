@@ -73,10 +73,26 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
 
       const result = await response.json();
 
-      const chartData: ChartData[] = result.data.map((item: any) => ({
-        date: item.stck_bsop_date || item['주식 영업 일자'],
-        price: parseInt(item.stck_clpr || item['주식 종가'])
-      })).reverse();
+      // API 응답 데이터를 차트 형식으로 변환 (날짜 형식 개선)
+      const chartData: ChartData[] = result.data.map((item: any) => {
+        const dateStr = item.stck_bsop_date || item['주식 영업 일자'];
+        let formattedDate = '';
+
+        // 날짜 형식 처리 (YYYYMMDD -> YYYY-MM-DD)
+        if (dateStr && dateStr.length === 8) {
+          const year = dateStr.substring(0, 4);
+          const month = dateStr.substring(4, 6);
+          const day = dateStr.substring(6, 8);
+          formattedDate = `${year}-${month}-${day}`;
+        } else {
+          formattedDate = dateStr;
+        }
+
+        return {
+          date: formattedDate,
+          price: parseInt(item.stck_clpr || item['주식 종가']) || 0
+        };
+      }).reverse();
 
       setChartData(chartData);
 
