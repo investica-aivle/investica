@@ -133,7 +133,32 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
 
   return (
     <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
-      <h4 className="text-sm font-medium mb-3 text-gray-100">실시간 시세</h4>
+      <div className="flex justify-between items-center mb-3">
+        <h4 className="text-sm font-medium text-gray-100">실시간 시세</h4>
+
+        {/* 기간 선택 버튼들을 헤더 우측으로 이동 */}
+        {targetStock && (
+          <div className="flex space-x-1">
+            {[
+              { code: 'D' as const, label: '일' },
+              { code: 'W' as const, label: '주' },
+              { code: 'M' as const, label: '월' }
+            ].map((period) => (
+              <button
+                key={period.code}
+                onClick={() => setPeriodCode(period.code)}
+                className={`px-3 py-1 rounded-lg text-xs transition-colors ${
+                  periodCode === period.code
+                    ? 'bg-blue-600/50 text-white border border-blue-500/50'
+                    : 'bg-zinc-800/50 text-gray-400 hover:bg-zinc-800/70 border border-zinc-600/30'
+                }`}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="space-y-4">
         {/* 종목 검색 */}
@@ -200,29 +225,8 @@ export function PriceSection({ targetStock, onStockSelect }: PriceSectionProps) 
               </div>
             </div>
 
-            {/* 기간 선택 버튼들 */}
-            <div className="flex justify-center space-x-2">
-              {[
-                { code: 'D' as const, label: '일' },
-                { code: 'W' as const, label: '주' },
-                { code: 'M' as const, label: '월' }
-              ].map((period) => (
-                <button
-                  key={period.code}
-                  onClick={() => setPeriodCode(period.code)}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                    periodCode === period.code
-                      ? 'bg-blue-600/50 text-white border border-blue-500/50'
-                      : 'bg-zinc-800/50 text-gray-400 hover:bg-zinc-800/70 border border-zinc-600/30'
-                  }`}
-                >
-                  {period.label}
-                </button>
-              ))}
-            </div>
-
-            {/* 차트 영역 */}
-            <div className="h-48 w-full">
+            {/* 차트 영역 - 높이 더 증가 */}
+            <div className="h-80 w-full">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-gray-400">차트 로딩 중...</div>
