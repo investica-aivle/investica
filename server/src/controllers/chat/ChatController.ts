@@ -4,35 +4,25 @@ import {
   IAgenticaRpcListener,
   IAgenticaRpcService,
 } from "@agentica/rpc";
-import { IKisSessionData } from "@models/KisTrading";
 import { WebSocketRoute } from "@nestia/core";
 import { Controller, Logger } from "@nestjs/common";
 import OpenAI from "openai";
 import { WebSocketAcceptor } from "tgrid";
 import typia from "typia";
-
 import { MyGlobal } from "../../MyGlobal";
-import { ChatService } from "../../providers/chat/ChatService";
-import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
 import { KisService } from "../../providers/kis/KisService";
-import { KisTradingProvider } from "../../providers/kis/KisTradingProvider";
 import { NewsAgentService } from "../../providers/news/NewsAgentService";
 import { NewsService } from "../../providers/news/NewsService";
 import { ReportsService } from "../../providers/reports/ReportsService";
-import { StockBalanceProvider } from "../../providers/stockBalance/StockBalanceProvider";
-import { StocksProvider } from "../../providers/stocks/StocksProvider";
-
-export interface IKisChatConnectionRequest {
-  accountNumber: string;
-  appKey: string;
-  appSecret: string;
-}
-
+import { SessionManager } from "../../providers/session/SessionManager";
+import { CookieUtil } from "../../utils/CookieUtil";
+import { KisSessionService } from "../../providers/kis/KisSessionService";
+import { IClientEvents } from "../../types/agentica";
 /**
- * KIS 세션 데이터를 포함한 Agentica RPC 서비스 인터페이스
+ * WebSocket 연결 헤더 정의 (쿠키 포함)
  */
-export interface IAgenticaKisRpcService extends IAgenticaRpcService<"chatgpt"> {
-  kisSessionData?: IKisSessionData;
+export interface IWebSocketHeaders {
+  sessionKey: string;
 }
 
 @Controller("chat")
@@ -40,62 +30,61 @@ export class MyChatController {
   private readonly logger = new Logger(MyChatController.name);
 
   constructor(
-    private readonly kisAuthProvider: KisAuthProvider,
-    private readonly kisTradingProvider: KisTradingProvider,
-    private readonly stocksService: StocksProvider,
+    private readonly sessionManager: SessionManager,
+    private readonly kisService: KisService,
     private readonly newsService: NewsService,
-    private readonly stockBalanceProvider: StockBalanceProvider,
-    private readonly chatService: ChatService,
-    private readonly reportsService: ReportsService,
+    private readonly reportsService: ReportsService
   ) {}
 
   @WebSocketRoute()
   public async start(
     @WebSocketRoute.Acceptor()
     acceptor: WebSocketAcceptor<
-      IKisChatConnectionRequest,
-      IAgenticaKisRpcService,
-      IAgenticaRpcListener
+      IWebSocketHeaders,
+      IAgenticaRpcService<"chatgpt">,
+      IClientEvents
     >,
   ): Promise<void> {
-    // 연결 시 전달받은 KIS 인증 정보 처리
-    const connectionRequest = acceptor.header;
-    const maskedAccountNumber = connectionRequest.accountNumber.replace(
-      /(\d{4})\d+(\d{2})/,
-      "$1****$2",
-    );
-    const maskedAppKey = connectionRequest.appKey.replace(
-      /(.{8}).*(.{3})/,
-      "$1***$2",
-    );
-
     this.logger.log(`=== 웹소켓 연결 요청 시작 ===`);
-    this.logger.log(`계좌번호: ${maskedAccountNumber}`);
-    this.logger.log(`App Key: ${maskedAppKey}`);
     this.logger.log(`요청 시간: ${new Date().toISOString()}`);
 
     try {
-      // KIS 인증 수행 - 실패 시 연결 거부
-      this.logger.log(`=== KIS 인증 시작 ===`);
-      this.logger.log(`KIS 인증 진행 중... 계좌: ${maskedAccountNumber}`);
+      // WebSocket 헤더에서 쿠키 추출
+      const headers = acceptor.header;
+      const sessionKey = headers.sessionKey || '';
 
-      const authStartTime = Date.now();
-      const kisSessionData = await this.kisAuthProvider.authenticate({
-        accountNumber: connectionRequest.accountNumber,
-        appKey: connectionRequest.appKey,
-        appSecret: connectionRequest.appSecret,
-      });
-      const authEndTime = Date.now();
+      if (!sessionKey) {
+        throw new Error("인증이 필요합니다. 쿠키를 포함해주세요.");
+      }
 
-      this.logger.log(`=== KIS 인증 성공 ===`);
-      this.logger.log(`계좌번호: ${maskedAccountNumber}`);
-      this.logger.log(`인증 소요시간: ${authEndTime - authStartTime}ms`);
-      this.logger.log(
-        `토큰 만료시간: ${kisSessionData.expiresAt.toISOString()}`,
+      this.logger.log(`=== 세션 키 추출 성공 ===`);
+      const maskedSessionKey = sessionKey.substring(0, 8) + "...";
+      this.logger.log(`세션 키: ${maskedSessionKey}`);
+
+      // 세션 키로 기존 세션 조회
+      const existingSession = this.sessionManager.getSessionByKey(sessionKey);
+
+      if (!existingSession || existingSession.expiresAt <= new Date()) {
+        this.logger.error(`=== 세션 무효 ===`);
+        this.logger.error(`세션이 만료되었거나 존재하지 않습니다.`);
+        throw new Error("세션이 만료되었습니다. 다시 로그인해주세요.");
+      }
+
+      // 기존 유효한 세션 사용
+      const maskedAccountNumber = existingSession.kisSessionData.accountNumber.replace(
+        /(\d{4})\d+(\d{2})/,
+        "$1****$2",
       );
+
+      this.logger.log(`=== 세션 검증 성공 ===`);
+      this.logger.log(`세션 키: ${maskedSessionKey}`);
+      this.logger.log(`계좌번호: ${maskedAccountNumber}`);
+      this.logger.log(`세션 만료시간: ${existingSession.expiresAt.toISOString()}`);
 
       this.logger.log(`=== Agentica 에이전트 초기화 시작 ===`);
       const agentStartTime = Date.now();
+
+      const listener = acceptor.getDriver();
 
       const agent: Agentica<"chatgpt"> = new Agentica({
         model: "chatgpt",
@@ -104,19 +93,13 @@ export class MyChatController {
           model: "gpt-4o-mini",
         },
         controllers: [
-          // Agentica 문서에 따른 올바른 TypeScript 클래스 프로토콜 사용
-          typia.llm.controller<KisService, "chatgpt">(
+          typia.llm.controller<KisSessionService, "chatgpt">(
             "kis",
-            new KisService(
-              this.kisTradingProvider,
-              kisSessionData,
-              this.stocksService,
-              this.stockBalanceProvider,
-            ),
+            new KisSessionService(this.kisService, existingSession.kisSessionData),
           ),
           typia.llm.controller<NewsAgentService, "chatgpt">(
             "news",
-            new NewsAgentService(this.newsService),
+            new NewsAgentService(this.newsService, listener),
           ),
           typia.llm.controller<ReportsService, "chatgpt">(
             "reports",
@@ -158,54 +141,39 @@ export class MyChatController {
       });
 
       const agentEndTime = Date.now();
-      this.logger.log(
-        `Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`,
-      );
+      this.logger.log(`Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`);
       this.logger.log(`컨트롤러 등록: KIS, News, Reports`);
 
       this.logger.log(`=== RPC 서비스 생성 및 웹소켓 연결 수락 ===`);
       const service = new AgenticaRpcService({
         agent,
         listener: acceptor.getDriver(),
-      }) as IAgenticaKisRpcService;
+      });
 
-      // 서비스 객체에 KIS 세션 데이터 직접 저장
-      service.kisSessionData = kisSessionData;
-      this.logger.log(`KIS 세션 데이터가 RPC 서비스에 저장됨`);
+      this.logger.log(`세션 키가 RPC 서비스에 저장됨: ${maskedSessionKey}`);
 
       await acceptor.accept(service);
 
       this.logger.log(`=== 웹소켓 연결 성공 ===`);
-      this.logger.log(`계좌: ${maskedAccountNumber}`);
-      this.logger.log(`총 소요시간: ${Date.now() - authStartTime}ms`);
+      this.logger.log(`세션 키: ${maskedSessionKey}`);
       this.logger.log(`연결 상태: 활성`);
+
     } catch (error) {
-      // KIS 인증 실패 시 연결 거부
+      // 연결 실패 시 연결 거부
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
 
-      this.logger.error(`=== KIS 인증 실패 ===`);
-      this.logger.error(`계좌번호: ${maskedAccountNumber}`);
-      this.logger.error(`App Key: ${maskedAppKey}`);
+      this.logger.error(`=== 연결 실패 ===`);
       this.logger.error(`실패 시간: ${new Date().toISOString()}`);
-      this.logger.error(
-        `인증 실패 상세:`,
-        JSON.stringify(
-          {
-            error: errorMessage,
-            stack: errorStack,
-            errorType: error?.constructor?.name || "Unknown",
-          },
-          null,
-          2,
-        ),
-      );
+      this.logger.error(`실패 원인: ${errorMessage}`);
 
-      // 클라이언트에게는 간단한 인증 실패 메시지만 전달
-      throw new Error(
-        "KIS 계좌 인증에 실패했습니다. 계좌번호, App Key, App Secret을 확인해주세요.",
-      );
+      if (errorStack) {
+        this.logger.error(`스택 트레이스: ${errorStack}`);
+      }
+
+      // 클라이언트에게 적절한 에러 메시지 전달
+      throw new Error(errorMessage);
     }
   }
 }

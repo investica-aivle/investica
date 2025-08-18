@@ -1,76 +1,37 @@
+import { Injectable } from "@nestjs/common";
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
 import { tags } from "typia";
 
-import { StockBalanceProvider } from "../stockBalance/StockBalanceProvider";
-import { StocksProvider } from "../stocks/StocksProvider";
+import { KisBalanceProvider } from "./KisBalanceProvider";
+import { KisPriceProvider } from "./KisPriceProvider";
 import { KisTradingProvider } from "./KisTradingProvider";
 
 /**
- * KIS Trading Service for Agentica Class Protocol
+ * KIS Trading Service (Stateless)
  *
- * This service provides KIS (Korea Investment Securities) stock trading
- * functionality for Agentica AI agents using the Class protocol.
- * It wraps the KisTradingProvider to make it compatible with Agentica's
- * function calling system.
- *
- * > If you're an A.I. chatbot and the user wants to trade Korean stocks,
- * > you should use the methods in this service to place orders and get
- * > account information. Each method contains detailed information about
- * > required parameters and return values.
+ * Internal service for KIS stock trading operations.
+ * Requires sessionData to be passed as parameter to each method.
  */
+@Injectable()
 export class KisService {
   constructor(
-    private readonly kisTradingProvider: KisTradingProvider,
-    private readonly sessionData: IKisSessionData,
-    private readonly stocksService: StocksProvider,
-    private readonly stockBalanceProvider: StockBalanceProvider,
+    private readonly tradingProvider: KisTradingProvider,
+    private readonly priceProvider: KisPriceProvider,
+    private readonly balanceProvider: KisBalanceProvider,
   ) {}
 
   /**
    * Execute stock buy order
-   *
-   * Place a buy order for Korean stocks through KIS OpenAPI.
-   * This function allows you to buy stocks using either market orders
-   * (executed at the current market price) or limit orders (executed
-   * only at the specified price or better).
-   *
-   * > For limit orders, you must specify a price. Market orders will
-   * > be executed at the best available price regardless of the price field.
-   * > Always check current market conditions before placing market orders.
-   *
-   * @param input Stock buy order request details
-   * @returns Order execution result with success status and details
    */
-  public async buyStock(input: {
-    /**
-     * Stock code (6 digits)
-     * @example "005930" Samsung Electronics
-     * @example "035720" Kakao
-     * @example "035420" NAVER
-     */
-    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
-
-    /**
-     * Order quantity (number of shares)
-     * @minimum 1
-     * @example 10
-     */
-    quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
-
-    /**
-     * Order condition - market order or limit order
-     * @example "limit" Execute only at specified price or better
-     * @example "market" Execute immediately at current market price
-     */
-    orderCondition: "market" | "limit";
-
-    /**
-     * Order price (required for limit orders, ignored for market orders)
-     * @minimum 1
-     * @example 75000
-     */
-    price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
-  }): Promise<IKisStock.IOrderResponse> {
+  public async buyStock(
+    sessionData: IKisSessionData,
+    input: {
+      stockCode: string & tags.Pattern<"^[0-9]{6}$">;
+      quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
+      orderCondition: "market" | "limit";
+      price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
+    }
+  ): Promise<IKisStock.IOrderResponse> {
     // Validate limit order has price
     if (input.orderCondition === "limit" && !input.price) {
       return {
@@ -80,8 +41,8 @@ export class KisService {
       };
     }
 
-    // Execute the buy order using stored session data
-    return await this.kisTradingProvider.executeStockOrder(this.sessionData, {
+    // Execute the buy order using provided session data
+    return await this.tradingProvider.executeStockOrder(sessionData, {
       stockCode: input.stockCode,
       orderType: "buy",
       quantity: input.quantity,
@@ -92,49 +53,16 @@ export class KisService {
 
   /**
    * Execute stock sell order
-   *
-   * Place a sell order for Korean stocks through KIS OpenAPI.
-   * This function allows you to sell stocks using either market orders
-   * (executed at the current market price) or limit orders (executed
-   * only at the specified price or better).
-   *
-   * > For limit orders, you must specify a price. Market orders will
-   * > be executed at the best available price regardless of the price field.
-   * > Always verify that the user owns the stocks before placing a sell order.
-   *
-   * @param input Stock sell order request details
-   * @returns Order execution result with success status and details
    */
-  public async sellStock(input: {
-    /**
-     * Stock code (6 digits)
-     * @example "005930" Samsung Electronics
-     * @example "035720" Kakao
-     * @example "035420" NAVER
-     */
-    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
-
-    /**
-     * Order quantity (number of shares)
-     * @minimum 1
-     * @example 10
-     */
-    quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
-
-    /**
-     * Order condition - market order or limit order
-     * @example "limit" Execute only at specified price or better
-     * @example "market" Execute immediately at current market price
-     */
-    orderCondition: "market" | "limit";
-
-    /**
-     * Order price (required for limit orders, ignored for market orders)
-     * @minimum 1
-     * @example 75000
-     */
-    price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
-  }): Promise<IKisStock.IOrderResponse> {
+  public async sellStock(
+    sessionData: IKisSessionData,
+    input: {
+      stockCode: string & tags.Pattern<"^[0-9]{6}$">;
+      quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
+      orderCondition: "market" | "limit";
+      price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
+    }
+  ): Promise<IKisStock.IOrderResponse> {
     // Validate limit order has price
     if (input.orderCondition === "limit" && !input.price) {
       return {
@@ -144,8 +72,8 @@ export class KisService {
       };
     }
 
-    // Execute the sell order using stored session data
-    return await this.kisTradingProvider.executeStockOrder(this.sessionData, {
+    // Execute the sell order using provided session data
+    return await this.tradingProvider.executeStockOrder(sessionData, {
       stockCode: input.stockCode,
       orderType: "sell",
       quantity: input.quantity,
@@ -157,19 +85,18 @@ export class KisService {
   /**
    * 주식 현재가 조회
    */
-  public async getStockPrice(input: {
-    /**
-     * 기업명
-     * @example "삼성전자"
-     */
-    company: string;
-  }): Promise<{
+  public async getStockPrice(
+    sessionData: IKisSessionData,
+    input: {
+      company: string;
+    }
+  ): Promise<{
     message: string;
     data: Record<string, any>;
   }> {
-    const result = await this.stocksService.fetchStockPrice(
+    const result = await this.priceProvider.fetchStockPrice(
       { company: input.company },
-      this.sessionData,
+      sessionData,
     );
     return {
       message: `${input.company}의 현재 주가 정보입니다.`,
@@ -179,22 +106,19 @@ export class KisService {
 
   /**
    * 국내 주식 체결 정보 조회
-   * @param input 기업명
-   * @returns 체결 정보 목록
    */
-  public async getStockTrades(input: {
-    /**
-     * 기업명
-     * @example "카카오"
-     */
-    company: string;
-  }): Promise<{
+  public async getStockTrades(
+    sessionData: IKisSessionData,
+    input: {
+      company: string;
+    }
+  ): Promise<{
     message: string;
     data: Record<string, any>[];
   }> {
-    const result = await this.stocksService.fetchStockTrades(
+    const result = await this.priceProvider.fetchStockTrades(
       { company: input.company },
-      this.sessionData,
+      sessionData,
     );
     return {
       message: `${input.company}의 실시간 체결 정보입니다.`,
@@ -203,39 +127,26 @@ export class KisService {
   }
 
   /**
-   * 국내 주식 일자별 가격 조회 (일/주/월별)
-   * @param input 기업명, 기간, 수정주가 반영 여부
-   * @returns 시계열 가격 데이터
+   * 국내 주식 일자별 가격 조회
    */
-  public async getStockDailyPrices(input: {
-    /**
-     * 기업명
-     * @example "네이버"
-     */
-    company: string;
-
-    /**
-     * 기간 구분 (D: 일간, W: 주간, M: 월간)
-     * @example "W"
-     */
-    periodCode?: "D" | "W" | "M";
-
-    /**
-     * 수정주가 반영 여부 (0: 미반영, 1: 반영)
-     * @example 1
-     */
-    adjustPrice?: 0 | 1;
-  }): Promise<{
+  public async getStockDailyPrices(
+    sessionData: IKisSessionData,
+    input: {
+      company: string;
+      periodCode?: "D" | "W" | "M";
+      adjustPrice?: 0 | 1;
+    }
+  ): Promise<{
     message: string;
     data: Record<string, any>[];
   }> {
-    const result = await this.stocksService.fetchStockDailyPrices(
+    const result = await this.priceProvider.fetchStockDailyPrices(
       {
         company: input.company,
         periodCode: input.periodCode ?? "D",
         adjustPrice: input.adjustPrice ?? 1,
       },
-      this.sessionData,
+      sessionData,
     );
     return {
       message: `${input.company}의 ${input.periodCode ?? "D"} 단위 시세 정보입니다.`,
@@ -245,60 +156,18 @@ export class KisService {
 
   /**
    * Get account stock balance
-   *
-   * Retrieve the current stock holdings in the user's account.
-   * This function shows all stocks currently owned, including quantity,
-   * purchase price, current price, and profit/loss information.
-   *
-   * > This function provides a comprehensive view of the user's portfolio.
-   * > Use this before placing sell orders to check available quantities.
-   * > The profit/loss information is calculated based on current market prices.
-   *
-   * @returns Account balance information with stock holdings
    */
-  public async getStockBalance(): Promise<{
-    /**
-     * Summary message about the account balance
-     * @example "3개 종목을 보유중이에요"
-     */
+  public async getStockBalance(sessionData: IKisSessionData): Promise<{
     message: string;
-
-    /**
-     * List of stock holdings in the account
-     */
     stocks: Array<{
-      /**
-       * Stock name
-       * @example "삼성전자"
-       */
       name: string;
-
-      /**
-       * Number of shares owned
-       * @example "100"
-       */
       quantity: string;
-
-      /**
-       * Average purchase price per share
-       * @example "75000"
-       */
       buyPrice: string;
-
-      /**
-       * Current market price per share
-       * @example "78000"
-       */
       currentPrice: string;
-
-      /**
-       * Profit/loss percentage
-       * @example "4.00"
-       */
       profit: string;
     }>;
   }> {
-    // Execute balance inquiry using stored session data
-    return await this.stockBalanceProvider.getStockBalance(this.sessionData);
+    // Execute balance inquiry using provided session data
+    return await this.balanceProvider.getStockBalance(sessionData);
   }
 }

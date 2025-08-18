@@ -380,7 +380,7 @@ ${file.content.substring(0, 500)}...
   )
   .join("\n")}
 
-위 보고서들의 주요 내용을 종합적으로 요약해줘. 다음 사항들을 포함해주세요:
+위 보고서들의 주요 내용을 종합적으로 요약해주세요. 다음 사항들을 포함해주세요:
 1. 전체적인 시장 동향
 2. 주요 투자 포인트
 3. 리스크 요인
@@ -693,6 +693,8 @@ Example output:
       console.log(`🔄 URL에서 변환 시작: ${pdfFileName}`);
       console.log(`🌐 다운로드 URL: ${downloadUrl}`);
 
+      //pdf 다운로드 필요
+      //현재 로컬에 다운되어있는 pdf를 찾는중
       const markdownFileName = `${pdfFileName.replace(".pdf", "")}.md`;
       const markdownFilePath = path.join(mdFolderPath, markdownFileName);
 
@@ -738,9 +740,7 @@ Example output:
     - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)
             
 `;
-      const model = this.genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
-      });
+      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent([prompt, filePart]);
       const response = result.response;
       const markdownContent = response.text();

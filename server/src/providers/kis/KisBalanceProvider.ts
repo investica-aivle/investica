@@ -1,7 +1,7 @@
 import { IKisSessionData } from "@models/KisTrading";
 import { Injectable, Logger } from "@nestjs/common";
 
-import { KisConstants } from "../kis/KisConstants";
+import { KisConstants } from "./KisConstants";
 
 export interface IStockBalanceItem {
   name: string;
@@ -17,8 +17,8 @@ export interface IStockBalanceResponse {
 }
 
 @Injectable()
-export class StockBalanceProvider {
-  private readonly logger = new Logger(StockBalanceProvider.name);
+export class KisBalanceProvider {
+  private readonly logger = new Logger(KisBalanceProvider.name);
 
   /**
    * 잔고 조회하기

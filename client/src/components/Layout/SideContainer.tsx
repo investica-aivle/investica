@@ -1,9 +1,14 @@
 import { BrainIcon, DollarSignIcon, NewspaperIcon, PieChartIcon, TrendingUpIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import KospiOverview from '../StockVisualization/KospiOverview';
+import StockTreemap from '../StockVisualization/Treemap';
+import { useAgenticaRpc } from '../../provider/AgenticaRpcProvider';
+import NewsPanel from '../news/NewsPanel';
+import { TradingTab } from '../trading/TradingTab.tsx';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
+  const { news, isConnected } = useAgenticaRpc();
   const onClose = () => {
     setShowSideContainer(false);
   };
@@ -65,92 +70,17 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
         
         {activeTab === 'kospi' && <KospiOverview />}
         
-        {activeTab === 'news' && (
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg text-gray-100">주요 뉴스</h3>
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-zinc-700/30 p-3 rounded-2xl backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-blue-300">삼성전자</span>
-                    <span className="text-xs bg-green-800/50 text-green-200 px-2 py-0.5 rounded-full">
-                      긍정
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-medium mb-1 text-gray-100">
-                    삼성전자, 신형 반도체 생산라인 확장 계획 발표
-                  </h4>
-                  <p className="text-xs text-gray-400">
-                    2023년 하반기 매출 상승세 전망. 반도체 시장 점유율 확대 예상...
-                  </p>
-                </div>
-              ))}
-              {[1, 2].map(i => (
-                <div key={i} className="bg-zinc-700/30 p-3 rounded-2xl backdrop-blur-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-blue-300">현대차</span>
-                    <span className="text-xs bg-red-900/50 text-red-200 px-2 py-0.5 rounded-full">
-                      부정
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-medium mb-1 text-gray-100">
-                    현대차, 글로벌 공급망 이슈로 생산 차질 예상
-                  </h4>
-                  <p className="text-xs text-gray-400">
-                    원자재 가격 상승과 공급망 문제로 3분기 생산량 감소 전망...
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+        {activeTab === "news" && (
+          <NewsPanel
+            company={news.company}
+            items={news.items}
+            fetchedAt={news.fetchedAt ?? undefined}
+            loading={!news.hasFirstPush || !isConnected}
+          />
         )}
         
         {activeTab === 'trading' && (
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg text-gray-100">매매 기능</h3>
-            <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
-              <h4 className="text-sm font-medium mb-3 text-gray-100">간편 매매</h4>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">
-                    종목 코드/이름
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full bg-zinc-800/50 border border-zinc-600/30 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    placeholder="예: 삼성전자, 005930"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">
-                    수량
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full bg-zinc-800/50 border border-zinc-600/30 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20"
-                    placeholder="수량 입력"
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <button className="flex-1 bg-green-700/50 hover:bg-green-600/50 text-white py-2 rounded-xl text-sm transition-colors">
-                    매수
-                  </button>
-                  <button className="flex-1 bg-red-700/50 hover:bg-red-600/50 text-white py-2 rounded-xl text-sm transition-colors">
-                    매도
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
-              <h4 className="text-sm font-medium mb-3 text-gray-100">자동 투자</h4>
-              <div className="text-xs text-gray-400 mb-3">
-                AI 기반 자동 매매 전략을 설정하세요
-              </div>
-              <button className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-xl text-sm transition-colors">
-                자동 투자 설정
-              </button>
-            </div>
-          </div>
+          <TradingTab />
         )}
         
         {activeTab === 'ai' && (

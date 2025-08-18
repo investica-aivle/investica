@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { KisAuthProvider } from "./KisAuthProvider";
 import { KisConstants } from "./KisConstants";
+import { MaskingUtil } from "../../utils/MaskingUtil";
 
 // KIS API 주문 요청 바디 (내부용)
 interface IKisOrderRequestBody {
@@ -45,16 +46,14 @@ export class KisTradingProvider {
     sessionData: IKisSessionData,
     orderRequest: IKisStock.IOrderRequest,
   ): Promise<IKisStock.IOrderResponse> {
-    const maskedAccountNumber = sessionData.accountNumber.replace(
-      /(\d{4})\d+(\d{2})/,
-      "$1****$2",
-    );
-
     // TR_ID 결정 (매수/매도에 따라)
     const trId =
       orderRequest.orderType === "buy"
         ? KisConstants.TR_ID.STOCK_ORDER.VIRTUAL.BUY
         : KisConstants.TR_ID.STOCK_ORDER.VIRTUAL.SELL;
+
+    // 로그에서 마스킹된 정보 사용
+    const maskedAccountNumber = MaskingUtil.maskAccountNumber(sessionData.accountNumber);
 
     this.logger.log(
       `Executing ${orderRequest.orderType} order for ${orderRequest.stockCode}, quantity: ${orderRequest.quantity}, account: ${maskedAccountNumber}`,
@@ -194,7 +193,7 @@ export class KisTradingProvider {
               headers: {
                 tr_id: trId,
                 authorization: `Bearer ${validSessionData.accessToken.substring(0, 20)}...`,
-                appkey: validSessionData.appKey.substring(0, 8) + "***",
+                appkey: MaskingUtil.maskAppKey(validSessionData.appKey),
                 appsecret: "[HIDDEN]",
               },
               fullResponse: apiResponse,

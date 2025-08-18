@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
 import { useAgenticaRpc } from "../../provider/AgenticaRpcProvider";
 import { ChatInput } from "./ChatInput";
 import { ChatMessages } from "./ChatMessages";
 import { ChatStatus } from "./ChatStatus";
+import { useEffect, useRef } from "react";
 import { IKisAuthData, KisAuthForm } from "./KisAuthForm";
 
 export function Chat() {
@@ -11,9 +11,7 @@ export function Chat() {
     conversate,
     isConnected,
     isError,
-    authError,
-    isAuthenticating,
-    tryConnect,
+    isConnecting,
   } = useAgenticaRpc();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasMessage = messages.length > 0;
@@ -39,21 +37,6 @@ export function Chat() {
     }
   };
 
-  const handleKisAuth = async (authData: IKisAuthData) => {
-    await tryConnect(authData);
-  };
-
-  // 연결되지 않았을 때 KIS 인증 폼 표시
-  if (!isConnected && !isAuthenticating) {
-    return (
-      <KisAuthForm
-        onSubmit={handleKisAuth}
-        isLoading={isAuthenticating}
-        error={authError || undefined}
-      />
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 min-w-0 h-full">
       <div className="flex-1 flex flex-col bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30 h-full">
@@ -65,10 +48,8 @@ export function Chat() {
             <ChatStatus
               isError={isError}
               isConnected={isConnected}
+              isConnecting={isConnecting}
               hasMessages={hasMessage}
-              onRetryConnect={() => {
-                /* 재연결 시 인증 폼으로 돌아가도록 처리 */
-              }}
               isWsUrlConfigured={import.meta.env.VITE_AGENTICA_WS_URL !== ""}
             />
           </div>
@@ -76,7 +57,7 @@ export function Chat() {
           <div className="p-4 flex-shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
-              disabled={!isConnected || isError || isLastMessageFromUser}
+              disabled={!isConnected || isError || isLastMessageFromUser || isConnecting}
             />
           </div>
       </div>
