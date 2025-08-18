@@ -40,17 +40,17 @@ const StockTreemap = () => {
     const opacityHex = getOpacityHex();
     
     if (changeRate >= 0) {
-      // 상승: 파란색 계열 (진하기에 따라)
-      if (absRate >= 5) return `#1E40AF${opacityHex}`; // 매우 진한 파랑 (5% 이상)
-      if (absRate >= 3) return `#2563EB${opacityHex}`; // 진한 파랑 (3-5%)
-      if (absRate >= 1) return `#3B82F6${opacityHex}`; // 중간 파랑 (1-3%)
-      return `#60A5FA${opacityHex}`; // 연한 파랑 (1% 미만)
-    } else {
-      // 하락: 빨간색 계열 (진하기에 따라)
+      // 상승: 빨간색 계열 (진하기에 따라)
       if (absRate >= 5) return `#991B1B${opacityHex}`; // 매우 진한 빨강 (5% 이상)
       if (absRate >= 3) return `#DC2626${opacityHex}`; // 진한 빨강 (3-5%)
       if (absRate >= 1) return `#EF4444${opacityHex}`; // 중간 빨강 (1-3%)
       return `#F87171${opacityHex}`; // 연한 빨강 (1% 미만)
+    } else {
+      // 하락: 파란색 계열 (진하기에 따라)
+      if (absRate >= 5) return `#1E40AF${opacityHex}`; // 매우 진한 파랑 (5% 이상)
+      if (absRate >= 3) return `#2563EB${opacityHex}`; // 진한 파랑 (3-5%)
+      if (absRate >= 1) return `#3B82F6${opacityHex}`; // 중간 파랑 (1-3%)
+      return `#60A5FA${opacityHex}`; // 연한 파랑 (1% 미만)
     }
   };
 
