@@ -132,17 +132,17 @@ export class StocksOverviewProvider {
       const filteredStocks = latestStocks
         .sort((a: StockPriceInfo, b: StockPriceInfo) => {
           // 시가총액 내림차순 정렬
-          return b.mrktTotAmt - a.mrktTotAmt;
+          return parseInt(b.mrktTotAmt) - parseInt(a.mrktTotAmt);
         })
         .slice(0, limit) // 상위 limit개만
         .map((stock: StockPriceInfo, index: number) => ({
           rank: index + 1,
           stockCode: stock.srtnCd,
           stockName: stock.itmsNm,
-          marketCap: stock.mrktTotAmt,
-          changeRate: stock.fltRt,
-          currentPrice: parseFloat(stock.clpr),
-          changeAmount: stock.vs,
+          marketCap: parseInt(stock.mrktTotAmt.toString()),
+          changeRate: Number(stock.fltRt),
+          currentPrice: Number(stock.clpr),
+          changeAmount: Number(stock.vs),
           marketCategory: stock.mrktCtg,
           date: stock.basDt,
         }));
@@ -171,18 +171,18 @@ interface StockPriceInfo {
   itmsNm: string; // 종목명
   mrktCtg: string; // 시장구분
   clpr: string; // 종가
-  vs: number; // 대비
-  fltRt: number; // 등락율
-  mkp: number; // 시가
-  hipr: number; // 고가
-  lopr: number; // 저가
-  trqu: number; // 거래량
-  trPrc: number; // 거래대금
-  lstgStCnt: number; // 상장주식수
+  vs: string; // 대비
+  fltRt: string; // 등락율
+  mkp: string; // 시가
+  hipr: string; // 고가
+  lopr: string; // 저가
+  trqu: string; // 거래량
+  trPrc: string; // 거래대금
+  lstgStCnt: string; // 상장주식수
   basDt: string; // 기준일자
   srtnCd: string; // 종목코드
   isinCd: string; // ISIN코드
-  mrktTotAmt: number; // 시가총액
+  mrktTotAmt: string; // 시가총액
 }
 
 interface StockPriceResponse {

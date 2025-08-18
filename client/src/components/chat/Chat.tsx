@@ -1,9 +1,9 @@
+import { useEffect, useRef } from "react";
 import { useAgenticaRpc } from "../../provider/AgenticaRpcProvider";
 import { ChatInput } from "./ChatInput";
 import { ChatMessages } from "./ChatMessages";
 import { ChatStatus } from "./ChatStatus";
-import { KisAuthForm, IKisAuthData } from "./KisAuthForm";
-import { useEffect, useRef } from "react";
+import { IKisAuthData, KisAuthForm } from "./KisAuthForm";
 
 export function Chat() {
   const {
@@ -55,8 +55,8 @@ export function Chat() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8 min-w-0">
-      <div className="flex-1 flex flex-col  bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30">
+    <div className="flex-1 flex flex-col p-4 md:p-8 min-w-0 h-full">
+      <div className="flex-1 flex flex-col bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30 h-full">
           <div
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
@@ -73,7 +73,7 @@ export function Chat() {
             />
           </div>
 
-          <div className="p-4">
+          <div className="p-4 flex-shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
               disabled={!isConnected || isError || isLastMessageFromUser}
