@@ -131,11 +131,6 @@ export interface KospiPriceData {
   종가: string;
   거래량: string;
   누적거래대금: string;
-  누적거래량: string;
-  락구분: string;
-  등락률: string;
-  전일대비: string;
-  전일대비구분: string;
   수정여부: string;
 }
 
