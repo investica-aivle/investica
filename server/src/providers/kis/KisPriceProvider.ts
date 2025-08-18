@@ -336,19 +336,14 @@ export class KisPriceProvider {
         );
       }
 
-      // output이 배열이 아닌 경우 처리
-      let outputData = data.output;
+      // output2 배열에서 일별 데이터 추출
+      const outputData = data.output2;
       if (!Array.isArray(outputData)) {
-        if (typeof outputData === "object" && outputData !== null) {
-          // 단일 객체인 경우 배열로 변환
-          outputData = [outputData];
-        } else {
-          console.error("예상치 못한 output 구조:", outputData);
-          throw new HttpException(
-            "코스피 지수 데이터 구조 오류",
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-        }
+        console.error("예상치 못한 output2 구조:", outputData);
+        throw new HttpException(
+          "코스피 지수 데이터 구조 오류",
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
 
       const result = outputData.map((item: Record<string, any>) => {
@@ -381,17 +376,12 @@ export class KisPriceProvider {
   private getKospiLabelMap(key: string): string {
     const kospiLabelMap: Record<string, string> = {
       stck_bsop_date: "기준일자",
-      stck_oprc: "시가",
-      stck_hgpr: "고가",
-      stck_lwpr: "저가",
-      stck_prpr: "종가",
-      cntg_vol: "거래량",
+      bstp_nmix_oprc: "시가",
+      bstp_nmix_hgpr: "고가",
+      bstp_nmix_lwpr: "저가",
+      bstp_nmix_prpr: "종가",
+      acml_vol: "거래량",
       acml_tr_pbmn: "누적거래대금",
-      acml_vol: "누적거래량",
-      flng_cls_code: "락구분",
-      prtt_rate: "등락률",
-      prdy_vrss: "전일대비",
-      prdy_vrss_sign: "전일대비구분",
       mod_yn: "수정여부",
     };
 
@@ -409,13 +399,13 @@ export class KisPriceProvider {
 
     switch (periodCode) {
       case "D":
-        daysToSubtract = 30; // 일별: 30일
+        daysToSubtract = 7; // 일별: 1주일
         break;
       case "W":
-        daysToSubtract = 90; // 주별: 90일
+        daysToSubtract = 84; // 주별: 12주 (약 3개월)
         break;
       case "M":
-        daysToSubtract = 365; // 월별: 1년
+        daysToSubtract = 180; // 월별: 6개월
         break;
       case "Y":
         daysToSubtract = 1825; // 년별: 5년
