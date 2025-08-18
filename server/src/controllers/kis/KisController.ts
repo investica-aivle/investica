@@ -193,7 +193,64 @@ export class KisController {
       return result;
     } catch (error) {
       this.logger.error(`=== 주식 일자별 가격 조회 실패 ===`);
-      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 업종 지수 일/주/월/년 시세를 조회합니다.
+   *
+   * @summary 업종 지수 시세 조회
+   * @param body 업종 지수 시세 조회 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 업종 지수 시세 데이터
+   */
+  @TypedRoute.Post("index-prices")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getIndexPrices(
+    @TypedBody()
+    body: {
+      indexCode: string;
+      periodCode?: "D" | "W" | "M" | "Y";
+      startDate?: string;
+      endDate?: string;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    this.logger.log(`=== 업종 지수 시세 조회 요청 ===`);
+    this.logger.log(`업종코드: ${body.indexCode}`);
+    this.logger.log(`기간 구분: ${body.periodCode || "D"}`);
+    this.logger.log(`시작일: ${body.startDate || "기본값"}`);
+    this.logger.log(`종료일: ${body.endDate || "기본값"}`);
+
+    try {
+      const result = await this.kisService.getIndexPrices(
+        session.kisSessionData,
+        {
+          indexCode: body.indexCode,
+          periodCode: body.periodCode,
+          startDate: body.startDate,
+          endDate: body.endDate,
+        },
+      );
+
+      this.logger.log(`=== 업종 지수 시세 조회 성공 ===`);
+      this.logger.log(`조회된 데이터 수: ${result.data.length}개`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 업종 지수 시세 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
 
       throw error;
     }

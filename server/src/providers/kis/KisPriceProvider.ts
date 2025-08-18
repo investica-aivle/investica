@@ -26,6 +26,32 @@ interface StockRequestDto {
   adjustPrice?: 0 | 1;
 }
 
+interface IndexRequestDto {
+  /**
+   * 업종코드 (2001: KOSPI 200, 1001: KOSPI 등)
+   * @example "2001"
+   */
+  indexCode: string;
+
+  /**
+   * 조회 기간 구분 (D:일, W:주, M:월, Y:년)
+   * @example "D"
+   */
+  periodCode?: "D" | "W" | "M" | "Y";
+
+  /**
+   * 조회 시작일 (YYYYMMDD 형식)
+   * @example "20240101"
+   */
+  startDate?: string;
+
+  /**
+   * 조회 종료일 (YYYYMMDD 형식)
+   * @example "20241231"
+   */
+  endDate?: string;
+}
+
 const iscdStatClsCodeMap: Record<string, string> = {
   "51": "관리종목",
   "52": "투자위험",
@@ -264,5 +290,138 @@ export class KisPriceProvider {
       throw new HttpException("종목코드 인식 실패", HttpStatus.BAD_REQUEST);
     }
     return stockCode;
+  }
+
+  /**
+   * 업종 지수 일/주/월/년 시세 조회
+   * @param body 업종코드, 기간구분, 시작일, 종료일 DTO
+   * @param session KIS 인증 세션
+   * @returns 업종 지수 시세 데이터 배열 (한글 키 포함)
+   */
+  public async fetchIndexPrices(
+    body: IndexRequestDto,
+    session: IKisSessionData,
+  ) {
+    const {
+      indexCode,
+      periodCode = "D",
+      startDate = this.getDefaultStartDate(periodCode),
+      endDate = this.getDefaultEndDate(),
+    } = body;
+    const { accessToken, appKey, appSecret } = session;
+
+    try {
+      // 국내주식업종기간별시세(일/주/월/년) API 사용
+      const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice`;
+      const { data } = await this.http.axiosRef.get(url, {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          authorization: `Bearer ${accessToken}`,
+          appkey: appKey,
+          appsecret: appSecret,
+          tr_id: "FHKST01010100", // 국내주식업종기간별시세(일/주/월/년) TR ID
+          custtype: "P",
+        },
+        params: {
+          FID_COND_MRKT_DIV_CODE: "U", // 업종
+          FID_INPUT_ISCD: indexCode, // 업종코드
+          FID_PERIOD_DIV_CODE: periodCode, // D:일, W:주, M:월, Y:년
+          FID_ORG_ADJ_PRC: "1", // 수정주가 반영 (1:반영, 0:미반영)
+          FID_INPUT_DATE_1: startDate, // 조회시작일자
+          FID_INPUT_DATE_2: endDate, // 조회종료일자
+        },
+      });
+
+      if (data.rt_cd !== "0") {
+        throw new HttpException(
+          data.msg1 || "업종 지수 시세 조회 실패",
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const result = data.output.map((item: Record<string, any>) => {
+        const parsed: Record<string, any> = {};
+        for (const [key, value] of Object.entries(item)) {
+          const label = this.getKospiLabelMap(key);
+          parsed[label] = value;
+        }
+        return parsed;
+      });
+
+      return result;
+    } catch (error: any) {
+      console.error(
+        "KIS 업종 지수 시세 요청 실패:",
+        error.response?.data || error,
+      );
+      throw new HttpException(
+        "한국투자증권 API 호출 실패",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * 코스피 시세 데이터 라벨 매핑
+   * @param key API 응답 키
+   * @returns 한글 라벨
+   */
+  private getKospiLabelMap(key: string): string {
+    const kospiLabelMap: Record<string, string> = {
+      stck_bsop_date: "기준일자",
+      stck_oprc: "시가",
+      stck_hgpr: "고가",
+      stck_lwpr: "저가",
+      stck_prpr: "종가",
+      cntg_vol: "거래량",
+      acml_tr_pbmn: "누적거래대금",
+      acml_vol: "누적거래량",
+      flng_cls_code: "락구분",
+      prtt_rate: "등락률",
+      prdy_vrss: "전일대비",
+      prdy_vrss_sign: "전일대비구분",
+      mod_yn: "수정여부",
+    };
+
+    return kospiLabelMap[key] || key;
+  }
+
+  /**
+   * 기본 시작일 계산 (기간구분에 따라)
+   * @param periodCode 기간구분
+   * @returns YYYYMMDD 형식의 시작일
+   */
+  private getDefaultStartDate(periodCode: string): string {
+    const today = new Date();
+    let daysToSubtract = 30; // 기본 30일
+
+    switch (periodCode) {
+      case "D":
+        daysToSubtract = 30; // 일별: 30일
+        break;
+      case "W":
+        daysToSubtract = 90; // 주별: 90일
+        break;
+      case "M":
+        daysToSubtract = 365; // 월별: 1년
+        break;
+      case "Y":
+        daysToSubtract = 1825; // 년별: 5년
+        break;
+    }
+
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - daysToSubtract);
+
+    return startDate.toISOString().slice(0, 10).replace(/-/g, "");
+  }
+
+  /**
+   * 기본 종료일 계산 (오늘)
+   * @returns YYYYMMDD 형식의 종료일
+   */
+  private getDefaultEndDate(): string {
+    const today = new Date();
+    return today.toISOString().slice(0, 10).replace(/-/g, "");
   }
 }
