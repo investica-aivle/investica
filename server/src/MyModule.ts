@@ -7,6 +7,7 @@ import { ChatModule } from "./controllers/chat/ChatModule";
 import { KisModule } from "./controllers/kis/KisModule";
 import { NewsModule } from "./controllers/news/NewsModule";
 import { ReportsModule } from "./controllers/reports/ReportsModule";
+import { StockOverviewModule } from "./controllers/stockoverview/StockOverviewModule";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ReportsModule } from "./controllers/reports/ReportsModule";
     KisModule,
     NewsModule,
     ReportsModule,
+    StockOverviewModule,
   ],
 })
 export class MyModule {}

@@ -23,7 +23,7 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
   ];
   return (
     <div className="flex flex-1 flex-col w-80 bg-zinc-800/50 backdrop-blur-md text-white h-full border-r border-zinc-700/30">
-      <div className="flex justify-between items-center p-4 border-b border-zinc-700/30">
+      <div className="flex justify-between items-center p-4 border-b border-zinc-700/30 flex-shrink-0">
         <h2 className="font-bold text-lg text-gray-100">주식 대시보드</h2>
         <button
           onClick={onClose}
@@ -33,7 +33,7 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
         </button>
       </div>
       
-      <div className="flex border-b border-zinc-700/30">
+      <div className="flex border-b border-zinc-700/30 flex-shrink-0">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -50,11 +50,10 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
         ))}
       </div>
       
-      <div className="overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {activeTab === 'portfolio' && (
           <div className="space-y-4">
             <h3 className="font-medium text-lg text-gray-100">내 포트폴리오</h3>
-            <StockTreemap />
             <div className="mt-6 bg-zinc-700/30 rounded-2xl p-4 backdrop-blur-md">
               <h4 className="font-medium mb-2 text-gray-100">포트폴리오 요약</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">

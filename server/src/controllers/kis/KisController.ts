@@ -1,14 +1,22 @@
 import { TypedBody, TypedRoute } from "@nestia/core";
-import { Controller, HttpCode, HttpStatus, Logger, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  UseGuards,
+} from "@nestjs/common";
 
+import { Session } from "../../decorators/session.decorators";
+import { SessionGuard } from "../../guards/SessionGuard";
 import { KisAuthProvider } from "../../providers/kis/KisAuthProvider";
 import { KisService } from "../../providers/kis/KisService";
-import { SessionManager } from "../../providers/session/SessionManager";
+import {
+  ISessionData,
+  SessionManager,
+} from "../../providers/session/SessionManager";
 import { MaskingUtil } from "../../utils/MaskingUtil";
 import { IKisAuthRequestDto, IKisAuthResponseDto } from "./dto/KisAuthDto";
-import { SessionGuard } from "../../guards/SessionGuard";
-import { Session } from "../../decorators/session.decorators";
-import { ISessionData } from "../../providers/session/SessionManager";
 
 /**
  * KIS (Korea Investment Securities) REST API Controller
@@ -41,7 +49,9 @@ export class KisController {
     @TypedBody() body: IKisAuthRequestDto,
   ): Promise<IKisAuthResponseDto> {
     const maskedAppKey = MaskingUtil.maskAppKey(body.appKey);
-    const maskedAccountNumber = MaskingUtil.maskAccountNumber(body.accountNumber);
+    const maskedAccountNumber = MaskingUtil.maskAccountNumber(
+      body.accountNumber,
+    );
 
     this.logger.log(`=== KIS OAuth 인증 시작 ===`);
     this.logger.log(`계좌번호: ${maskedAccountNumber}`);
@@ -56,14 +66,18 @@ export class KisController {
       });
 
       this.logger.log(`=== KIS OAuth 인증 성공 ===`);
-      this.logger.log(`액세스 토큰 만료시간: ${kisSessionData.expiresAt.toISOString()}`);
+      this.logger.log(
+        `액세스 토큰 만료시간: ${kisSessionData.expiresAt.toISOString()}`,
+      );
 
       // 세션 생성
       const { sessionKey } = this.sessionManager.createSession(kisSessionData);
       const createdAt = new Date();
 
       // 만료까지 남은 시간 계산 (초 단위)
-      const expiresInSeconds = Math.floor((kisSessionData.expiresAt.getTime() - createdAt.getTime()) / 1000);
+      const expiresInSeconds = Math.floor(
+        (kisSessionData.expiresAt.getTime() - createdAt.getTime()) / 1000,
+      );
 
       // 계좌 타입 결정 (실전/모의)
       const accountType = this.determineAccountType(body.accountNumber);
@@ -84,7 +98,9 @@ export class KisController {
       };
     } catch (error) {
       this.logger.error(`=== KIS OAuth 인증 실패 ===`);
-      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
 
       // 상세 에러 정보 구성
       const errorDetails = this.buildErrorDetails(error);
@@ -116,7 +132,9 @@ export class KisController {
     loggedOutAt: string;
   }> {
     const maskedSessionKey = MaskingUtil.maskSessionKey(session.sessionKey);
-    const maskedAccountNumber = MaskingUtil.maskAccountNumber(session.kisSessionData.accountNumber);
+    const maskedAccountNumber = MaskingUtil.maskAccountNumber(
+      session.kisSessionData.accountNumber,
+    );
 
     this.logger.log(`=== 로그아웃 요청 시작 ===`);
     this.logger.log(`세션 키: ${maskedSessionKey}`);
@@ -128,7 +146,9 @@ export class KisController {
 
       if (!removed) {
         this.logger.warn(`=== 세션 제거 실패 ===`);
-        this.logger.warn(`세션이 이미 제거되었거나 존재하지 않음: ${session.id}`);
+        this.logger.warn(
+          `세션이 이미 제거되었거나 존재하지 않음: ${session.id}`,
+        );
       }
 
       const loggedOutAt = new Date().toISOString();
@@ -144,7 +164,9 @@ export class KisController {
       };
     } catch (error) {
       this.logger.error(`=== 로그아웃 실패 ===`);
-      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
 
       throw error;
     }
@@ -162,7 +184,8 @@ export class KisController {
   @UseGuards(SessionGuard)
   @HttpCode(HttpStatus.OK)
   public async getStockDailyPrices(
-    @TypedBody() body: {
+    @TypedBody()
+    body: {
       company: string;
       periodCode?: "D" | "W" | "M";
       adjustPrice?: 0 | 1;
@@ -174,7 +197,7 @@ export class KisController {
   }> {
     this.logger.log(`=== 주식 일자별 가격 조회 요청 ===`);
     this.logger.log(`기업명: ${body.company}`);
-    this.logger.log(`기간 구분: ${body.periodCode || 'D'}`);
+    this.logger.log(`기간 구분: ${body.periodCode || "D"}`);
     this.logger.log(`수정주가: ${body.adjustPrice ?? 1}`);
 
     try {
@@ -184,7 +207,7 @@ export class KisController {
           company: body.company,
           periodCode: body.periodCode,
           adjustPrice: body.adjustPrice,
-        }
+        },
       );
 
       this.logger.log(`=== 주식 일자별 가격 조회 성공 ===`);
@@ -193,7 +216,303 @@ export class KisController {
       return result;
     } catch (error) {
       this.logger.error(`=== 주식 일자별 가격 조회 실패 ===`);
-      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 코스피 지수 일/주/월/년 시세를 조회합니다.
+   *
+   * @summary 코스피 지수 시세 조회
+   * @param body 코스피 지수 시세 조회 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 코스피 지수 시세 데이터
+   */
+  @TypedRoute.Post("kospi-prices")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getKospiPrices(
+    @TypedBody()
+    body: {
+      periodCode?: "D" | "W" | "M" | "Y";
+      startDate?: string;
+      endDate?: string;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    this.logger.log(`=== 코스피 지수 시세 조회 요청 ===`);
+    this.logger.log(`기간 구분: ${body.periodCode || "D"}`);
+    this.logger.log(`시작일: ${body.startDate || "기본값"}`);
+    this.logger.log(`종료일: ${body.endDate || "기본값"}`);
+
+    try {
+      const result = await this.kisService.getKospiPrices(
+        session.kisSessionData,
+        {
+          periodCode: body.periodCode,
+          startDate: body.startDate,
+          endDate: body.endDate,
+        },
+      );
+
+      this.logger.log(`=== 코스피 지수 시세 조회 성공 ===`);
+      this.logger.log(`조회된 데이터 수: ${result.data.length}개`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 코스피 지수 시세 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 주식 현재가를 조회합니다.
+   *
+   * @summary 주식 현재가 조회
+   * @param body 현재가 조회 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 현재가 데이터
+   */
+  @TypedRoute.Post("stock-price")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getStockPrice(
+    @TypedBody()
+    body: {
+      company: string;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    message: string;
+    data: Record<string, any>;
+  }> {
+    this.logger.log(`=== 주식 현재가 조회 요청 ===`);
+    this.logger.log(`기업명: ${body.company}`);
+
+    try {
+      const result = await this.kisService.getStockPrice(
+        session.kisSessionData,
+        {
+          company: body.company,
+        },
+      );
+
+      this.logger.log(`=== 주식 현재가 조회 성공 ===`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 주식 현재가 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 주식 체결 정보를 조회합니다.
+   *
+   * @summary 주식 체결 정보 조회
+   * @param body 체결 정보 조회 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 체결 정보 데이터
+   */
+  @TypedRoute.Post("stock-trades")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getStockTrades(
+    @TypedBody()
+    body: {
+      company: string;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    this.logger.log(`=== 주식 체결 정보 조회 요청 ===`);
+    this.logger.log(`기업명: ${body.company}`);
+
+    try {
+      const result = await this.kisService.getStockTrades(
+        session.kisSessionData,
+        {
+          company: body.company,
+        },
+      );
+
+      this.logger.log(`=== 주식 체결 정보 조회 성공 ===`);
+      this.logger.log(`조회된 데이터 수: ${result.data.length}개`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 주식 체결 정보 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 주식 매수 주문을 실행합니다.
+   *
+   * @summary 주식 매수 주문
+   * @param body 매수 주문 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 주문 결과
+   */
+  @TypedRoute.Post("buy-stock")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async buyStock(
+    @TypedBody()
+    body: {
+      stockCode: string;
+      quantity: number;
+      orderCondition: "market" | "limit";
+      price?: number;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    errorCode?: string;
+  }> {
+    this.logger.log(`=== 주식 매수 주문 요청 ===`);
+    this.logger.log(`종목코드: ${body.stockCode}`);
+    this.logger.log(`수량: ${body.quantity}`);
+    this.logger.log(`주문조건: ${body.orderCondition}`);
+    if (body.price) {
+      this.logger.log(`가격: ${body.price}`);
+    }
+
+    try {
+      const result = await this.kisService.buyStock(session.kisSessionData, {
+        stockCode: body.stockCode,
+        quantity: body.quantity,
+        orderCondition: body.orderCondition,
+        price: body.price,
+      });
+
+      this.logger.log(`=== 주식 매수 주문 성공 ===`);
+      this.logger.log(`결과: ${result.message}`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 주식 매수 주문 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 주식 매도 주문을 실행합니다.
+   *
+   * @summary 주식 매도 주문
+   * @param body 매도 주문 요청 데이터
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 주문 결과
+   */
+  @TypedRoute.Post("sell-stock")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async sellStock(
+    @TypedBody()
+    body: {
+      stockCode: string;
+      quantity: number;
+      orderCondition: "market" | "limit";
+      price?: number;
+    },
+    @Session() session: ISessionData,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    errorCode?: string;
+  }> {
+    this.logger.log(`=== 주식 매도 주문 요청 ===`);
+    this.logger.log(`종목코드: ${body.stockCode}`);
+    this.logger.log(`수량: ${body.quantity}`);
+    this.logger.log(`주문조건: ${body.orderCondition}`);
+    if (body.price) {
+      this.logger.log(`가격: ${body.price}`);
+    }
+
+    try {
+      const result = await this.kisService.sellStock(session.kisSessionData, {
+        stockCode: body.stockCode,
+        quantity: body.quantity,
+        orderCondition: body.orderCondition,
+        price: body.price,
+      });
+
+      this.logger.log(`=== 주식 매도 주문 성공 ===`);
+      this.logger.log(`결과: ${result.message}`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 주식 매도 주문 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 계좌 주식 잔고를 조회합니다.
+   *
+   * @summary 계좌 주식 잔고 조회
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 주식 잔고 데이터
+   */
+  @TypedRoute.Post("stock-balance")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getStockBalance(@Session() session: ISessionData): Promise<{
+    message: string;
+    stocks: Array<{
+      name: string;
+      quantity: string;
+      buyPrice: string;
+      currentPrice: string;
+      profit: string;
+    }>;
+  }> {
+    this.logger.log(`=== 계좌 주식 잔고 조회 요청 ===`);
+
+    try {
+      const result = await this.kisService.getStockBalance(
+        session.kisSessionData,
+      );
+
+      this.logger.log(`=== 계좌 주식 잔고 조회 성공 ===`);
+      this.logger.log(`보유 종목 수: ${result.stocks.length}개`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 계좌 주식 잔고 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
 
       throw error;
     }
@@ -219,13 +538,16 @@ export class KisController {
     if (error?.response?.data) {
       const kisError = error.response.data;
       errorDetails.kisErrorCode = kisError.error_code || kisError.rt_cd;
-      errorDetails.kisErrorMessage = kisError.error_description || kisError.msg1;
+      errorDetails.kisErrorMessage =
+        kisError.error_description || kisError.msg1;
     }
 
     // 재시도 가능한 에러 유형 판단
-    if (error?.code === "NETWORK_ERROR" ||
-        error?.response?.status >= 500 ||
-        error?.message?.includes("timeout")) {
+    if (
+      error?.code === "NETWORK_ERROR" ||
+      error?.response?.status >= 500 ||
+      error?.message?.includes("timeout")
+    ) {
       errorDetails.retryable = true;
     }
 

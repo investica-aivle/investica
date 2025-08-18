@@ -13,6 +13,43 @@ export class MiraeAssetReportProvider {
     "https://securities.miraeasset.com/bbs/board/message/list.do?categoryId=1527";
   private readonly reportsUrl_IA =
     "https://securities.miraeasset.com/bbs/board/message/list.do?categoryId=1525";
+
+  /**
+   * JSON 파일의 업데이트 시간을 확인하여 스크래핑 필요 여부 판단
+   * @param isInvestmentStrategy true: 투자전략 보고서, false: 산업분석 보고서
+   * @param hoursThreshold 시간 임계값 (기본값: 6시간)
+   * @returns 스크래핑이 필요한지 여부
+   */
+  public shouldScrapeReports(
+    isInvestmentStrategy: boolean = true,
+    hoursThreshold: number = 6,
+  ): boolean {
+    const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
+    const jsonFilePath = path.join("./downloads", jsonPath);
+
+    if (!fs.existsSync(jsonFilePath)) {
+      console.log(`📄 JSON 파일이 없음 - 스크래핑 필요`);
+      return true;
+    }
+
+    const stats = fs.statSync(jsonFilePath);
+    const lastModified = stats.mtime;
+    const now = new Date();
+    const hoursDiff =
+      (now.getTime() - lastModified.getTime()) / (1000 * 60 * 60);
+
+    if (hoursDiff < hoursThreshold) {
+      console.log(
+        `📅 JSON 파일이 ${hoursDiff.toFixed(1)}시간 전에 업데이트됨 - 스크래핑 건너뛰기`,
+      );
+      return false;
+    }
+
+    console.log(
+      `📅 JSON 파일이 ${hoursDiff.toFixed(1)}시간 전에 업데이트됨 - 스크래핑 필요`,
+    );
+    return true;
+  }
   /**
    * 미래에셋증권 보고서 스크래핑 및 다운로드 (동기화 포함)
    */
@@ -26,17 +63,28 @@ export class MiraeAssetReportProvider {
   }> {
     try {
       // 1. 먼저 스크래핑으로 모든 보고서 가져오기
-      const allReports = await this.scrapeReportsFromWeb(keywords, isInvestmentStrategy);
+      const allReports = await this.scrapeReportsFromWeb(
+        keywords,
+        isInvestmentStrategy,
+      );
 
       console.log(allReports);
 
       // 2. JSON 파일 기반 중복 제거
       const filteredReports = syncWithExisting
-        ? this.filterDuplicateReportsFromJson(allReports, outputDir, isInvestmentStrategy)
+        ? this.filterDuplicateReportsFromJson(
+            allReports,
+            outputDir,
+            isInvestmentStrategy,
+          )
         : allReports;
 
       // 3. 필터링된 새로운 보고서들만 JSON 파일에 추가
-      const reports = await this.saveReportsToJson(filteredReports, outputDir, isInvestmentStrategy);
+      const reports = await this.saveReportsToJson(
+        filteredReports,
+        outputDir,
+        isInvestmentStrategy,
+      );
 
       return {
         reports,
@@ -53,10 +101,12 @@ export class MiraeAssetReportProvider {
    */
   private async scrapeReportsFromWeb(
     keywords: string[],
-    isInvestmentStrategy: boolean
+    isInvestmentStrategy: boolean,
   ): Promise<MiraeAssetReport[]> {
     try {
-      const reportsUrl = isInvestmentStrategy ? this.reportsUrl_IS : this.reportsUrl_IA;
+      const reportsUrl = isInvestmentStrategy
+        ? this.reportsUrl_IS
+        : this.reportsUrl_IA;
       const response = await axios.get(reportsUrl, {
         headers: {
           "User-Agent":
@@ -246,7 +296,7 @@ export class MiraeAssetReportProvider {
   private filterDuplicateReportsFromJson(
     reports: MiraeAssetReport[],
     outputDir: string,
-    isInvestmentStrategy: boolean
+    isInvestmentStrategy: boolean,
   ): MiraeAssetReport[] {
     const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
     const jsonFilePath = path.join(outputDir, jsonPath);
@@ -297,7 +347,9 @@ export class MiraeAssetReportProvider {
     isInvestmentStrategy: boolean,
   ): Promise<MiraeAssetReport[]> {
     try {
-      const jsonPath = isInvestmentStrategy ? "reports.json" : "reports_IA.json";
+      const jsonPath = isInvestmentStrategy
+        ? "reports.json"
+        : "reports_IA.json";
       const filePath = path.join(outputDir, jsonPath);
       let existingData: ReportsJsonData = {
         lastUpdated: new Date().toISOString(),

@@ -116,6 +116,30 @@ export class MyChatController {
         },
       });
 
+      agent.on("initialize", async () => {
+        this.logger.log("🤖 AGENT 초기화");
+      });
+      agent.on("select", async (event) => {
+        this.logger.log(
+          "🎯 함수 선택",
+          event.selection.operation.name,
+          event.selection.reason,
+        );
+      });
+      agent.on("execute", async (event) => {
+        this.logger.log(
+          "⚡ 함수 실행",
+          event.operation.name,
+          event.arguments,
+          event.value,
+        );
+      });
+      agent.on("describe", async (event) => {
+        this.logger.log("📋 함수 설명");
+        for (const execute of event.executes)
+          this.logger.log(`  📌 ${execute.operation.name}`);
+      });
+
       const agentEndTime = Date.now();
       this.logger.log(`Agentica 에이전트 초기화 완료: ${agentEndTime - agentStartTime}ms`);
       this.logger.log(`컨트롤러 등록: KIS, News, Reports`);

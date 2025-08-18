@@ -39,21 +39,23 @@ function App() {
   return (
     <AgenticaRpcProvider>
       <AppInitializer>
-        <div className="relative min-h-screen">
+        <div className="relative h-screen overflow-hidden">
           {/* Shared Background */}
           <div className="fixed inset-0 bg-gradient-to-br from-zinc-900 via-slate-900 to-neutral-900" />
           <div className="fixed inset-0 opacity-[0.07] bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px]" />
 
           {/* Content */}
-          <div className="relative w-full min-h-screen flex flex-col">
+          <div className="relative w-full h-screen flex flex-col">
             <Header setShowSideContainer={setShowSideContainer} />
-            <div className="flex flex-1">
+            <div className="flex flex-1 overflow-hidden">
               {showSideContainer &&
                 <div className="hidden lg:flex md:flex-1">
                   <SideContainer setShowSideContainer={setShowSideContainer} />
                 </div>
               }
+              <div className="flex-1 overflow-hidden">
                 <Chat />
+              </div>
             </div>
           </div>
         </div>

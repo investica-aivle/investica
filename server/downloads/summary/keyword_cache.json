@@ -1,0 +1,77 @@
+{
+  "keywords": [
+    {
+      "icon": "📉",
+      "keyword": "미국 금리 인하 기대 확대",
+      "description": "7월 코어 CPI 예상치 부합 및 고용시장 둔화로 연준의 9월 금리 인하 확률이 90%까지 확대.",
+      "impact": "positive"
+    },
+    {
+      "icon": "🚨",
+      "keyword": "미국 스태그플레이션 우려",
+      "description": "ISM 서비스업 지수 둔화 속 고용 위축 및 가격 지수 상승으로 스태그플레이션 위험이 시사됨.",
+      "impact": "negative"
+    },
+    {
+      "icon": "💰",
+      "keyword": "연금시장 디지털 자산 투자 허용",
+      "description": "트럼프 행정명령으로 12.2조 달러 DC형 연금의 디지털 자산 등 대체 자산 투자 접근성 개선.",
+      "impact": "positive"
+    },
+    {
+      "icon": "📈",
+      "keyword": "글로벌 기업 이익 전망 개선",
+      "description": "전세계 12개월 선행 EPS가 소폭 상향 조정되었으며, 특히 미국과 한국 기업의 이익 전망이 개선.",
+      "impact": "positive"
+    },
+    {
+      "icon": "🇰🇷",
+      "keyword": "국내 재정적자 축소 기대",
+      "description": "정부 지출 구조조정으로 내년 통합재정수지 적자 축소 및 국채 발행 부담 완화 기대.",
+      "impact": "positive"
+    }
+  ],
+  "referencedFiles": [
+    {
+      "id": "2138116",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(8/18~22)",
+      "date": "2025-08-14",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138116.pdf?attachmentId=2138116",
+      "mdFileName": "2138116.md"
+    },
+    {
+      "id": "2138073",
+      "title": "Fixed Income Comment안심하기 이른 인플레이션",
+      "date": "2025-08-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138073.pdf?attachmentId=2138073",
+      "mdFileName": "2138073.md"
+    },
+    {
+      "id": "2137952",
+      "title": "Thematic RadarEp 36. 디지털 자산에 열린 연금 시장",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137952.pdf?attachmentId=2137952",
+      "mdFileName": "2137952.md"
+    },
+    {
+      "id": "2137951",
+      "title": "Credit Market Weekly8.11~15일",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137951.pdf?attachmentId=2137951",
+      "mdFileName": "2137951.md"
+    },
+    {
+      "id": "2137944",
+      "title": "[Earnings Revision] 8월 2주차",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137944.pdf?attachmentId=2137944",
+      "mdFileName": "2137944.md"
+    }
+  ],
+  "updatedAt": "2025-08-16"
+}

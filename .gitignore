@@ -13,3 +13,4 @@ package-lock.json
 _mydocs/
 .DS_Store
 server/src/api/
+server/packages/api/

@@ -14,9 +14,9 @@ interface KisAuthFormProps {
 
 export function KisAuthForm({ onSubmit, isLoading, error }: KisAuthFormProps) {
   const [formData, setFormData] = useState<IKisAuthData>({
-    accountNumber: "",
-    appKey: "",
-    appSecret: "",
+    accountNumber: import.meta.env.VITE_KIS_ACCOUNT ?? "",
+    appKey: import.meta.env.VITE_KIS_APP_KEY ?? "",
+    appSecret: import.meta.env.VITE_KIS_APP_SECRET ?? "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {

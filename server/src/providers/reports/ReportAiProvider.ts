@@ -1,39 +1,83 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import PdfConversionResult, {
+  Keyword,
+  KeywordCacheData,
+  KeywordSummaryResult,
   MiraeAssetReport,
   ReportsJsonData,
 } from "@models/Reports";
 import { HttpService } from "@nestjs/axios";
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from "fs";
 import * as path from "path";
-import fetch from 'node-fetch';
-
-import { MyGlobal } from "../../MyGlobal";
 
 /**
- * Perplexity PDF Converter Provider
+ * Report AI Provider
  *
- * Perplexity AI API를 직접 사용하여 변환하는 기능을 제공합니다.
+ * Google Gemini AI를 사용하여 PDF를 마크다운으로 변환하는 기능을 제공합니다.
  * 내부적으로 사용되는 Provider입니다.
  */
 @Injectable()
-export class PerplexityProvider {
+export class ReportAiProvider {
   private genAI: GoogleGenerativeAI;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    const apiKey = MyGlobal.env.GOOGLE_API_KEY;
+    const apiKey = this.configService.get<string>("GOOGLE_API_KEY");
+    console.log(apiKey);
     if (!apiKey) {
-      throw new InternalServerErrorException('Google API Key not found in configuration.');
-    }
-    else {
+      throw new InternalServerErrorException(
+        "Google API Key not found in configuration.",
+      );
+    } else {
       console.log(`✅ GOOGLE_API_KEY 설정됨`);
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
+
+    // temp_files 디렉토리 생성
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+      console.log(`📁 임시 파일 디렉토리 생성: ${this.tempDir}`);
+    }
+  }
+
+  /**
+   * 최신 마크다운 파일들을 가져오기
+   */
+  public async getLatestMarkdownFiles(
+    jsonFilePath: string = "./downloads/reports.json",
+    limit: number = 5,
+    options: {
+      contentLengthLimit?: number;
+      shouldLimitLength?: boolean;
+    } = {},
+  ): Promise<{
+    limitedFiles: any[];
+    fileContents: any[];
+  }> {
+    // 1. 마크다운 파일들 읽기 및 정렬
+    const sortedFiles = this.getMarkdownFilesFromJson(jsonFilePath);
+
+    if (sortedFiles.length === 0) {
+      return {
+        limitedFiles: [],
+        fileContents: [],
+      };
+    }
+
+    // 2. limit만큼 자르기
+    const limitedFiles = sortedFiles.slice(0, limit);
+
+    // 3. 파일 내용 읽기
+    const fileContents = this.readLatestMarkdownFiles(limitedFiles, options);
+
+    return {
+      limitedFiles,
+      fileContents,
+    };
   }
 
   /**
@@ -54,26 +98,15 @@ export class PerplexityProvider {
   }> {
     try {
       console.log("summarizeLatestMarkdownFiles");
-      // 1. 마크다운 파일들 읽기 및 정렬
-      const sortedFiles = this.getMarkdownFilesFromJson(jsonFilePath);
 
-      if (sortedFiles.length === 0) {
-        return {
-          message: "요약할 마크다운 파일이 없습니다.",
-          summary: "",
-          referencedFiles: [],
-        };
-      }
-
-      // 2. limit만큼 자르기
-      const limitedFiles = sortedFiles.slice(0, limit);
-
-      // 3. 파일 내용 읽기
-      const fileContents = this.readMarkdownFileContents(limitedFiles);
+      const { limitedFiles, fileContents } = await this.getLatestMarkdownFiles(
+        jsonFilePath,
+        limit,
+      );
 
       if (fileContents.length === 0) {
         return {
-          message: "마크다운 파일을 읽을 수 없습니다.",
+          message: "마크다운 파일이 없습니다.",
           summary: "",
           referencedFiles: [],
         };
@@ -92,6 +125,62 @@ export class PerplexityProvider {
       return {
         message: `요약 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`,
         summary: "",
+        referencedFiles: [],
+      };
+    }
+  }
+
+  /**
+   * 키워드 기반 짧은 요약 생성
+   */
+  public async generateKeywordSummary(
+    jsonFilePath: string = "./downloads/reports.json",
+    limit: number = 5,
+  ): Promise<KeywordSummaryResult> {
+    try {
+      console.log("generateKeywordSummary");
+
+      const { limitedFiles, fileContents } = await this.getLatestMarkdownFiles(
+        jsonFilePath,
+        limit,
+        { contentLengthLimit: 3000, shouldLimitLength: true },
+      );
+
+      if (fileContents.length === 0) {
+        return {
+          message: "마크다운 파일이 없습니다.",
+          keywords: [],
+          referencedFiles: [],
+        };
+      }
+
+      // 캐시 확인
+      const cacheResult = this.checkKeywordCache(limitedFiles);
+      if (cacheResult.isValid) {
+        console.log("✅ 캐시된 키워드 요약 사용");
+        return {
+          message: `${fileContents.length}개의 최신 마크다운 파일에서 키워드를 추출했습니다. (캐시됨)`,
+          keywords: cacheResult.keywords,
+          referencedFiles: limitedFiles,
+        };
+      }
+
+      // AI 키워드 요약 요청
+      const keywordData = await this.requestAIKeywordSummary(fileContents);
+
+      // 캐시 저장
+      await this.saveKeywordCache(keywordData, limitedFiles);
+
+      return {
+        message: `${fileContents.length}개의 최신 마크다운 파일에서 키워드를 추출했습니다.`,
+        keywords: keywordData,
+        referencedFiles: limitedFiles,
+      };
+    } catch (error) {
+      console.error("Error generating keyword summary:", error);
+      return {
+        message: `키워드 요약 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`,
+        keywords: [],
         referencedFiles: [],
       };
     }
@@ -166,83 +255,6 @@ export class PerplexityProvider {
     }
   }
 
-  // /**
-  //  * PDF 파일이 있는데 MD 파일이 없는 경우에만 변환
-  //  */
-  // public async convertDownloadedPdfToMarkdown(
-  //   pdfFolderPath: string,
-  //   mdFolderPath: string = "./downloads/markdown",
-  // ): Promise<PdfConversionResult[]> {
-  //   console.log(`🔄 PDF→마크다운 변환 시작`);
-  //   console.log(`📁 PDF 폴더: ${pdfFolderPath}`);
-  //   console.log(`📁 마크다운 폴더: ${mdFolderPath}`);
-
-  //   const results: PdfConversionResult[] = [];
-
-  //   // PDF는 있지만 MD가 없는 파일들 찾기
-  //   const missingMarkdownFiles = this.findMissingMarkdownFiles(
-  //     pdfFolderPath,
-  //     mdFolderPath,
-  //   );
-
-  //   console.log(`📋 변환할 파일 개수: ${missingMarkdownFiles.length}`);
-
-  //   // 누락된 파일들 변환
-  //   for (const pdfFile of missingMarkdownFiles) {
-  //     console.log(`\n🔄 변환 중: ${pdfFile}.pdf`);
-  //     const pdfFilePath = path.join(pdfFolderPath, `${pdfFile}.pdf`);
-  //     const result = await this.convertPdfToMarkdown(pdfFilePath, mdFolderPath);
-
-  //     if (result.success) {
-  //       console.log(`✅ 변환 성공: ${result.fileName}`);
-  //     } else {
-  //       console.log(`❌ 변환 실패: ${result.error}`);
-  //     }
-
-  //     results.push(result);
-  //   }
-
-  //   const successCount = results.filter((r) => r.success).length;
-  //   console.log(
-  //     `\n📊 변환 결과: ${results.length}개 중 ${successCount}개 성공`,
-  //   );
-
-  //   return results;
-  // }
-  /**
-   * PDF는 있지만 MD가 없는 파일들 찾기
-   */
-  // private findMissingMarkdownFiles(
-  //   pdfFolderPath: string,
-  //   mdFolderPath: string,
-  // ): string[] {
-  //   // PDF 파일들 읽기
-  //   const pdfFiles = fs
-  //     .readdirSync(pdfFolderPath)
-  //     .filter((file) => file.endsWith(".pdf"))
-  //     .map((file) => path.basename(file, ".pdf"));
-
-  //   // MD 파일들 읽기
-  //   const mdFiles = fs.existsSync(mdFolderPath)
-  //     ? fs
-  //         .readdirSync(mdFolderPath)
-  //         .filter((file) => file.endsWith(".md"))
-  //         .map((file) => path.basename(file, ".md"))
-  //     : [];
-
-  //   // PDF는 있지만 MD가 없는 파일들 찾기
-  //   const missingFiles: string[] = [];
-  //   for (const pdfFile of pdfFiles) {
-  //     if (!mdFiles.includes(pdfFile)) {
-  //       missingFiles.push(pdfFile);
-  //     } else {
-  //       console.log(`Markdown already exists for: ${pdfFile}.pdf, skipping...`);
-  //     }
-  //   }
-
-  //   return missingFiles;
-  // }
-
   /**
    * JSON을 이용해서 마크다운 날짜순 정렬해서 리턴
    */
@@ -278,32 +290,18 @@ export class PerplexityProvider {
       return [];
     }
   }
-  // /**
-  //  * 마크다운 파일들 읽기 및 날짜순 정렬
-  //  */
-  // private readAndSortMarkdownFiles(markdownDir: string, limit: number) {
-  //   if (!fs.existsSync(markdownDir)) {
-  //     return [];
-  //   }
-
-  //   return fs
-  //     .readdirSync(markdownDir)
-  //     .filter((file) => file.endsWith(".md"))
-  //     .map((file) => ({
-  //       fileName: file,
-  //       filePath: path.join(markdownDir, file),
-  //       date: this.extractDateFromFileName(file),
-  //       title: this.extractTitleFromFileName(file),
-  //     }))
-  //     .filter((file) => file.date !== null) // 날짜 추출 실패한 파일 제외
-  //     .sort((a, b) => b.date!.getTime() - a.date!.getTime()) // 최신순 정렬
-  //     .slice(0, limit); // 최근 n개만 선택
-  // }
 
   /**
    * 마크다운 파일 내용 읽기
    */
-  private readMarkdownFileContents(sortedFiles: MiraeAssetReport[]) {
+  public readLatestMarkdownFiles(
+    sortedFiles: MiraeAssetReport[],
+    options: {
+      contentLengthLimit?: number;
+      shouldLimitLength?: boolean;
+    } = {},
+  ) {
+    const { contentLengthLimit = 2000, shouldLimitLength = true } = options;
     const fileContents = [];
 
     for (const file of sortedFiles) {
@@ -312,11 +310,13 @@ export class PerplexityProvider {
 
         const filePath = `./downloads/markdown/${file.mdFileName}`;
         const content = fs.readFileSync(filePath, "utf8");
-        const truncatedContent = content.substring(0, 2000); // 내용 길이 제한
+        const finalContent = shouldLimitLength
+          ? content.substring(0, contentLengthLimit)
+          : content;
 
         fileContents.push({
           fileName: file.mdFileName,
-          content: truncatedContent,
+          content: finalContent,
         });
       } catch (error) {
         console.error(`Error reading file ${file.mdFileName}:`, error);
@@ -340,6 +340,24 @@ export class PerplexityProvider {
     const result = await model.generateContent(summaryPrompt);
     const response = await result.response;
     return response.text();
+  }
+
+  /**
+   * AI 키워드 요약 요청
+   */
+  private async requestAIKeywordSummary(
+    fileContents: Array<{
+      fileName: string;
+      content: string;
+    }>,
+  ) {
+    const keywordPrompt = this.createKeywordPrompt(fileContents);
+    const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(keywordPrompt);
+    const response = await result.response;
+    const responseText = response.text();
+
+    return this.parseKeywordResponse(responseText);
   }
 
   /**
@@ -369,6 +387,190 @@ ${file.content.substring(0, 500)}...
 4. 향후 전망
 
 간결하고 명확하게 요약해주세요.`;
+  }
+
+  /**
+   * 키워드 요약 프롬프트 생성
+   */
+  private createKeywordPrompt(
+    fileContents: Array<{
+      fileName: string;
+      content: string;
+    }>,
+  ) {
+    const formatInstructions = this.getKeywordFormatInstructions();
+
+    return `다음 ${fileContents.length}개의 최신 증권보고서들에서 주식시장에 영향을 줄 핵심 키워드를 추출해줘:
+
+${fileContents
+  .map(
+    (file, index) => `
+**${index + 1}. ${file.fileName}**
+${file.content.substring(0, 500)}...
+`,
+  )
+  .join("\n")}
+
+위 보고서들에서 주식시장에 직접적인 영향을 줄 수 있는 핵심 키워드 3-8개를 추출해주세요.
+
+${formatInstructions}
+
+각 키워드는 구체적이고 임팩트 있는 것들로 추출해주세요.`;
+  }
+
+  /**
+   * 키워드 응답 파싱
+   */
+  private parseKeywordResponse(responseText: string): Keyword[] {
+    try {
+      // JSON 블록 추출
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      if (!jsonMatch) {
+        console.warn(
+          "JSON 블록을 찾을 수 없습니다. 전체 텍스트에서 JSON 추출 시도...",
+        );
+        // JSON 블록이 없으면 전체 텍스트에서 JSON 배열 찾기
+        const arrayMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (!arrayMatch) {
+          console.error("유효한 JSON 배열을 찾을 수 없습니다.");
+          return [];
+        }
+        const jsonStr = arrayMatch[0];
+        const parsed = JSON.parse(jsonStr);
+        return this.validateKeywordArray(parsed);
+      }
+
+      const jsonStr = jsonMatch[1];
+      const parsed = JSON.parse(jsonStr);
+      return this.validateKeywordArray(parsed);
+    } catch (error) {
+      console.error("키워드 응답 파싱 실패:", error);
+      return [];
+    }
+  }
+
+  /**
+   * 키워드 배열 검증
+   */
+  private validateKeywordArray(parsed: any): Keyword[] {
+    if (!Array.isArray(parsed)) {
+      console.error("파싱된 데이터가 배열이 아닙니다.");
+      return [];
+    }
+
+    return parsed
+      .filter((item) => {
+        return (
+          item &&
+          typeof item === "object" &&
+          typeof item.icon === "string" &&
+          typeof item.keyword === "string" &&
+          typeof item.description === "string" &&
+          ["positive", "negative", "neutral"].includes(item.impact)
+        );
+      })
+      .map((item) => ({
+        icon: item.icon,
+        keyword: item.keyword,
+        description: item.description,
+        impact: item.impact as "positive" | "negative" | "neutral",
+      }));
+  }
+
+  /**
+   * 키워드 캐시 확인
+   */
+  private checkKeywordCache(files: MiraeAssetReport[]): {
+    isValid: boolean;
+    keywords: Keyword[];
+  } {
+    try {
+      const cachePath = "./downloads/summary/keyword_cache.json";
+
+      if (!fs.existsSync(cachePath)) {
+        return { isValid: false, keywords: [] };
+      }
+
+      const cacheContent = fs.readFileSync(cachePath, "utf8");
+      const cache = JSON.parse(cacheContent);
+
+      // 현재 파일 ID들
+      const currentFileIds = files.map((f) => f.id);
+
+      // 캐시된 파일 ID들
+      const cachedFileIds = cache.referencedFiles.map((f: any) => f.id);
+
+      // 현재 파일들이 모두 캐시에 포함되어 있는지 확인
+      const allFilesInCache = currentFileIds.every((id) =>
+        cachedFileIds.includes(id),
+      );
+
+      if (!allFilesInCache) {
+        console.log("🔄 새로운 파일이 포함되어 있어 캐시 무효화");
+        return { isValid: false, keywords: [] };
+      }
+
+      console.log("✅ 모든 파일이 캐시에 포함되어 있어 캐시 사용");
+      return { isValid: true, keywords: cache.keywords };
+    } catch (error) {
+      console.error("캐시 확인 중 오류:", error);
+      return { isValid: false, keywords: [] };
+    }
+  }
+
+  /**
+   * 키워드 캐시 저장
+   */
+  private async saveKeywordCache(
+    keywords: Keyword[],
+    files: MiraeAssetReport[],
+  ): Promise<void> {
+    try {
+      const summaryDir = "./downloads/summary";
+      const cachePath = `${summaryDir}/keyword_cache.json`;
+
+      // summary 디렉토리 생성
+      if (!fs.existsSync(summaryDir)) {
+        fs.mkdirSync(summaryDir, { recursive: true });
+        console.log(`📁 요약 디렉토리 생성: ${summaryDir}`);
+      }
+
+      // 기존 캐시 읽기 (있다면)
+      let existingCache: KeywordCacheData = {
+        keywords: [],
+        referencedFiles: [],
+        updatedAt: "",
+      };
+      if (fs.existsSync(cachePath)) {
+        try {
+          const cacheContent = fs.readFileSync(cachePath, "utf8");
+          existingCache = JSON.parse(cacheContent);
+        } catch (error) {
+          console.warn("기존 캐시 읽기 실패, 새로 생성합니다.");
+        }
+      }
+
+      // 기존 파일들과 새 파일들 병합 (중복 제거)
+      const existingFileIds = new Set(
+        existingCache.referencedFiles.map((f: any) => f.id),
+      );
+      const newFiles = files.filter((f) => !existingFileIds.has(f.id));
+
+      const allFiles = [...existingCache.referencedFiles, ...newFiles];
+
+      const cacheData: KeywordCacheData = {
+        keywords,
+        referencedFiles: allFiles,
+        updatedAt: new Date().toISOString().split("T")[0],
+      };
+
+      fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), "utf8");
+      console.log(
+        `💾 키워드 캐시 저장 완료: ${cachePath} (총 ${allFiles.length}개 파일)`,
+      );
+    } catch (error) {
+      console.error("캐시 저장 중 오류:", error);
+    }
   }
 
   /**
@@ -425,23 +627,47 @@ ${file.content.substring(0, 500)}...
   }
 
   /**
-   * 파일명에서 제목 추출 (yyyymmdd_title_id 형식)
+   * 키워드 스키마의 format_instructions 생성 (Pydantic parser와 유사)
    */
-  private extractTitleFromFileName(fileName: string): string {
-    try {
-      // yyyymmdd_title_id.md 형식에서 제목 부분 추출
-      const match = fileName.match(/^\d{8}_(.+?)_\d+\.md$/);
-      if (match) {
-        return match[1].replace(/_/g, " "); // 언더스코어를 공백으로 변경
+  private getKeywordFormatInstructions(): string {
+    return `The output should be formatted as a JSON array that conforms to the following schema:
+
+{
+  "type": "array",
+  "items": {
+    "type": "object", 
+    "properties": {
+      "icon": { "type": "string", "description": "적절한 이모지 아이콘" },
+      "keyword": { "type": "string", "description": "주식시장에 영향을 주는 핵심 키워드" },
+      "description": { "type": "string", "description": "키워드에 대한 한두 줄 설명" },
+      "impact": { 
+        "type": "string", 
+        "enum": ["positive", "negative", "neutral"],
+        "description": "키워드가 주식시장에 미치는 영향"
       }
-      return fileName.replace(".md", ""); // 매치되지 않으면 확장자만 제거
-    } catch (error) {
-      console.error(`Error extracting title from filename ${fileName}:`, error);
-      return fileName;
-    }
+    },
+    "required": ["icon", "keyword", "description", "impact"]
+  }
+}
+
+Example output:
+[
+  {
+    "icon": "🚨",
+    "keyword": "트럼프 관세 35% 선언",
+    "description": "미국 대선 후보 트럼프가 중국산 수입품에 35% 관세 부과를 선언하여 무역 긴장 고조",
+    "impact": "negative"
+  },
+  {
+    "icon": "📈",
+    "keyword": "반도체 수요 급증", 
+    "description": "AI 서버 수요 증가로 인한 메모리 반도체 가격 상승 전망",
+    "impact": "positive"
+  }
+]`;
   }
 
-  private readonly tempDir = path.join(__dirname, '..', '..', '..', 'temp_files');
+  private readonly tempDir = path.join(__dirname, "..", "..", "temp_files");
 
   /**
    * URL에서 PDF를 직접 변환 (file_url 사용)
@@ -553,19 +779,24 @@ ${file.content.substring(0, 500)}...
 
     try {
       console.log(`PDF 다운로드 중: ${url}`);
-      const response = await fetch(url);
 
-      if (!response.ok) {
+      // httpService 사용
+      const response = await this.httpService.axiosRef.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      if (response.status !== 200) {
         throw new Error(`HTTP 오류: ${response.status} ${response.statusText}`);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      fs.writeFileSync(outputPath, Buffer.from(arrayBuffer));
+      fs.writeFileSync(outputPath, Buffer.from(response.data));
       console.log(`PDF 다운로드 완료: ${outputPath}`);
       return outputPath;
     } catch (error: any) {
       console.error(`PDF 다운로드 중 오류 발생: ${error.message}`);
-      throw new InternalServerErrorException(`PDF 다운로드 실패: ${error.message}`);
+      throw new InternalServerErrorException(
+        `PDF 다운로드 실패: ${error.message}`,
+      );
     }
   }
 
@@ -612,181 +843,4 @@ ${file.content.substring(0, 500)}...
       console.error(`❌ JSON 파일 업데이트 실패:`, error);
     }
   }
-
-  /**
-   * JSON 파일에서 마크다운 변환 상태 업데이트 (더 이상 사용하지 않음)
-   */
-  /*
-  private async updateReportsJson(
-    pdfFolderPath: string,
-    conversionResults: PdfConversionResult[],
-  ): Promise<void> {
-    try {
-      const jsonFilePath = path.join(pdfFolderPath, "reports.json");
-
-      if (!fs.existsSync(jsonFilePath)) {
-        console.log(`📄 JSON 파일이 없어서 업데이트 건너뜀: ${jsonFilePath}`);
-        return;
-      }
-
-      const jsonContent = fs.readFileSync(jsonFilePath, "utf8");
-      const reportsData: ReportsJsonData = JSON.parse(jsonContent);
-
-      // 성공한 변환 결과들로 마크다운 상태 업데이트
-      const successfulConversions = conversionResults.filter((r) => r.success);
-
-      for (const conversion of successfulConversions) {
-        const fileName = conversion.fileName.replace(".md", "");
-
-        // reports 배열에서 해당 파일 찾아서 markdownFileName 업데이트
-        const reportIndex = reportsData.reports.findIndex(
-          (report) => report.pdfFileName === fileName,
-        );
-
-        if (reportIndex !== -1) {
-          reportsData.reports[reportIndex].markdownFileName =
-            conversion.fileName;
-        }
-      }
-
-      // 마크다운 변환 완료 시간 업데이트
-      reportsData.lastMarkdownUpdate = new Date().toISOString();
-
-      // JSON 파일 다시 저장
-      fs.writeFileSync(
-        jsonFilePath,
-        JSON.stringify(reportsData, null, 2),
-        "utf8",
-      );
-      console.log(
-        `📄 JSON 파일 업데이트 완료: ${successfulConversions.length}개 마크다운 상태 반영`,
-      );
-    } catch (error) {
-      console.error(`❌ JSON 파일 업데이트 실패:`, error);
-    }
-  }
-  */
-
-  //   /**
-  //    * PDF 파일을 마크다운으로 변환 (직접 API 사용)
-  //    */
-  //   private async convertPdfToMarkdown(
-  //     pdfFilePath: string,
-  //     mdFolderPath: string = "./downloads/markdown",
-  //   ): Promise<PdfConversionResult> {
-  //     try {
-  //       // API 키 확인
-  //       if (!this.apiKey) {
-  //         console.error("❌ PERPLEXITY_API_KEY not configured");
-  //         return {
-  //           markdown: "",
-  //           fileName: "",
-  //           success: false,
-  //           error: "PERPLEXITY_API_KEY not configured",
-  //         };
-  //       }
-
-  //       // 출력 디렉토리 생성
-  //       if (!fs.existsSync(mdFolderPath)) {
-  //         fs.mkdirSync(mdFolderPath, { recursive: true });
-  //       }
-
-  //       console.log(`🔄 변환 시작: ${pdfFilePath}`);
-
-  //       // PDF 파일 읽기
-  //       const pdfBuffer = fs.readFileSync(pdfFilePath);
-  //       const fileName = path.basename(pdfFilePath, ".pdf");
-  //       const markdownFileName = `${fileName}.md`;
-  //       const markdownFilePath = path.join(mdFolderPath, markdownFileName);
-
-  //       console.log(`📄 PDF 크기: ${pdfBuffer.length} bytes`);
-  //       console.log(`📝 마크다운 파일명: ${markdownFileName}`);
-
-  //       // PDF를 base64로 인코딩
-  //       const pdfBase64 = pdfBuffer.toString("base64");
-  //       console.log(`🔢 Base64 인코딩 완료: ${pdfBase64.length} characters`);
-
-  //       // Perplexity API에 파일 업로드하여 변환 요청
-  //       console.log(`🌐 Perplexity API 호출 시작...`);
-
-  //       const response = await fetch(this.perplexityApiUrl, {
-  //         method: "POST",
-  //         headers: {
-  //           Authorization: `Bearer ${this.apiKey}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           model: "llama-3.1-sonar-large-128k-online",
-  //           messages: [
-  //             {
-  //               role: "user",
-  //               content: [
-  //                 {
-  //                   type: "text",
-  //                   text: `이 PDF 파일을 마크다운으로 변환해줘. 다음 조건을 지켜줘:
-
-  // 1. 최대한 정보를 만들지 말고 모든 정보를 반영해서 마크다운 파일로 만들어줘
-  // 2. 내용을 안 없애면 좋겠어
-  // 3. 표 형식은 마크다운의 표 형식으로 변환하는 등 최대한 PDF 구조를 그대로 반영해줘
-  // 4. 그래프 같은 것들이 있는 경우 각 그래프마다 간단하게 지표를 뽑아내거나 평가한 정보가 있으면 좋겠음
-
-  // 마크다운 형식으로만 응답해줘.`,
-  //                 },
-  //                 {
-  //                   type: "file",
-  //                   file: {
-  //                     data: pdfBase64,
-  //                     mime_type: "application/pdf",
-  //                     name: `${fileName}.pdf`,
-  //                   },
-  //                 },
-  //               ],
-  //             },
-  //           ],
-  //           max_tokens: 4000,
-  //           temperature: 0.1,
-  //         }),
-  //       });
-
-  //       console.log(
-  //         `📡 API 응답 상태: ${response.status} ${response.statusText}`,
-  //       );
-
-  //       if (!response.ok) {
-  //         const errorText = await response.text();
-  //         console.error(`❌ API 에러 응답: ${errorText}`);
-  //         throw new Error(
-  //           `Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`,
-  //         );
-  //       }
-
-  //       const data = await response.json();
-  //       console.log(
-  //         `✅ API 응답 성공: ${data.choices ? data.choices.length : 0} choices`,
-  //       );
-
-  //       const markdownContent = data.choices[0].message.content;
-  //       console.log(
-  //         `📝 마크다운 내용 길이: ${markdownContent.length} characters`,
-  //       );
-
-  //       // 마크다운 파일 저장
-  //       fs.writeFileSync(markdownFilePath, markdownContent, "utf8");
-  //       console.log(`💾 마크다운 파일 저장 완료: ${markdownFilePath}`);
-
-  //       return {
-  //         markdown: markdownContent,
-  //         fileName: markdownFileName,
-  //         success: true,
-  //       };
-  //     } catch (error) {
-  //       console.error(`❌ PDF 변환 실패 (${pdfFilePath}):`, error);
-  //       return {
-  //         markdown: "",
-  //         fileName: "",
-  //         success: false,
-  //         error: error instanceof Error ? error.message : String(error),
-  //       };
-  //     }
-  //   }
 }
