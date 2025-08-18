@@ -26,32 +26,6 @@ interface StockRequestDto {
   adjustPrice?: 0 | 1;
 }
 
-interface IndexRequestDto {
-  /**
-   * 업종코드 (2001: KOSPI 200, 1001: KOSPI 등)
-   * @example "2001"
-   */
-  indexCode: string;
-
-  /**
-   * 조회 기간 구분 (D:일, W:주, M:월, Y:년)
-   * @example "D"
-   */
-  periodCode?: "D" | "W" | "M" | "Y";
-
-  /**
-   * 조회 시작일 (YYYYMMDD 형식)
-   * @example "20240101"
-   */
-  startDate?: string;
-
-  /**
-   * 조회 종료일 (YYYYMMDD 형식)
-   * @example "20241231"
-   */
-  endDate?: string;
-}
-
 const iscdStatClsCodeMap: Record<string, string> = {
   "51": "관리종목",
   "52": "투자위험",
@@ -293,25 +267,33 @@ export class KisPriceProvider {
   }
 
   /**
-   * 업종 지수 일/주/월/년 시세 조회
-   * @param body 업종코드, 기간구분, 시작일, 종료일 DTO
+   * 코스피 지수 일/주/월/년 시세 조회
+   * @param periodCode 기간구분 (D:일, W:주, M:월, Y:년)
+   * @param startDate 시작일자 (YYYYMMDD)
+   * @param endDate 종료일자 (YYYYMMDD)
    * @param session KIS 인증 세션
-   * @returns 업종 지수 시세 데이터 배열 (한글 키 포함)
+   * @returns 코스피 지수 시세 데이터 배열
    */
-  public async fetchIndexPrices(
-    body: IndexRequestDto,
-    session: IKisSessionData,
+  public async fetchKospiIndexPrices(
+    periodCode: string = "D",
+    startDate?: string,
+    endDate?: string,
+    session?: IKisSessionData,
   ) {
-    const {
-      indexCode,
-      periodCode = "D",
-      startDate = this.getDefaultStartDate(periodCode),
-      endDate = this.getDefaultEndDate(),
-    } = body;
+    const defaultStartDate = startDate || this.getDefaultStartDate(periodCode);
+    const defaultEndDate = endDate || this.getDefaultEndDate();
+
+    if (!session) {
+      throw new HttpException(
+        "KIS 인증 세션이 필요합니다",
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     const { accessToken, appKey, appSecret } = session;
 
     try {
-      // 국내주식업종기간별시세(일/주/월/년) API 사용
+      // 국내주식업종기간별시세(일/주/월/년) API 사용 - KOSPI 200 (업종코드: 2001)
       const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice`;
       const { data } = await this.http.axiosRef.get(url, {
         headers: {
@@ -324,17 +306,17 @@ export class KisPriceProvider {
         },
         params: {
           FID_COND_MRKT_DIV_CODE: "U", // 업종
-          FID_INPUT_ISCD: indexCode, // 업종코드
+          FID_INPUT_ISCD: "2001", // KOSPI 200 업종코드
           FID_PERIOD_DIV_CODE: periodCode, // D:일, W:주, M:월, Y:년
           FID_ORG_ADJ_PRC: "1", // 수정주가 반영 (1:반영, 0:미반영)
-          FID_INPUT_DATE_1: startDate, // 조회시작일자
-          FID_INPUT_DATE_2: endDate, // 조회종료일자
+          FID_INPUT_DATE_1: defaultStartDate, // 조회시작일자
+          FID_INPUT_DATE_2: defaultEndDate, // 조회종료일자
         },
       });
 
       if (data.rt_cd !== "0") {
         throw new HttpException(
-          data.msg1 || "업종 지수 시세 조회 실패",
+          data.msg1 || "코스피 지수 시세 조회 실패",
           HttpStatus.BAD_GATEWAY,
         );
       }
@@ -351,7 +333,7 @@ export class KisPriceProvider {
       return result;
     } catch (error: any) {
       console.error(
-        "KIS 업종 지수 시세 요청 실패:",
+        "KIS 코스피 지수 시세 요청 실패:",
         error.response?.data || error,
       );
       throw new HttpException(

@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
+import { Injectable } from "@nestjs/common";
 import { tags } from "typia";
 
 import { KisBalanceProvider } from "./KisBalanceProvider";
@@ -30,7 +30,7 @@ export class KisService {
       quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
       orderCondition: "market" | "limit";
       price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
-    }
+    },
   ): Promise<IKisStock.IOrderResponse> {
     // Validate limit order has price
     if (input.orderCondition === "limit" && !input.price) {
@@ -61,7 +61,7 @@ export class KisService {
       quantity: number & tags.Type<"uint32"> & tags.Minimum<1>;
       orderCondition: "market" | "limit";
       price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
-    }
+    },
   ): Promise<IKisStock.IOrderResponse> {
     // Validate limit order has price
     if (input.orderCondition === "limit" && !input.price) {
@@ -89,7 +89,7 @@ export class KisService {
     sessionData: IKisSessionData,
     input: {
       company: string;
-    }
+    },
   ): Promise<{
     message: string;
     data: Record<string, any>;
@@ -111,7 +111,7 @@ export class KisService {
     sessionData: IKisSessionData,
     input: {
       company: string;
-    }
+    },
   ): Promise<{
     message: string;
     data: Record<string, any>[];
@@ -135,7 +135,7 @@ export class KisService {
       company: string;
       periodCode?: "D" | "W" | "M";
       adjustPrice?: 0 | 1;
-    }
+    },
   ): Promise<{
     message: string;
     data: Record<string, any>[];
@@ -150,6 +150,32 @@ export class KisService {
     );
     return {
       message: `${input.company}의 ${input.periodCode ?? "D"} 단위 시세 정보입니다.`,
+      data: result,
+    };
+  }
+
+  /**
+   * 코스피 지수 일/주/월/년 시세 조회
+   */
+  public async getKospiPrices(
+    sessionData: IKisSessionData,
+    input: {
+      periodCode?: "D" | "W" | "M" | "Y";
+      startDate?: string;
+      endDate?: string;
+    },
+  ): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    const result = await this.priceProvider.fetchKospiIndexPrices(
+      input.periodCode ?? "D",
+      input.startDate,
+      input.endDate,
+      sessionData,
+    );
+    return {
+      message: `코스피 지수의 ${input.periodCode ?? "D"} 단위 시세 정보입니다.`,
       data: result,
     };
   }
