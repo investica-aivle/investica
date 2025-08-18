@@ -294,26 +294,41 @@ export class KisPriceProvider {
 
     try {
       // 국내주식업종기간별시세(일/주/월/년) API 사용 - KOSPI 200 (업종코드: 2001)
+
       const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice`;
+      const requestParams = {
+        FID_COND_MRKT_DIV_CODE: "U", // 업종
+        FID_INPUT_ISCD: "2001", // KOSPI 200 업종코드
+        FID_PERIOD_DIV_CODE: periodCode, // D:일, W:주, M:월, Y:년
+        FID_INPUT_DATE_1: defaultStartDate, // 조회시작일자
+        FID_INPUT_DATE_2: defaultEndDate, // 조회종료일자
+      };
+
+      const requestHeaders = {
+        "content-type": "application/json; charset=utf-8",
+        authorization: `Bearer ${accessToken}`,
+        appkey: appKey,
+        appsecret: appSecret,
+        tr_id: "FHKUP03500100", // 국내주식업종기간별시세(일/주/월/년) TR ID
+        custtype: "P",
+      };
+
+      // API 요청 정보 로그
+      console.log("=== 코스피 API 요청 정보 ===");
+      console.log("URL:", url);
+      console.log("Headers:", JSON.stringify(requestHeaders, null, 2));
+      console.log("Params:", JSON.stringify(requestParams, null, 2));
+
       const { data } = await this.http.axiosRef.get(url, {
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          authorization: `Bearer ${accessToken}`,
-          appkey: appKey,
-          appsecret: appSecret,
-          tr_id: "FHKST01010100", // 국내주식업종기간별시세(일/주/월/년) TR ID
-          custtype: "P",
-        },
-        params: {
-          FID_COND_MRKT_DIV_CODE: "U", // 업종
-          FID_INPUT_ISCD: "2001", // KOSPI 200 업종코드
-          FID_PERIOD_DIV_CODE: periodCode, // D:일, W:주, M:월, Y:년
-          FID_ORG_ADJ_PRC: "1", // 수정주가 반영 (1:반영, 0:미반영)
-          FID_INPUT_DATE_1: defaultStartDate, // 조회시작일자
-          FID_INPUT_DATE_2: defaultEndDate, // 조회종료일자
-        },
+        headers: requestHeaders,
+        params: requestParams,
       });
 
+      // API 응답 구조 디버깅
+      console.log("=== 코스피 API 응답 구조 ===");
+      console.log("data:", JSON.stringify(data, null, 2));
+      console.log("data.output 타입:", typeof data.output);
+      console.log("data.output:", data.output);
       if (data.rt_cd !== "0") {
         throw new HttpException(
           data.msg1 || "코스피 지수 시세 조회 실패",
@@ -321,7 +336,22 @@ export class KisPriceProvider {
         );
       }
 
-      const result = data.output.map((item: Record<string, any>) => {
+      // output이 배열이 아닌 경우 처리
+      let outputData = data.output;
+      if (!Array.isArray(outputData)) {
+        if (typeof outputData === "object" && outputData !== null) {
+          // 단일 객체인 경우 배열로 변환
+          outputData = [outputData];
+        } else {
+          console.error("예상치 못한 output 구조:", outputData);
+          throw new HttpException(
+            "코스피 지수 데이터 구조 오류",
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+      }
+
+      const result = outputData.map((item: Record<string, any>) => {
         const parsed: Record<string, any> = {};
         for (const [key, value] of Object.entries(item)) {
           const label = this.getKospiLabelMap(key);
