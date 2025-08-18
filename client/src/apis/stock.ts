@@ -1,4 +1,4 @@
-import { StockDailyPricesResponse, StockOverviewResponse, StockPriceResponse, StockTradesResponse } from '../models/Stock';
+import { KospiPricesRequest, KospiPricesResponse, StockDailyPricesResponse, StockOverviewResponse, StockPriceResponse, StockTradesResponse } from '../models/Stock';
 import apiClient from './index';
 
 const stockApi = {
@@ -39,6 +39,14 @@ const stockApi = {
     })
       .then(response => response.data);
   }
+};
+
+/**
+ * 코스피 지수 일/주/월/년 시세 조회
+ */
+export const getKospiPrices = async (params: KospiPricesRequest): Promise<KospiPricesResponse> => {
+  const response = await apiClient.post('/api/kis/kospi-prices', params);
+  return response.data;
 };
 
 export default stockApi;
