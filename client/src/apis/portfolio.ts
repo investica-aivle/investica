@@ -103,6 +103,124 @@ export interface StockHolding {
   bfdy_cprs_icdc: string;
 }
 
+// 계좌 정보 타입 정의
+export interface AccountInfo {
+  /**
+   * 예수금총금액 (현금)
+   */
+  dnca_tot_amt: string;
+
+  /**
+   * 익일정산금액 (D+1 예수금)
+   */
+  nxdy_excc_amt: string;
+
+  /**
+   * 가수도정산금액 (D+2 예수금)
+   */
+  prvs_rcdl_excc_amt: string;
+
+  /**
+   * CMA평가금액
+   */
+  cma_evlu_amt: string;
+
+  /**
+   * 전일매수금액
+   */
+  bfdy_buy_amt: string;
+
+  /**
+   * 금일매수금액
+   */
+  thdt_buy_amt: string;
+
+  /**
+   * 익일자동상환금액
+   */
+  nxdy_auto_rdpt_amt: string;
+
+  /**
+   * 전일매도금액
+   */
+  bfdy_sll_amt: string;
+
+  /**
+   * 금일매도금액
+   */
+  thdt_sll_amt: string;
+
+  /**
+   * D+2자동상환금액
+   */
+  d2_auto_rdpt_amt: string;
+
+  /**
+   * 전일제비용금액
+   */
+  bfdy_tlex_amt: string;
+
+  /**
+   * 금일제비용금액
+   */
+  thdt_tlex_amt: string;
+
+  /**
+   * 총대출금액
+   */
+  tot_loan_amt: string;
+
+  /**
+   * 유가평가금액 (주식 평가금액)
+   */
+  scts_evlu_amt: string;
+
+  /**
+   * 총평가금액 (유가증권 평가금액 합계금액 + D+2 예수금)
+   */
+  tot_evlu_amt: string;
+
+  /**
+   * 순자산금액
+   */
+  nass_amt: string;
+
+  /**
+   * 융자금액
+   */
+  fncg_amt: string;
+
+  /**
+   * 융자원리금
+   */
+  fncg_orgn_amt: string;
+
+  /**
+   * 매입금액합계금액 (총 투자원금)
+   */
+  pchs_amt_smtl_amt: string;
+
+  /**
+   * 평가손익합계금액
+   */
+  evlu_pfls_smtl_amt: string;
+
+  /**
+   * 평가수익율
+   */
+  evlu_erng_rt: string;
+
+  /**
+   * 가수금
+   */
+  wghn_pdno: string;
+
+  /**
+   * 당일실현손익율
+   */
+  thdt_tlex_rt: string;
+}
+
 // 포트폴리오 전체 데이터 타입 정의
 export interface PortfolioData {
   rt_cd: string;
@@ -111,12 +229,7 @@ export interface PortfolioData {
   ctx_area_fk100: string;
   ctx_area_nk100: string;
   output1: StockHolding[];
-  output2: Array<{
-    tot_evlu_amt: string;
-    pchs_amt_smtl_amt: string;
-    evlu_pfls_smtl_amt: string;
-    [key: string]: string;
-  }>;
+  output2: AccountInfo[];
   message: string;
 }
 
