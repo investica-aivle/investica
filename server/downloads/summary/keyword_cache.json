@@ -2,38 +2,32 @@
   "keywords": [
     {
       "icon": "🛡️",
-      "keyword": "글로벌 방산 수요 지속",
-      "description": "우크라이나 휴전 논의에도 불구하고 지정학적 위협이 상존하여 글로벌 방위산업에 대한 수요 증가세가 이어질 전망입니다.",
+      "keyword": "글로벌 방산 수요 증가",
+      "description": "우크라이나 휴전 성사 시에도 러시아 위협 유지로 글로벌 방산 수요가 지속적으로 증가할 전망입니다.",
+      "impact": "positive"
+    },
+    {
+      "icon": "📉",
+      "keyword": "미국 금리 인하 기대감",
+      "description": "7월 코어 CPI가 예상치에 부합하며 하반기 미국 금리 인하 기대감이 유지되고 있습니다.",
       "impact": "positive"
     },
     {
       "icon": "💸",
-      "keyword": "서비스/수입품 물가 상승",
-      "description": "7월 코어 서비스 인플레이션과 수입 비중 높은 품목들의 물가 상승이 가속화되며 인플레이션 압력이 지속되고 있습니다.",
+      "keyword": "서비스 인플레이션 가속화",
+      "description": "헬스케어, 자동차 수리 등 서비스 물가 상승 압력 확대로 연준의 9월 빅컷 기대감이 축소되고 있습니다.",
       "impact": "negative"
     },
     {
-      "icon": "📉",
-      "keyword": "금리 인하 기대 축소",
-      "description": "서비스 물가 상승세 지속으로 연내 금리 인하 횟수에 대한 시장의 기대가 축소되고 9월 빅컷 가능성도 낮아지고 있습니다.",
-      "impact": "negative"
-    },
-    {
-      "icon": "🏦",
-      "keyword": "연준 잭슨홀 미팅 주목",
-      "description": "파월 의장의 발언을 통해 연준의 향후 통화정책 방향, 특히 9월 금리 인하 가능성과 인플레이션 대응 기조에 대한 단서가 제공될 예정입니다.",
-      "impact": "neutral"
-    },
-    {
-      "icon": "💰",
-      "keyword": "국내 재정적자 축소 기대",
-      "description": "2026년 정부 지출 구조조정으로 통합재정수지 적자폭이 축소될 것으로 예상되어 국채 발행 부담 완화 및 재정 건전성 개선에 긍정적입니다.",
+      "icon": "📊",
+      "keyword": "국내 재정적자 축소",
+      "description": "정부 지출 구조조정을 통한 2026년 예산안에서 재정적자 축소 및 국채 발행 부담 완화가 기대됩니다.",
       "impact": "positive"
     },
     {
-      "icon": "₿",
-      "keyword": "퇴직연금 디지털 자산 투자 허용",
-      "description": "트럼프 행정명령으로 12.2조 달러 규모의 DC형 퇴직연금 자금 중 일부가 디지털 자산을 포함한 대체 자산으로 유입될 가능성이 커졌습니다.",
+      "icon": "🪙",
+      "keyword": "디지털 자산 연금 투자 허용",
+      "description": "트럼프 행정명령으로 DC형 퇴직연금의 디지털 자산 접근성이 개선되어 대규모 연금 자산 유입이 기대됩니다.",
       "impact": "positive"
     }
   ],
@@ -77,46 +71,6 @@
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137944.pdf?attachmentId=2137944",
       "mdFileName": "2137944.md"
-    },
-    {
-      "id": "2137912",
-      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(8/11~15)",
-      "date": "2025-08-08",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137912.pdf?attachmentId=2137912",
-      "mdFileName": "2137912.md"
-    },
-    {
-      "id": "2137804",
-      "title": "Thematic RadarEp 35. 중국 바이오텍: 기술 수출 가속화",
-      "date": "2025-08-05",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137804.pdf?attachmentId=2137804",
-      "mdFileName": "2137804.md"
-    },
-    {
-      "id": "2137769",
-      "title": "Credit Market Weekly8.4~8일",
-      "date": "2025-08-04",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137769.pdf?attachmentId=2137769",
-      "mdFileName": "2137769.md"
-    },
-    {
-      "id": "2137765",
-      "title": "Fixed Income Comment미국 금리 급락 관련 체크할 포인트",
-      "date": "2025-08-04",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137765.pdf?attachmentId=2137765",
-      "mdFileName": "2137765.md"
-    },
-    {
-      "id": "2137752",
-      "title": "[Earnings Revision] 8월 1주차",
-      "date": "2025-08-04",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137752.pdf?attachmentId=2137752",
-      "mdFileName": "2137752.md"
     },
     {
       "id": "2138163",

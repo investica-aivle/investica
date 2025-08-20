@@ -250,4 +250,43 @@ export class KisSessionService {
   public async getPortfolioSummary(): Promise<IKisPortfolio.IPortfolioSummary> {
     return await this.kisService.getPortfolioSummary(this.sessionData);
   }
+
+  /**
+   * Get KOSPI index prices
+   *
+   * Retrieve real-time KOSPI index price information.
+   * Provides current KOSPI index value, price change, change rate, and trading volume.
+   *
+   * > Use this to check overall market conditions and trends.
+   * > KOSPI index reflects the overall performance of Korean stock market.
+   * > For current price only, use periodCode "D" with today's date.
+   * > For historical data, specify startDate and endDate with appropriate periodCode.
+   *
+   * @param input Period and date range for KOSPI data
+   * @returns KOSPI index price information and market data
+   */
+  public async getKospiPrices(input: {
+    /**
+     * Period type (D: Daily, W: Weekly, M: Monthly, Y: Yearly)
+     * @example "D"
+     */
+    periodCode?: "D" | "W" | "M" | "Y";
+
+    /**
+     * Start date for data range
+     * @example "20240101"
+     */
+    startDate?: string;
+
+    /**
+     * End date for data range
+     * @example "20241231"
+     */
+    endDate?: string;
+  }): Promise<{
+    message: string;
+    data: Record<string, any>[];
+  }> {
+    return await this.kisService.getKospiPrices(this.sessionData, input);
+  }
 }
