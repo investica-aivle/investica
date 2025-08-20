@@ -6,7 +6,7 @@ export enum TabType {
   AI = 'ai'
 }
 
-interface TabDetail {
+export interface TabDetail {
   name: string;
   function: string[];
   description: string;
@@ -27,13 +27,16 @@ const tabs: TabsConfig = {
         "getSecuritiesISReportList",
         "getSpecificReportContent",
         "fetchKospiIndexPrices",
-        "getKospiPrices"
+        "getKospiPrices",
+        "getStockPrice",
     ],
     description: "코스피 현황"
   },
   [TabType.NEWS]: {
     name: "news",
-    function: [],
+    function: [
+      "getNewsSummary",
+    ],
     description: "주요 뉴스"
   },
   [TabType.TRADING]: {

@@ -1,5 +1,4 @@
 import { BrainIcon, DollarSignIcon, NewspaperIcon, PieChartIcon, TrendingUpIcon, XIcon } from 'lucide-react';
-import { useState } from 'react';
 import tabs, { TabType } from '../../constant/tabs';
 import { useAgenticaRpc } from '../../provider/AgenticaRpcProvider';
 import NewsPanel from '../news/NewsPanel';
@@ -7,8 +6,7 @@ import KospiOverview from '../StockVisualization/KospiOverview';
 import { TradingTab } from '../trading/TradingTab.tsx';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
-  const [activeTab, setActiveTab] = useState<TabType>(TabType.PORTFOLIO);
-  const { news, isConnected } = useAgenticaRpc();
+  const { news, isConnected, currentTab, setCurrentTab } = useAgenticaRpc();
   const onClose = () => {
     setShowSideContainer(false);
   };
@@ -44,11 +42,11 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
           <button
             key={tab.id}
             className={`flex-1 py-2 px-1 text-xs flex flex-col items-center justify-center ${
-              activeTab === tab.id 
+              currentTab === tab.id 
                 ? 'text-white border-b-2 border-white/50' 
                 : 'text-gray-400 hover:bg-zinc-700/30'
             }`}
-            onClick={() => setActiveTab(tab.id as TabType)}
+            onClick={() => setCurrentTab(tab.id as TabType)}
           >
             {tab.icon}
             <span className="mt-1">{tab.name}</span>
@@ -57,7 +55,7 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
       </div>
       
       <div className="flex-1 overflow-y-auto p-4">
-        {activeTab === TabType.PORTFOLIO && (
+        {currentTab === TabType.PORTFOLIO && (
           <div className="space-y-4">
             <h3 className="font-medium text-lg text-gray-100">내 포트폴리오</h3>
             <div className="mt-6 bg-zinc-700/30 rounded-2xl p-4 backdrop-blur-md">
@@ -74,9 +72,9 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
           </div>
         )}
         
-        {activeTab === TabType.KOSPI && <KospiOverview />}
+        {currentTab === TabType.KOSPI && <KospiOverview />}
         
-        {activeTab === TabType.NEWS && (
+        {currentTab === TabType.NEWS && (
           <NewsPanel
             company={news.company}
             items={news.items}
@@ -85,11 +83,11 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
           />
         )}
         
-        {activeTab === TabType.TRADING && (
+        {currentTab === TabType.TRADING && (
           <TradingTab />
         )}
         
-        {activeTab === TabType.AI && (
+        {currentTab === TabType.AI && (
           <div className="space-y-4">
             <h3 className="font-medium text-lg text-gray-100">AI 분석</h3>
             <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">

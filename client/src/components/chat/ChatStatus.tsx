@@ -4,6 +4,7 @@ interface ChatStatusProps {
   isConnecting: boolean;
   hasMessages: boolean;
   isWsUrlConfigured: boolean;
+  isLoading: boolean;
 }
 
 export function ChatStatus({
@@ -11,6 +12,7 @@ export function ChatStatus({
   isConnected,
   isConnecting,
   hasMessages,
+  isLoading,
   isWsUrlConfigured
 }: ChatStatusProps) {
   if (!isWsUrlConfigured) {
@@ -57,6 +59,15 @@ export function ChatStatus({
     return (
       <div className="h-full flex items-center justify-center text-gray-400 text-sm">
         연결 대기 중...
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center space-x-2 p-3">
+        <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-blue-400 text-sm font-medium">답변 중...</span>
       </div>
     );
   }

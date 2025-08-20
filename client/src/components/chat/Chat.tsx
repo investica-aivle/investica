@@ -1,15 +1,15 @@
+import { useEffect, useRef } from "react";
 import { useAgenticaRpc } from "../../provider/AgenticaRpcProvider";
 import { ChatInput } from "./ChatInput";
 import { ChatMessages } from "./ChatMessages";
 import { ChatStatus } from "./ChatStatus";
-import { useEffect, useRef } from "react";
-import { IKisAuthData, KisAuthForm } from "./KisAuthForm";
 
 export function Chat() {
   const {
     messages,
     conversate,
     isConnected,
+    isLoading,
     isError,
     isConnecting,
   } = useAgenticaRpc();
@@ -48,6 +48,7 @@ export function Chat() {
             <ChatStatus
               isError={isError}
               isConnected={isConnected}
+              isLoading={isLoading}
               isConnecting={isConnecting}
               hasMessages={hasMessage}
               isWsUrlConfigured={import.meta.env.VITE_AGENTICA_WS_URL !== ""}
@@ -57,7 +58,7 @@ export function Chat() {
           <div className="p-4 flex-shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
-              disabled={!isConnected || isError || isLastMessageFromUser || isConnecting}
+              disabled={!isConnected || isError || isLastMessageFromUser || isConnecting || isLoading}
             />
           </div>
       </div>
