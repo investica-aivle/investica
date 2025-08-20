@@ -28,18 +28,16 @@ export class ReportAiProvider {
   ) {
     const apiKey = this.configService.get<string>("GOOGLE_API_KEY");
     if (!apiKey) {
-      throw new InternalServerErrorException(
-        "Google API Key not found in configuration.",
-      );
+      throw new InternalServerErrorException("Google API Key not found in configuration.");
     } else {
-      console.log(`✅ GOOGLE_API_KEY 설정됨`);
+      console.log(`GOOGLE_API_KEY 설정됨`);
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
 
     // temp_files 디렉토리 생성
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
-      console.log(`📁 임시 파일 디렉토리 생성: ${this.tempDir}`);
+      console.log(`임시 파일 디렉토리 생성: ${this.tempDir}`);
     }
   }
 
@@ -156,7 +154,7 @@ export class ReportAiProvider {
       // 캐시 확인
       const cacheResult = this.checkKeywordCache(limitedFiles);
       if (cacheResult.isValid) {
-        console.log("✅ 캐시된 키워드 요약 사용");
+        console.log("캐시된 키워드 요약 사용");
         return {
           message: `${fileContents.length}개의 최신 마크다운 파일에서 키워드를 추출했습니다. (캐시됨)`,
           keywords: cacheResult.keywords,
@@ -194,16 +192,16 @@ export class ReportAiProvider {
     jsonFilePath: string = "./downloads/reports.json",
     mdFolderPath: string = "./downloads/markdown",
   ): Promise<PdfConversionResult[]> {
-    console.log(`🔄 JSON 기반 마크다운 변환 시작`);
-    console.log(`📄 JSON 파일: ${jsonFilePath}`);
-    console.log(`📁 마크다운 폴더: ${mdFolderPath}`);
+    console.log(`JSON 기반 마크다운 변환 시작`);
+    console.log(`JSON 파일: ${jsonFilePath}`);
+    console.log(`마크다운 폴더: ${mdFolderPath}`);
 
     const results: PdfConversionResult[] = [];
 
     try {
       // JSON 파일 읽기
       if (!fs.existsSync(jsonFilePath)) {
-        console.log(`❌ JSON 파일이 없습니다: ${jsonFilePath}`);
+        console.log(`JSON 파일이 없습니다: ${jsonFilePath}`);
         return results;
       }
 
@@ -215,7 +213,7 @@ export class ReportAiProvider {
         (report) => report.mdFileName === null,
       );
 
-      console.log(`📋 변환할 보고서 개수: ${reportsNeedingConversion.length}`);
+      console.log(`변환할 보고서 개수: ${reportsNeedingConversion.length}`);
 
       // 출력 디렉토리 생성
       if (!fs.existsSync(mdFolderPath)) {
@@ -224,7 +222,7 @@ export class ReportAiProvider {
 
       // 각 보고서를 file_url로 변환
       for (const report of reportsNeedingConversion) {
-        console.log(`\n🔄 변환 중: ${report.title}`);
+        console.log(`\n변환 중: ${report.title}`);
 
         const result = await this.convertPdfFromUrl(
           report.downloadUrl,
@@ -233,9 +231,9 @@ export class ReportAiProvider {
         );
 
         if (result.success) {
-          console.log(`✅ 변환 성공: ${result.fileName}`);
+          console.log(`변환 성공: ${result.fileName}`);
         } else {
-          console.log(`❌ 변환 실패: ${result.error}`);
+          console.log(`변환 실패: ${result.error}`);
         }
 
         results.push(result);
@@ -251,7 +249,7 @@ export class ReportAiProvider {
 
       return results;
     } catch (error) {
-      console.error(`❌ JSON 기반 변환 실패:`, error);
+      console.error(`JSON 기반 변환 실패:`, error);
       return results;
     }
   }
@@ -282,9 +280,7 @@ export class ReportAiProvider {
           return dateB.getTime() - dateA.getTime();
         });
 
-      console.log(
-        `JSON에서 ${reportsWithMarkdown.length}개의 마크다운 파일을 찾았습니다.`,
-      );
+      console.log(`JSON에서 ${reportsWithMarkdown.length}개의 마크다운 파일을 찾았습니다.`);
       return reportsWithMarkdown;
     } catch (error) {
       console.error(`JSON에서 마크다운 파일 읽기 실패:`, error);
@@ -483,11 +479,11 @@ export class ReportAiProvider {
       );
 
       if (!allFilesInCache) {
-        console.log("🔄 새로운 파일이 포함되어 있어 캐시 무효화");
+        console.log("새로운 파일이 포함되어 있어 캐시 무효화");
         return { isValid: false, keywords: [] };
       }
 
-      console.log("✅ 모든 파일이 캐시에 포함되어 있어 캐시 사용");
+      console.log("모든 파일이 캐시에 포함되어 있어 캐시 사용");
       return { isValid: true, keywords: cache.keywords };
     } catch (error) {
       console.error("캐시 확인 중 오류:", error);
@@ -509,7 +505,7 @@ export class ReportAiProvider {
       // summary 디렉토리 생성
       if (!fs.existsSync(summaryDir)) {
         fs.mkdirSync(summaryDir, { recursive: true });
-        console.log(`📁 요약 디렉토리 생성: ${summaryDir}`);
+        console.log(`요약 디렉토리 생성: ${summaryDir}`);
       }
 
       // 기존 캐시 읽기 (있다면)
@@ -542,9 +538,7 @@ export class ReportAiProvider {
       };
 
       fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), "utf8");
-      console.log(
-        `💾 키워드 캐시 저장 완료: ${cachePath} (총 ${allFiles.length}개 파일)`,
-      );
+      console.log(`키워드 캐시 저장 완료: ${cachePath} (총 ${allFiles.length}개 파일)`);
     } catch (error) {
       console.error("캐시 저장 중 오류:", error);
     }
@@ -624,7 +618,7 @@ export class ReportAiProvider {
     try {
       // API 키 확인
       if (!this.genAI) {
-        console.error("❌ Gemini API not configured");
+        console.error("Gemini API not configured");
         return {
           markdown: "",
           fileName: "",
@@ -633,8 +627,8 @@ export class ReportAiProvider {
         };
       }
 
-      console.log(`🔄 URL에서 변환 시작: ${pdfFileName}`);
-      console.log(`🌐 다운로드 URL: ${downloadUrl}`);
+      console.log(`URL에서 변환 시작: ${pdfFileName}`);
+      console.log(`다운로드 URL: ${downloadUrl}`);
 
       //pdf 다운로드 필요
       //현재 로컬에 다운되어있는 pdf를 찾는중
@@ -660,7 +654,7 @@ export class ReportAiProvider {
 
       // 마크다운 파일 저장
       fs.writeFileSync(markdownFilePath, markdownContent, "utf8");
-      console.log(`💾 마크다운 파일 저장 완료: ${markdownFilePath}`);
+      console.log(`마크다운 파일 저장 완료: ${markdownFilePath}`);
 
       return {
         markdown: markdownContent,
@@ -668,7 +662,7 @@ export class ReportAiProvider {
         success: true,
       };
     } catch (error) {
-      console.error(`❌ URL 변환 실패 (${pdfFileName}):`, error);
+      console.error(`URL 변환 실패 (${pdfFileName}):`, error);
       return {
         markdown: "",
         fileName: "",
@@ -707,9 +701,7 @@ export class ReportAiProvider {
       return outputPath;
     } catch (error: any) {
       console.error(`PDF 다운로드 중 오류 발생: ${error.message}`);
-      throw new InternalServerErrorException(
-        `PDF 다운로드 실패: ${error.message}`,
-      );
+      throw new InternalServerErrorException(`PDF 다운로드 실패: ${error.message}`);
     }
   }
 
@@ -749,19 +741,12 @@ export class ReportAiProvider {
         JSON.stringify(reportsData, null, 2),
         "utf8",
       );
-      console.log(
-        `📄 JSON 파일 업데이트 완료: ${successfulConversions.length}개 마크다운 상태 반영`,
-      );
+      console.log(`JSON 파일 업데이트 완료: ${successfulConversions.length}개`,);
     } catch (error) {
-      console.error(`❌ JSON 파일 업데이트 실패:`, error);
+      console.error(`JSON 파일 갱신 실패:`, error);
     }
   }
 
-  /**
-   * =================================================================
-   *                  Industry Evaluation Methods
-   * =================================================================
-   */
 
   private readonly industryTags = [
     "반도체", "IT하드웨어", "IT소프트웨어", "인터넷/게임", "통신서비스",
@@ -771,13 +756,11 @@ export class ReportAiProvider {
     "철강/금속", "에너지", "유틸리티"
   ];
 
-  /**
-   * 최신 산업 분석 보고서를 기반으로 산업군별 전망을 평가합니다.
-   * @param limit 분석할 최신 보고서의 개수
-   * @returns 평가 결과 JSON 객체
+  /*
+   * 산업 분석 보고서를 기반으로 산업군별 평가.
    */
   public async evaluateLatestIndustries(limit: number = 5): Promise<any> {
-    console.log(`🚀 산업군 평가 시작: 최신 보고서 ${limit}개를 대상으로 합니다.`);
+    console.log(`산업군 평가 시작: 보고서 ${limit} 개`);
 
     // 1. 최신 데이터 수집
     const { limitedFiles, fileContents } = await this.getLatestMarkdownFiles(
@@ -792,19 +775,19 @@ export class ReportAiProvider {
     }
 
     try {
-      // 2. 1차 LLM 호출: 보고서별 산업군 분류
+      //보고서별 산업군 분류
       const classifiedReports = await this._classifyIndustries(limitedFiles);
       if (!classifiedReports) {
-        throw new Error("1차 LLM 호출(산업군 분류)에 실패했습니다.");
+        throw new Error("산업군 분류에 실패했습니다.");
       }
 
-      // 3. 분류 결과 기반 데이터 재구성
+      //분류 결과 기반 데이터 재구성
       const reportsByIndustry = this._groupReportsByIndustry(classifiedReports, limitedFiles, fileContents);
 
-      // 4. 2차 LLM 호출: 산업군별 전망 평가
+      //산업군별 전망 평가
       const industryEvaluations = [];
       for (const [industryName, reports] of reportsByIndustry.entries()) {
-        console.log(`\n🔄 ${industryName} 산업 평가 중... (${reports.reportContents.length}개 보고서)`);
+        console.log(`\n${industryName} 산업 평가 중... (${reports.reportContents.length}개 보고서)`);
         const evaluationResult = await this._evaluateIndustryContents(industryName, reports.reportContents);
         if (evaluationResult) {
           industryEvaluations.push({
@@ -815,7 +798,7 @@ export class ReportAiProvider {
         }
       }
 
-      // 5. 최종 결과 조합 및 파일 저장
+      //최종 결과 조합 및 파일 저장
       const finalResult = {
         lastEvaluated: new Date().toISOString(),
         evaluatedReportCount: limitedFiles.length,
@@ -827,21 +810,21 @@ export class ReportAiProvider {
         fs.mkdirSync("./downloads/summary", { recursive: true });
       }
       fs.writeFileSync(outputPath, JSON.stringify(finalResult, null, 2), "utf8");
-      console.log(`\n✅ 평가 완료! 최종 결과가 ${outputPath}에 저장되었습니다.`);
+      console.log(`\n평가 완료, 최종 결과가 ${outputPath}에 저장.`);
 
       return finalResult;
 
     } catch (error) {
-      console.error("❌ 산업군 평가 중 심각한 오류 발생:", error);
+      console.error("산업군 평가 실패:", error);
       return null;
     }
   }
 
-  /**
-   * [Helper] LLM을 호출하여 보고서를 표준 산업군 태그로 분류합니다.
+  /*
+   * LLM을 호출하여 보고서를 산업군 태그로 분류.
    */
   private async _classifyIndustries(reports: MiraeAssetReport[]): Promise<Array<{ id: string; industries: string[] }>> {
-    console.log("🔄 1차 LLM 호출: 산업군 분류 중...");
+    console.log("LLM 호출: 산업군 분류 중...");
     const reportsToClassify = reports.map(r => ({ id: r.id, title: r.title, content: this.readLatestMarkdownFiles([r], { contentLengthLimit: 200, shouldLimitLength: true })[0]?.content || '' }));
 
     const prompt = `
@@ -860,8 +843,8 @@ export class ReportAiProvider {
     return this._callGenerativeModel(prompt);
   }
 
-  /**
-   * [Helper] 분류된 산업군에 따라 보고서 내용을 그룹화합니다.
+  /*
+   * 분류된 산업군에 따라 보고서 내용을 그룹화.
    */
   private _groupReportsByIndustry(classifiedReports: Array<{ id: string; industries: string[] }>, allReports: MiraeAssetReport[], allContents: Array<{ fileName: string; content: string }>) {
     const reportsByIndustry = new Map<string, { reportContents: string[], referencedReports: any[] }>();
@@ -885,8 +868,8 @@ export class ReportAiProvider {
     return reportsByIndustry;
   }
 
-  /**
-   * [Helper] LLM을 호출하여 특정 산업군에 대한 심층 평가를 수행합니다.
+  /*
+   * LLM을 호출하여 특정 산업군에 대한 평가
    */
   private async _evaluateIndustryContents(industryName: string, contents: string[]): Promise<any> {
     const prompt = `
@@ -896,7 +879,8 @@ export class ReportAiProvider {
     --- 내용 끝 ---
     
     위 자료들을 근거로 '${industryName}' 산업의 동향이 국내 주식 시장의'${industryName}' 관련주들에 미칠 영향을 평가하되, 
-    특히 해외 경쟁사의 성장이 국내 기업의 시장 점유율과 수익성에 미칠 위협을 중점적으로 분석하고, 
+    특히 해외 경쟁사의 성장이 국내 기업의 시장 점유율과 수익성에 미칠 위협을 중점적으로 분석하여라.
+    핵심 긍정 요인, 핵심 리스크 또한 국내 시장의 시점으로 작성하여라.
     반드시 다음 JSON 스키마에 맞춰서 결과를 반환해라:
       {
         "evaluation": "긍정적|부정적|중립적",
@@ -910,12 +894,12 @@ export class ReportAiProvider {
     return this._callGenerativeModel(prompt);
   }
 
-  /**
-   * [Helper] Gemini 모델을 호출하고 JSON 응답을 파싱합니다.
+  /*
+   * gemini 호출하고 JSON 응답을 파싱합니다.
    */
   private async _callGenerativeModel(prompt: string): Promise<any> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       const responseText = result.response.text();
       

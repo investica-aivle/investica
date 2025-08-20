@@ -1,4 +1,5 @@
 import { KeywordSummaryResult, ReportDetail } from '../models/Reports';
+import { IndustryEvaluationSummaryResponse } from '../types/reports'; // IndustryEvaluationSummaryResponse 추가
 import apiClient from './index';
 
 const reportsApi = {
@@ -15,6 +16,14 @@ const reportsApi = {
    */
   getKeywordSummary: (): Promise<KeywordSummaryResult> => {
     return apiClient.get('/reports/summary/keyword')
+      .then(response => response.data);
+  },
+
+  /**
+   * 산업 평가 요약 (AI 종목 추천) 결과 조회
+   */
+  getIndustryEvaluationSummary: (): Promise<IndustryEvaluationSummaryResponse> => { // 타입 변경
+    return apiClient.get('/reports/summary/industry-evaluation')
       .then(response => response.data);
   }
 };
