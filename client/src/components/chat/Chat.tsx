@@ -40,16 +40,13 @@ export function Chat() {
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 min-w-0 h-full">
       <div className="flex-1 flex flex-col bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30 h-full">
-        <div
-            className="flex-1 overflow-y-auto p-4 custom-scrollbar"
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
             style={{
               scrollbarWidth: 'thin',
               scrollbarColor: '#52525b #18181b'
             }}
-        >
-          <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
           >
             {hasMessage && <ChatMessages messages={messages} />}
             <ChatStatus
@@ -68,6 +65,5 @@ export function Chat() {
           />
         </div>
       </div>
-    </div>
   );
 }
