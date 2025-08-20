@@ -1,4 +1,4 @@
-import { IKisSessionData, IKisStock } from "@models/KisTrading";
+import { IKisSessionData, IKisStock, IKisPortfolio } from "@models/KisTrading";
 import { tags } from "typia";
 import { IClientEvents } from "../../types/agentica";
 
@@ -177,6 +177,9 @@ export class KisSessionService {
    *
    * > Use this to analyze historical trends and create charts.
    * > Useful for technical analysis and investment pattern analysis.
+   * > ALWAYS present results in markdown table format using | (pipes) and - (hyphens).
+   * > Table structure: | 날짜 | 시가 | 고가 | 저가 | 종가 | 거래량 |
+   * > Example: |2024-01-15|75,000원|78,000원|74,500원|77,500원|1,234,567주|
    *
    * @param input Company name, period type, and adjusted price option
    * @returns Time-series price data and trading volume information
@@ -207,60 +210,44 @@ export class KisSessionService {
   }
 
   /**
-   * Get account stock balance
+   * Get comprehensive portfolio data
    *
-   * Retrieve the current stock holdings in the user's account.
-   * This function shows all stocks currently owned, including quantity,
-   * purchase price, current price, and profit/loss information.
+   * Retrieve complete portfolio information including all stock holdings,
+   * account summary, and detailed financial metrics from KIS API.
+   * This function provides the full dataset needed for portfolio analysis.
    *
-   * > This function provides a comprehensive view of the user's portfolio.
-   * > Use this before placing sell orders to check available quantities.
-   * > The profit/loss information is calculated based on current market prices.
+   * > Present data in user-friendly format: 1) Overview message 2) Holdings summary
+   * > 3) Individual stocks MUST be presented in markdown table format using | (pipes) and - (hyphens).
+   * > Stock table structure: | 종목명 | 보유수량 | 매입평균가 | 현재가 | 평가금액 | 평가손익 | 수익률 |
+   * > Example: |삼성전자|10주|75,000원|78,000원|780,000원|+30,000원|+4.0%|
+   * > 4) Account summary table: | 항목 | 금액 | with deposits (예수금: 추가 매수 가능 현금),
+   * > total value (총 평가금액), net assets (순자산). Use Korean won notation (원),
+   * > +/- indicators, avoid technical field names like pdno/prdt_name.
+   * > Include beginner explanations in parentheses.
    *
-   * @returns Account balance information with stock holdings
+   * @returns Complete portfolio data with all KIS API fields
    */
-  public async getStockBalance(): Promise<{
-    /**
-     * Summary message about the account balance
-     * @example "3개 종목을 보유중이에요"
-     */
-    message: string;
+  public async getPortfolioData(): Promise<IKisPortfolio.IPortfolioResponse> {
+    return await this.kisService.getPortfolioData(this.sessionData);
+  }
 
-    /**
-     * List of stock holdings in the account
-     */
-    stocks: Array<{
-      /**
-       * Stock name
-       * @example "삼성전자"
-       */
-      name: string;
-
-      /**
-       * Number of shares owned
-       * @example "100"
-       */
-      quantity: string;
-
-      /**
-       * Average purchase price per share
-       * @example "75000"
-       */
-      buyPrice: string;
-
-      /**
-       * Current market price per share
-       * @example "78000"
-       */
-      currentPrice: string;
-
-      /**
-       * Profit/loss percentage
-       * @example "4.00"
-       */
-      profit: string;
-    }>;
-  }> {
-    return await this.kisService.getStockBalance(this.sessionData);
+  /**
+   * Get portfolio summary for header
+   *
+   * Retrieve essential portfolio metrics optimized for the portfolio header display.
+   * This function provides only the key information needed for the main portfolio overview.
+   *
+   * > Present summary in friendly format with overview message. Show key metrics with
+   * > Korean won (원), +/- indicators, natural expressions (예: "5개 종목 보유중").
+   * > Include: total value (총 평가금액: 주식과 현금 합친 총 가치), profit/loss
+   * > (평가손익: 번 돈 또는 잃은 돈), return % (수익률: 원금 대비 퍼센트),
+   * > investment (총 투자원금: 주식 사는데 쓴 돈), holdings count (보유종목 수:
+   * > 가진 회사 주식 개수), available cash (가용자금: 추가 매수 가능 현금).
+   * > Use comma separators, conversational tone with beginner explanations.
+   *
+   * @returns Simplified portfolio summary for header display
+   */
+  public async getPortfolioSummary(): Promise<IKisPortfolio.IPortfolioSummary> {
+    return await this.kisService.getPortfolioSummary(this.sessionData);
   }
 }
