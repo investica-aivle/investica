@@ -43,6 +43,10 @@ export function Chat() {
           <div
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#52525b #18181b'
+            }}
           >
             {hasMessage && <ChatMessages messages={messages} />}
             <ChatStatus
@@ -54,6 +58,7 @@ export function Chat() {
               isWsUrlConfigured={import.meta.env.VITE_AGENTICA_WS_URL !== ""}
             />
           </div>
+        </div>
 
           <div className="p-4 flex-shrink-0">
             <ChatInput
@@ -61,7 +66,6 @@ export function Chat() {
               disabled={!isConnected || isError || isLastMessageFromUser || isConnecting || isLoading}
             />
           </div>
-      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as fs from "fs";
 import * as path from "path";
-
+import * as os from "os";
 /**
  * Report AI Provider
  *
@@ -27,20 +27,17 @@ export class ReportAiProvider {
     private readonly configService: ConfigService,
   ) {
     const apiKey = this.configService.get<string>("GOOGLE_API_KEY");
-    console.log(apiKey);
     if (!apiKey) {
-      throw new InternalServerErrorException(
-        "Google API Key not found in configuration.",
-      );
+      throw new InternalServerErrorException("Google API Key not found in configuration.");
     } else {
-      console.log(`✅ GOOGLE_API_KEY 설정됨`);
+      console.log(`GOOGLE_API_KEY 설정됨`);
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
 
     // temp_files 디렉토리 생성
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
-      console.log(`📁 임시 파일 디렉토리 생성: ${this.tempDir}`);
+      console.log(`임시 파일 디렉토리 생성: ${this.tempDir}`);
     }
   }
 
@@ -157,7 +154,7 @@ export class ReportAiProvider {
       // 캐시 확인
       const cacheResult = this.checkKeywordCache(limitedFiles);
       if (cacheResult.isValid) {
-        console.log("✅ 캐시된 키워드 요약 사용");
+        console.log("캐시된 키워드 요약 사용");
         return {
           message: `${fileContents.length}개의 최신 마크다운 파일에서 키워드를 추출했습니다. (캐시됨)`,
           keywords: cacheResult.keywords,
@@ -186,6 +183,8 @@ export class ReportAiProvider {
     }
   }
 
+
+
   /**
    * JSON 파일을 통해 마크다운 변환이 필요한 보고서들을 찾아서 변환
    */
@@ -193,16 +192,16 @@ export class ReportAiProvider {
     jsonFilePath: string = "./downloads/reports.json",
     mdFolderPath: string = "./downloads/markdown",
   ): Promise<PdfConversionResult[]> {
-    console.log(`🔄 JSON 기반 마크다운 변환 시작`);
-    console.log(`📄 JSON 파일: ${jsonFilePath}`);
-    console.log(`📁 마크다운 폴더: ${mdFolderPath}`);
+    console.log(`JSON 기반 마크다운 변환 시작`);
+    console.log(`JSON 파일: ${jsonFilePath}`);
+    console.log(`마크다운 폴더: ${mdFolderPath}`);
 
     const results: PdfConversionResult[] = [];
 
     try {
       // JSON 파일 읽기
       if (!fs.existsSync(jsonFilePath)) {
-        console.log(`❌ JSON 파일이 없습니다: ${jsonFilePath}`);
+        console.log(`JSON 파일이 없습니다: ${jsonFilePath}`);
         return results;
       }
 
@@ -214,7 +213,7 @@ export class ReportAiProvider {
         (report) => report.mdFileName === null,
       );
 
-      console.log(`📋 변환할 보고서 개수: ${reportsNeedingConversion.length}`);
+      console.log(`변환할 보고서 개수: ${reportsNeedingConversion.length}`);
 
       // 출력 디렉토리 생성
       if (!fs.existsSync(mdFolderPath)) {
@@ -223,7 +222,7 @@ export class ReportAiProvider {
 
       // 각 보고서를 file_url로 변환
       for (const report of reportsNeedingConversion) {
-        console.log(`\n🔄 변환 중: ${report.title}`);
+        console.log(`\n변환 중: ${report.title}`);
 
         const result = await this.convertPdfFromUrl(
           report.downloadUrl,
@@ -232,9 +231,9 @@ export class ReportAiProvider {
         );
 
         if (result.success) {
-          console.log(`✅ 변환 성공: ${result.fileName}`);
+          console.log(`변환 성공: ${result.fileName}`);
         } else {
-          console.log(`❌ 변환 실패: ${result.error}`);
+          console.log(`변환 실패: ${result.error}`);
         }
 
         results.push(result);
@@ -250,7 +249,7 @@ export class ReportAiProvider {
 
       return results;
     } catch (error) {
-      console.error(`❌ JSON 기반 변환 실패:`, error);
+      console.error(`JSON 기반 변환 실패:`, error);
       return results;
     }
   }
@@ -281,9 +280,7 @@ export class ReportAiProvider {
           return dateB.getTime() - dateA.getTime();
         });
 
-      console.log(
-        `JSON에서 ${reportsWithMarkdown.length}개의 마크다운 파일을 찾았습니다.`,
-      );
+      console.log(`JSON에서 ${reportsWithMarkdown.length}개의 마크다운 파일을 찾았습니다.`);
       return reportsWithMarkdown;
     } catch (error) {
       console.error(`JSON에서 마크다운 파일 읽기 실패:`, error);
@@ -369,24 +366,11 @@ export class ReportAiProvider {
       content: string;
     }>,
   ) {
-    return `다음 ${fileContents.length}개의 최신 증권보고서들을 요약해줘:
-
-${fileContents
+    return `다음 ${fileContents.length}개의 최신 증권보고서들을 요약해줘:\n\n${fileContents
   .map(
-    (file, index) => `
-**${index + 1}. ${file.fileName}**
-${file.content.substring(0, 500)}...
-`,
+    (file, index) => `\n**${index + 1}. ${file.fileName}**\n${file.content.substring(0, 500)}...\n`,
   )
-  .join("\n")}
-
-위 보고서들의 주요 내용을 종합적으로 요약해주세요. 다음 사항들을 포함해주세요:
-1. 전체적인 시장 동향
-2. 주요 투자 포인트
-3. 리스크 요인
-4. 향후 전망
-
-간결하고 명확하게 요약해주세요.`;
+  .join("\n")}\n\n위 보고서들의 주요 내용을 종합적으로 요약해주세요. 다음 사항들을 포함해주세요:\n1. 전체적인 시장 동향\n2. 주요 투자 포인트\n3. 리스크 요인\n4. 향후 전망\n\n간결하고 명확하게 요약해주세요.`;
   }
 
   /**
@@ -400,22 +384,11 @@ ${file.content.substring(0, 500)}...
   ) {
     const formatInstructions = this.getKeywordFormatInstructions();
 
-    return `다음 ${fileContents.length}개의 최신 증권보고서들에서 주식시장에 영향을 줄 핵심 키워드를 추출해줘:
-
-${fileContents
+    return `다음 ${fileContents.length}개의 최신 증권보고서들에서 주식시장에 영향을 줄 핵심 키워드를 추출해줘:\n\n${fileContents
   .map(
-    (file, index) => `
-**${index + 1}. ${file.fileName}**
-${file.content.substring(0, 500)}...
-`,
+    (file, index) => `\n**${index + 1}. ${file.fileName}**\n${file.content.substring(0, 500)}...\n`,
   )
-  .join("\n")}
-
-위 보고서들에서 주식시장에 직접적인 영향을 줄 수 있는 핵심 키워드 3-8개를 추출해주세요.
-
-${formatInstructions}
-
-각 키워드는 구체적이고 임팩트 있는 것들로 추출해주세요.`;
+  .join("\n")}\n\n위 보고서들에서 주식시장에 직접적인 영향을 줄 수 있는 핵심 키워드 3-8개를 추출해주세요.\n\n${formatInstructions}\n\n각 키워드는 구체적이고 임팩트 있는 것들로 추출해주세요.`;
   }
 
   /**
@@ -506,11 +479,11 @@ ${formatInstructions}
       );
 
       if (!allFilesInCache) {
-        console.log("🔄 새로운 파일이 포함되어 있어 캐시 무효화");
+        console.log("새로운 파일이 포함되어 있어 캐시 무효화");
         return { isValid: false, keywords: [] };
       }
 
-      console.log("✅ 모든 파일이 캐시에 포함되어 있어 캐시 사용");
+      console.log("모든 파일이 캐시에 포함되어 있어 캐시 사용");
       return { isValid: true, keywords: cache.keywords };
     } catch (error) {
       console.error("캐시 확인 중 오류:", error);
@@ -532,7 +505,7 @@ ${formatInstructions}
       // summary 디렉토리 생성
       if (!fs.existsSync(summaryDir)) {
         fs.mkdirSync(summaryDir, { recursive: true });
-        console.log(`📁 요약 디렉토리 생성: ${summaryDir}`);
+        console.log(`요약 디렉토리 생성: ${summaryDir}`);
       }
 
       // 기존 캐시 읽기 (있다면)
@@ -565,9 +538,7 @@ ${formatInstructions}
       };
 
       fs.writeFileSync(cachePath, JSON.stringify(cacheData, null, 2), "utf8");
-      console.log(
-        `💾 키워드 캐시 저장 완료: ${cachePath} (총 ${allFiles.length}개 파일)`,
-      );
+      console.log(`키워드 캐시 저장 완료: ${cachePath} (총 ${allFiles.length}개 파일)`);
     } catch (error) {
       console.error("캐시 저장 중 오류:", error);
     }
@@ -630,47 +601,13 @@ ${formatInstructions}
    * 키워드 스키마의 format_instructions 생성 (Pydantic parser와 유사)
    */
   private getKeywordFormatInstructions(): string {
-    return `The output should be formatted as a JSON array that conforms to the following schema:
-
-{
-  "type": "array",
-  "items": {
-    "type": "object", 
-    "properties": {
-      "icon": { "type": "string", "description": "적절한 이모지 아이콘" },
-      "keyword": { "type": "string", "description": "주식시장에 영향을 주는 핵심 키워드" },
-      "description": { "type": "string", "description": "키워드에 대한 한두 줄 설명" },
-      "impact": { 
-        "type": "string", 
-        "enum": ["positive", "negative", "neutral"],
-        "description": "키워드가 주식시장에 미치는 영향"
-      }
-    },
-    "required": ["icon", "keyword", "description", "impact"]
-  }
-}
-
-Example output:
-[
-  {
-    "icon": "🚨",
-    "keyword": "트럼프 관세 35% 선언",
-    "description": "미국 대선 후보 트럼프가 중국산 수입품에 35% 관세 부과를 선언하여 무역 긴장 고조",
-    "impact": "negative"
-  },
-  {
-    "icon": "📈",
-    "keyword": "반도체 수요 급증", 
-    "description": "AI 서버 수요 증가로 인한 메모리 반도체 가격 상승 전망",
-    "impact": "positive"
-  }
-]`;
+    return `The output should be formatted as a JSON array that conforms to the following schema:\n\n{\n  "type": "array",\n  "items": {\n    "type": "object", \n    "properties": {\n      "icon": { "type": "string", "description": "적절한 이모지 아이콘" },\n      "keyword": { "type": "string", "description": "주식시장에 영향을 주는 핵심 키워드" },\n      "description": { "type": "string", "description": "키워드에 대한 한두 줄 설명" },\n      "impact": { \n        "type": "string", \n        "enum": ["positive", "negative", "neutral"],\n        "description": "키워드가 주식시장에 미치는 영향"\n      }\n    },\n    "required": ["icon", "keyword", "description", "impact"]\n  }\n}\n\nExample output:\n[\n  {\n    "icon": "🚨",\n    "keyword": "트럼프 관세 35% 선언",\n    "description": "미국 대선 후보 트럼프가 중국산 수입품에 35% 관세 부과를 선언하여 무역 긴장 고조",\n    "impact": "negative"\n  },\n  {\n    "icon": "📈",\n    "keyword": "반도체 수요 급증", \n    "description": "AI 서버 수요 증가로 인한 메모리 반도체 가격 상승 전망",\n    "impact": "positive"\n  }\n]`;
   }
 
-  private readonly tempDir = path.join(__dirname, "..", "..", "temp_files");
+  private readonly tempDir = path.join(os.tmpdir(), "temp_files");
 
   /**
-   * URL에서 PDF를 직접 변환 (file_url 사용)
+   * URL에서 PDF 변환 base64 인코딩
    */
   public async convertPdfFromUrl(
     downloadUrl: string,
@@ -681,7 +618,7 @@ Example output:
     try {
       // API 키 확인
       if (!this.genAI) {
-        console.error("❌ Gemini API not configured");
+        console.error("Gemini API not configured");
         return {
           markdown: "",
           fileName: "",
@@ -690,8 +627,8 @@ Example output:
         };
       }
 
-      console.log(`🔄 URL에서 변환 시작: ${pdfFileName}`);
-      console.log(`🌐 다운로드 URL: ${downloadUrl}`);
+      console.log(`URL에서 변환 시작: ${pdfFileName}`);
+      console.log(`다운로드 URL: ${downloadUrl}`);
 
       //pdf 다운로드 필요
       //현재 로컬에 다운되어있는 pdf를 찾는중
@@ -709,37 +646,7 @@ Example output:
         },
       };
 
-      const prompt = `
-첨부된 PDF는 금융 보고서입니다.
-
-이 문서의 내용을 가능한 한 정확하고 자세하게 쓰되 요약하여 정리하십시오.
-보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.
-작성자의 해석이나 주관적 판단 없이, PDF에 포함된 내용을 기반으로 정리하십시오.
-형식은 마크다운을 계층형식으로 작성하십시오.
-
-그래프 같은 것 들이 있는 경우 각 그래프 마다 간단하게 지표를뽑아내거나 평가한정보가 있어야 함
-제목이나 항목 구분 하며 본문 내용을 작성하십시오.
-
-문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
-보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
-
-결과는 아래 예시와 같이 **굵은 글씨**와 -을 활용한 리스트 형식으로 깔끔하게 정리하여야 함.
-
-## 전세계 주식시장의 이익동향
-
-    **전세계 12개월 선행 EPS** : 전월 대비 -0.1% 하락
-
-    - 신흥국: -0.6%
-
-    - 선진국: -0.01%
-
-    - 국가별 변화
-
-    - 상향 조정: 미국(+0.4%), 홍콩(+0.2%)
-
-    - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)
-            
-`;
+      const prompt = `\n첨부된 PDF는 금융 보고서입니다.\n\n이 문서의 내용을 가능한 한 정확하고 자세하게 쓰되 요약하여 정리하십시오.\n보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.\n작성자의 해석이나 주관적 판단 없이, PDF에 포함된 내용을 기반으로 정리하십시오.\n형식은 마크다운을 계층형식으로 작성하십시오.\n\n그래프 같은 것 들이 있는 경우 각 그래프 마다 간단하게 지표를뽑아내거나 평가한정보가 있어야 함\n제목이나 항목 구분 하며 본문 내용을 작성하십시오.\n\n문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.\n보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.\n\n결과는 아래 예시와 같이 **굵은 글씨**와 -을 활용한 리스트 형식으로 깔끔하게 정리하여야 함.\n\n## 전세계 주식시장의 이익동향\n\n    **전세계 12개월 선행 EPS** : 전월 대비 -0.1% 하락\n\n    - 신흥국: -0.6%\n\n    - 선진국: -0.01%\n\n    - 국가별 변화\n\n    - 상향 조정: 미국(+0.4%), 홍콩(+0.2%)\n\n    - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)\n            \n`;
       const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent([prompt, filePart]);
       const response = result.response;
@@ -747,7 +654,7 @@ Example output:
 
       // 마크다운 파일 저장
       fs.writeFileSync(markdownFilePath, markdownContent, "utf8");
-      console.log(`💾 마크다운 파일 저장 완료: ${markdownFilePath}`);
+      console.log(`마크다운 파일 저장 완료: ${markdownFilePath}`);
 
       return {
         markdown: markdownContent,
@@ -755,7 +662,7 @@ Example output:
         success: true,
       };
     } catch (error) {
-      console.error(`❌ URL 변환 실패 (${pdfFileName}):`, error);
+      console.error(`URL 변환 실패 (${pdfFileName}):`, error);
       return {
         markdown: "",
         fileName: "",
@@ -794,9 +701,7 @@ Example output:
       return outputPath;
     } catch (error: any) {
       console.error(`PDF 다운로드 중 오류 발생: ${error.message}`);
-      throw new InternalServerErrorException(
-        `PDF 다운로드 실패: ${error.message}`,
-      );
+      throw new InternalServerErrorException(`PDF 다운로드 실패: ${error.message}`);
     }
   }
 
@@ -836,11 +741,175 @@ Example output:
         JSON.stringify(reportsData, null, 2),
         "utf8",
       );
-      console.log(
-        `📄 JSON 파일 업데이트 완료: ${successfulConversions.length}개 마크다운 상태 반영`,
-      );
+      console.log(`JSON 파일 업데이트 완료: ${successfulConversions.length}개`,);
     } catch (error) {
-      console.error(`❌ JSON 파일 업데이트 실패:`, error);
+      console.error(`JSON 파일 갱신 실패:`, error);
+    }
+  }
+
+
+  private readonly industryTags = [
+    "반도체", "IT하드웨어", "IT소프트웨어", "인터넷/게임", "통신서비스",
+    "자동차", "내구소비재/의류", "유통/소매", "미디어/엔터테인먼트", "호텔/레저",
+    "필수소비재", "음식료", "기계", "조선", "운송", "건설", "상사/자본재",
+    "제약/바이오", "헬스케어", "은행", "증권", "보험", "화학", "정유",
+    "철강/금속", "에너지", "유틸리티"
+  ];
+
+  /*
+   * 산업 분석 보고서를 기반으로 산업군별 평가.
+   */
+  public async evaluateLatestIndustries(limit: number = 5): Promise<any> {
+    console.log(`산업군 평가 시작: 보고서 ${limit} 개`);
+
+    // 1. 최신 데이터 수집
+    const { limitedFiles, fileContents } = await this.getLatestMarkdownFiles(
+      "./downloads/reports_IA.json",
+      limit,
+      { contentLengthLimit: 10000, shouldLimitLength: true }
+    );
+
+    if (fileContents.length === 0) {
+      console.log("평가할 보고서가 없습니다.");
+      return null;
+    }
+
+    try {
+      //보고서별 산업군 분류
+      const classifiedReports = await this._classifyIndustries(limitedFiles);
+      if (!classifiedReports) {
+        throw new Error("산업군 분류에 실패했습니다.");
+      }
+
+      //분류 결과 기반 데이터 재구성
+      const reportsByIndustry = this._groupReportsByIndustry(classifiedReports, limitedFiles, fileContents);
+
+      //산업군별 전망 평가
+      const industryEvaluations = [];
+      for (const [industryName, reports] of reportsByIndustry.entries()) {
+        console.log(`\n${industryName} 산업 평가 중... (${reports.reportContents.length}개 보고서)`);
+        const evaluationResult = await this._evaluateIndustryContents(industryName, reports.reportContents);
+        if (evaluationResult) {
+          industryEvaluations.push({
+            industryName,
+            ...evaluationResult,
+            referencedReports: reports.referencedReports,
+          });
+        }
+      }
+
+      //최종 결과 조합 및 파일 저장
+      const finalResult = {
+        lastEvaluated: new Date().toISOString(),
+        evaluatedReportCount: limitedFiles.length,
+        industryEvaluations,
+      };
+
+      const outputPath = "./downloads/summary/industry_evaluation.json";
+      if (!fs.existsSync("./downloads/summary")) {
+        fs.mkdirSync("./downloads/summary", { recursive: true });
+      }
+      fs.writeFileSync(outputPath, JSON.stringify(finalResult, null, 2), "utf8");
+      console.log(`\n평가 완료, 최종 결과가 ${outputPath}에 저장.`);
+
+      return finalResult;
+
+    } catch (error) {
+      console.error("산업군 평가 실패:", error);
+      return null;
+    }
+  }
+
+  /*
+   * LLM을 호출하여 보고서를 산업군 태그로 분류.
+   */
+  private async _classifyIndustries(reports: MiraeAssetReport[]): Promise<Array<{ id: string; industries: string[] }>> {
+    console.log("LLM 호출: 산업군 분류 중...");
+    const reportsToClassify = reports.map(r => ({ id: r.id, title: r.title, content: this.readLatestMarkdownFiles([r], { contentLengthLimit: 200, shouldLimitLength: true })[0]?.content || '' }));
+
+    const prompt = `
+    다음은 미리 정의된 산업군 태그 목록입니다:
+    [${this.industryTags.join(", ")}]
+       
+    이제 아래 보고서들의 제목과 내용 일부를 보고, 각 보고서가 이 목록에 있는 태그 중 어떤 산업군(들)에 가장 적합한지 분류해 주십시오.
+    하나의 보고서는 여러 산업군에 속할 수 있습니다. 목록에 없는 산업군은 절대로 만들지 마십시오.
+    결과는 반드시 다음 JSON 형식으로 반환해 주십시오: 
+    [{ "id": "보고서ID", "industries": ["선택된태그1", "선택된태그2"] }, ...]
+          
+    --- 보고서 목록 ---
+    ${JSON.stringify(reportsToClassify, null, 2)}
+    `;
+
+    return this._callGenerativeModel(prompt);
+  }
+
+  /*
+   * 분류된 산업군에 따라 보고서 내용을 그룹화.
+   */
+  private _groupReportsByIndustry(classifiedReports: Array<{ id: string; industries: string[] }>, allReports: MiraeAssetReport[], allContents: Array<{ fileName: string; content: string }>) {
+    const reportsByIndustry = new Map<string, { reportContents: string[], referencedReports: any[] }>();
+
+    for (const classified of classifiedReports) {
+      const originalReport = allReports.find(r => r.id === classified.id);
+      if (!originalReport || !originalReport.mdFileName) continue;
+
+      const reportContent = allContents.find(c => c.fileName === originalReport.mdFileName)?.content;
+      if (!reportContent) continue;
+
+      for (const industryName of classified.industries) {
+        if (!reportsByIndustry.has(industryName)) {
+          reportsByIndustry.set(industryName, { reportContents: [], referencedReports: [] });
+        }
+        const industryData = reportsByIndustry.get(industryName)!;
+        industryData.reportContents.push(reportContent);
+        industryData.referencedReports.push({ id: originalReport.id, title: originalReport.title });
+      }
+    }
+    return reportsByIndustry;
+  }
+
+  /*
+   * LLM을 호출하여 특정 산업군에 대한 평가
+   */
+  private async _evaluateIndustryContents(industryName: string, contents: string[]): Promise<any> {
+    const prompt = `
+    너는 전문 애널리스트다. 다음은 '${industryName}' 산업에 대한 최신 증권사 보고서 내용들이다.
+    --- 보고서 내용 ---
+    ${contents.join("\n\n---\n\n")}
+    --- 내용 끝 ---
+    
+    위 자료들을 근거로 '${industryName}' 산업의 동향이 국내 주식 시장의'${industryName}' 관련주들에 미칠 영향을 평가하되, 
+    특히 해외 경쟁사의 성장이 국내 기업의 시장 점유율과 수익성에 미칠 위협을 중점적으로 분석하여라.
+    핵심 긍정 요인, 핵심 리스크 또한 국내 시장의 시점으로 작성하여라.
+    반드시 다음 JSON 스키마에 맞춰서 결과를 반환해라:
+      {
+        "evaluation": "긍정적|부정적|중립적",
+        "evaluationCode": "POSITIVE|NEGATIVE|NEUTRAL",
+        "confidence": 0.0,
+        "summary": "종합 평가 요약 (2-3 문장)",
+        "keyDrivers": ["핵심 긍정 요인1", "요인2"],
+        "keyRisks": ["핵심 리스크1", "리스크2"]
+      }
+                                                                    `;
+    return this._callGenerativeModel(prompt);
+  }
+
+  /*
+   * gemini 호출하고 JSON 응답을 파싱합니다.
+   */
+  private async _callGenerativeModel(prompt: string): Promise<any> {
+    try {
+      const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+      
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
+
+      return JSON.parse(jsonStr);
+    } catch (error) {
+      console.error("LLM 호출 또는 JSON 파싱 실패:", error, "Original Text:", (error as any).responseText || '');
+      return null;
     }
   }
 }

@@ -8,6 +8,7 @@ import { HttpModule } from "@nestjs/axios";
 import { ConfigModule } from "@nestjs/config";
 import { KisController } from "./KisController";
 import { SessionManager } from "../../providers/session/SessionManager";
+import { StockModule } from "../stock/StockModule";
 
 /**
  * KIS (Korea Investment Securities) Module
@@ -19,6 +20,7 @@ import { SessionManager } from "../../providers/session/SessionManager";
   imports: [
     HttpModule,
     ConfigModule, // 둘 다 주입에 필요
+    StockModule, // StockCodeService를 사용하기 위해 import
   ],
   providers: [KisTradingProvider, KisAuthProvider, KisPriceProvider, KisBalanceProvider, KisService, SessionManager],
   controllers: [KisController],

@@ -186,7 +186,7 @@ export class KisController {
   public async getStockDailyPrices(
     @TypedBody()
     body: {
-      company: string;
+      stockName: string;
       periodCode?: "D" | "W" | "M";
       adjustPrice?: 0 | 1;
     },
@@ -196,18 +196,18 @@ export class KisController {
     data: Record<string, any>[];
   }> {
     this.logger.log(`=== 주식 일자별 가격 조회 요청 ===`);
-    this.logger.log(`기업명: ${body.company}`);
-    this.logger.log(`기간 구분: ${body.periodCode || "D"}`);
+    this.logger.log(`종목명: ${body.stockName}`);
+    this.logger.log(`기간 구분: ${body.periodCode || 'D'}`);
     this.logger.log(`수정주가: ${body.adjustPrice ?? 1}`);
 
     try {
       const result = await this.kisService.getStockDailyPrices(
         session.kisSessionData,
         {
-          company: body.company,
+          stockName: body.stockName,
           periodCode: body.periodCode,
           adjustPrice: body.adjustPrice,
-        },
+        }
       );
 
       this.logger.log(`=== 주식 일자별 가격 조회 성공 ===`);
@@ -304,7 +304,7 @@ export class KisController {
       const result = await this.kisService.getStockPrice(
         session.kisSessionData,
         {
-          company: body.company,
+          stockName: body.company,
         },
       );
 
@@ -349,7 +349,7 @@ export class KisController {
       const result = await this.kisService.getStockTrades(
         session.kisSessionData,
         {
-          company: body.company,
+          stockName: body.company,
         },
       );
 
@@ -370,18 +370,17 @@ export class KisController {
   /**
    * 주식 매수 주문을 실행합니다.
    *
-   * @summary 주식 매수 주문
+   * @summary 주식 매수
    * @param body 매수 주문 요청 데이터
    * @param session 세션 정보 (SessionGuard에서 검증된 세션)
-   * @returns 주문 결과
+   * @returns 매수 주문 실행 결과
    */
-  @TypedRoute.Post("buy-stock")
+  @TypedRoute.Post("buy")
   @UseGuards(SessionGuard)
   @HttpCode(HttpStatus.OK)
   public async buyStock(
-    @TypedBody()
-    body: {
-      stockCode: string;
+    @TypedBody() body: {
+      stockName: string;
       quantity: number;
       orderCondition: "market" | "limit";
       price?: number;
@@ -390,53 +389,62 @@ export class KisController {
   ): Promise<{
     success: boolean;
     message: string;
+    orderData?: any;
     errorCode?: string;
   }> {
     this.logger.log(`=== 주식 매수 주문 요청 ===`);
-    this.logger.log(`종목코드: ${body.stockCode}`);
+    this.logger.log(`종목명: ${body.stockName}`);
     this.logger.log(`수량: ${body.quantity}`);
     this.logger.log(`주문조건: ${body.orderCondition}`);
-    if (body.price) {
-      this.logger.log(`가격: ${body.price}`);
-    }
+    this.logger.log(`가격: ${body.price || '시장가'}`);
 
     try {
-      const result = await this.kisService.buyStock(session.kisSessionData, {
-        stockCode: body.stockCode,
-        quantity: body.quantity,
-        orderCondition: body.orderCondition,
-        price: body.price,
-      });
-
-      this.logger.log(`=== 주식 매수 주문 성공 ===`);
-      this.logger.log(`결과: ${result.message}`);
-
-      return result;
-    } catch (error) {
-      this.logger.error(`=== 주식 매수 주문 실패 ===`);
-      this.logger.error(
-        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      const result = await this.kisService.buyStock(
+        session.kisSessionData,
+        {
+          stockName: body.stockName,
+          quantity: body.quantity,
+          orderCondition: body.orderCondition,
+          price: body.price,
+        }
       );
 
-      throw error;
+      this.logger.log(`=== 주식 매수 주문 결과 ===`);
+      this.logger.log(`성공 여부: ${result.success}`);
+      this.logger.log(`메시지: ${result.message}`);
+
+      return {
+        success: result.success,
+        message: result.message,
+        orderData: result.success ? result : undefined,
+        errorCode: result.success ? undefined : result.errorCode,
+      };
+    } catch (error) {
+      this.logger.error(`=== 주식 매수 주문 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      return {
+        success: false,
+        message: "매수 주문 처리 중 오류가 발생했습니다.",
+        errorCode: "ORDER_PROCESSING_ERROR",
+      };
     }
   }
 
   /**
    * 주식 매도 주문을 실행합니다.
    *
-   * @summary 주식 매도 주문
+   * @summary 주식 매도
    * @param body 매도 주문 요청 데이터
    * @param session 세션 정보 (SessionGuard에서 검증된 세션)
-   * @returns 주문 결과
+   * @returns 매도 주문 실행 결과
    */
-  @TypedRoute.Post("sell-stock")
+  @TypedRoute.Post("sell")
   @UseGuards(SessionGuard)
   @HttpCode(HttpStatus.OK)
   public async sellStock(
-    @TypedBody()
-    body: {
-      stockCode: string;
+    @TypedBody() body: {
+      stockName: string;
       quantity: number;
       orderCondition: "market" | "limit";
       price?: number;
@@ -445,71 +453,318 @@ export class KisController {
   ): Promise<{
     success: boolean;
     message: string;
+    orderData?: any;
     errorCode?: string;
   }> {
     this.logger.log(`=== 주식 매도 주문 요청 ===`);
-    this.logger.log(`종목코드: ${body.stockCode}`);
+    this.logger.log(`종목명: ${body.stockName}`);
     this.logger.log(`수량: ${body.quantity}`);
     this.logger.log(`주문조건: ${body.orderCondition}`);
-    if (body.price) {
-      this.logger.log(`가격: ${body.price}`);
-    }
+    this.logger.log(`가격: ${body.price || '시장가'}`);
 
     try {
-      const result = await this.kisService.sellStock(session.kisSessionData, {
-        stockCode: body.stockCode,
-        quantity: body.quantity,
-        orderCondition: body.orderCondition,
-        price: body.price,
-      });
-
-      this.logger.log(`=== 주식 매도 주문 성공 ===`);
-      this.logger.log(`결과: ${result.message}`);
-
-      return result;
-    } catch (error) {
-      this.logger.error(`=== 주식 매도 주문 실패 ===`);
-      this.logger.error(
-        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      const result = await this.kisService.sellStock(
+        session.kisSessionData,
+        {
+          stockName: body.stockName,
+          quantity: body.quantity,
+          orderCondition: body.orderCondition,
+          price: body.price,
+        }
       );
 
-      throw error;
+      this.logger.log(`=== 주식 매도 주문 결과 ===`);
+      this.logger.log(`성공 여부: ${result.success}`);
+      this.logger.log(`메시지: ${result.message}`);
+
+      return {
+        success: result.success,
+        message: result.message,
+        orderData: result.success ? result : undefined,
+        errorCode: result.success ? undefined : result.errorCode,
+      };
+    } catch (error) {
+      this.logger.error(`=== 주식 매도 주문 실패 ===`);
+      this.logger.error(`오류: ${error instanceof Error ? error.message : String(error)}`);
+
+      return {
+        success: false,
+        message: "매도 주문 처리 중 오류가 발생했습니다.",
+        errorCode: "ORDER_PROCESSING_ERROR",
+      };
     }
   }
 
   /**
-   * 계좌 주식 잔고를 조회합니다.
+   * 전체 포트폴리오 데이터 조회
    *
-   * @summary 계좌 주식 잔고 조회
+   * @summary 전체 포트폴리오 데이터 조회 (한투 API 핵심 필드만)
    * @param session 세션 정보 (SessionGuard에서 검증된 세션)
-   * @returns 주식 잔고 데이터
+   * @returns 전체 포트폴리오 데이터 (보유종목, 계좌요약 정보 포함)
    */
-  @TypedRoute.Post("stock-balance")
+  @TypedRoute.Post("portfolio-data")
   @UseGuards(SessionGuard)
   @HttpCode(HttpStatus.OK)
-  public async getStockBalance(@Session() session: ISessionData): Promise<{
-    message: string;
-    stocks: Array<{
-      name: string;
-      quantity: string;
-      buyPrice: string;
-      currentPrice: string;
-      profit: string;
+  public async getPortfolioData(@Session() session: ISessionData): Promise<{
+    /**
+     * 성공 실패 여부 (0: 성공, 0 이외의 값: 실패)
+     */
+    rt_cd: string;
+
+    /**
+     * 응답코드
+     */
+    msg_cd: string;
+
+    /**
+     * 응답메세지
+     */
+    msg1: string;
+
+    /**
+     * 연속조회검색조건100
+     */
+    ctx_area_fk100: string;
+
+    /**
+     * 연속조회키100
+     */
+    ctx_area_nk100: string;
+
+    /**
+     * 보유 주식 목록
+     */
+    output1: Array<{
+      /**
+       * 상품번호 (종목번호 뒷 6자리)
+       */
+      pdno: string;
+
+      /**
+       * 상품명 (종목명)
+       */
+      prdt_name: string;
+
+      /**
+       * 매매구분명
+       */
+      trad_dvsn_name: string;
+
+      /**
+       * 전일매수수량
+       */
+      bfdy_buy_qty: string;
+
+      /**
+       * 전일매도수량
+       */
+      bfdy_sll_qty: string;
+
+      /**
+       * 금일매수수량
+       */
+      thdt_buyqty: string;
+
+      /**
+       * 금일매도수량
+       */
+      thdt_sll_qty: string;
+
+      /**
+       * 보유수량
+       */
+      hldg_qty: string;
+
+      /**
+       * 주문가능수량
+       */
+      ord_psbl_qty: string;
+
+      /**
+       * 매입평균가격
+       */
+      pchs_avg_pric: string;
+
+      /**
+       * 매입금액
+       */
+      pchs_amt: string;
+
+      /**
+       * 현재가
+       */
+      prpr: string;
+
+      /**
+       * 평가금액
+       */
+      evlu_amt: string;
+
+      /**
+       * 평가손익금액
+       */
+      evlu_pfls_amt: string;
+
+      /**
+       * 평가손익율
+       */
+      evlu_pfls_rt: string;
+
+      /**
+       * 등락율
+       */
+      fltt_rt: string;
+
+      /**
+       * 전일대비증감
+       */
+      bfdy_cprs_icdc: string;
     }>;
+
+    /**
+     * 계좌 요약 정��
+     */
+    output2: Array<{
+      /**
+       * 예수금총금액
+       */
+      dnca_tot_amt: string;
+
+      /**
+       * 익일정산금액 (D+1 예수금)
+       */
+      nxdy_excc_amt: string;
+
+      /**
+       * 가수도정산금액 (D+2 예수금)
+       */
+      prvs_rcdl_excc_amt: string;
+
+      /**
+       * CMA평가금액
+       */
+      cma_evlu_amt: string;
+
+      /**
+       * 전일매수금액
+       */
+      bfdy_buy_amt: string;
+
+      /**
+       * 금일매수금액
+       */
+      thdt_buy_amt: string;
+
+      /**
+       * 익일자동상환금액
+       */
+      nxdy_auto_rdpt_amt: string;
+
+      /**
+       * 전일매도금액
+       */
+      bfdy_sll_amt: string;
+
+      /**
+       * 금일매도금액
+       */
+      thdt_sll_amt: string;
+
+      /**
+       * D+2자동상환금액
+       */
+      d2_auto_rdpt_amt: string;
+
+      /**
+       * 전일제비용금액
+       */
+      bfdy_tlex_amt: string;
+
+      /**
+       * 금일제비용금액
+       */
+      thdt_tlex_amt: string;
+
+      /**
+       * 총대출금액
+       */
+      tot_loan_amt: string;
+
+      /**
+       * 유가평가금액
+       */
+      scts_evlu_amt: string;
+
+      /**
+       * 총평가금액 (유가증권 평가금액 합계금액 + D+2 예수금)
+       */
+      tot_evlu_amt: string;
+
+      /**
+       * 순자산금액
+       */
+      nass_amt: string;
+
+      /**
+       * 융자금자동상환여부
+       */
+      fncg_gld_auto_rdpt_yn: string;
+
+      /**
+       * 매입금액합계금액
+       */
+      pchs_amt_smtl_amt: string;
+
+      /**
+       * 평가금액합계금액 (유가증권 평가금액 합계금액)
+       */
+      evlu_amt_smtl_amt: string;
+
+      /**
+       * 평가손익합계금액
+       */
+      evlu_pfls_smtl_amt: string;
+
+      /**
+       * 총대주매각대금
+       */
+      tot_stln_slng_chgs: string;
+
+      /**
+       * 전일총자산평가금액
+       */
+      bfdy_tot_asst_evlu_amt: string;
+
+      /**
+       * 자산증감액
+       */
+      asst_icdc_amt: string;
+
+      /**
+       * 자산증감수익율
+       */
+      asst_icdc_erng_rt: string;
+    }>;
+
+    /**
+     * 요약 메시지
+     */
+    message: string;
   }> {
-    this.logger.log(`=== 계좌 주식 잔고 조회 요청 ===`);
+    this.logger.log(`=== 전체 포트폴리오 데이터 조회 요청 ===`);
 
     try {
-      const result = await this.kisService.getStockBalance(
+      const result = await this.kisService.getPortfolioData(
         session.kisSessionData,
       );
 
-      this.logger.log(`=== 계좌 주식 잔고 조회 성공 ===`);
-      this.logger.log(`보유 종목 수: ${result.stocks.length}개`);
+      this.logger.log(`=== 전체 포트폴리오 데이터 조회 성공 ===`);
+      this.logger.log(`보유 종목 수: ${result.output1.length}개`);
+      this.logger.log(`총 평가금액: ${result.output2[0]?.tot_evlu_amt || '0'}원`);
 
       return result;
     } catch (error) {
-      this.logger.error(`=== 계좌 주식 잔고 조회 실패 ===`);
+      this.logger.error(`=== 전체 포트폴리오 데이터 조회 실패 ===`);
       this.logger.error(
         `오류: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -519,7 +774,77 @@ export class KisController {
   }
 
   /**
-   * 계좌번호로 계좌 타입을 결정합니다.
+   * 포트폴리오 요약 정보 조회 (PortfolioHeader용)
+   *
+   * @summary 포트폴리오 헤더용 간소화된 요약 정보 조회
+   * @param session 세션 정보 (SessionGuard에서 검증된 세션)
+   * @returns 포트폴리오 핵심 요약 데이터
+   */
+  @TypedRoute.Post("portfolio-summary")
+  @UseGuards(SessionGuard)
+  @HttpCode(HttpStatus.OK)
+  public async getPortfolioSummary(@Session() session: ISessionData): Promise<{
+    /**
+     * 총 평가금액
+     * @example 15420000
+     */
+    totalValue: number;
+
+    /**
+     * 평가손익금액
+     * @example 320000
+     */
+    changeAmount: number;
+
+    /**
+     * 평가손익율
+     * @example 2.12
+     */
+    changePercent: number;
+
+    /**
+     * 총 투자원금 (매입금액합계)
+     * @example 15100000
+     */
+    totalInvestment: number;
+
+    /**
+     * 보유종목 수
+     * @example 8
+     */
+    stockCount: number;
+
+    /**
+     * 요약 메시지
+     * @example "8개 종목을 보유중이에요"
+     */
+    message: string;
+  }> {
+    this.logger.log(`=== 포트폴리오 요약 정보 조회 요청 ===`);
+
+    try {
+      const result = await this.kisService.getPortfolioSummary(
+        session.kisSessionData,
+      );
+
+      this.logger.log(`=== 포트폴리오 요약 정보 조회 성공 ===`);
+      this.logger.log(`보유 종목 수: ${result.stockCount}개`);
+      this.logger.log(`총 평가금액: ${result.totalValue.toLocaleString()}원`);
+      this.logger.log(`평가손익: ${result.changeAmount.toLocaleString()}원 (${result.changePercent}%)`);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`=== 포트폴리오 요약 정보 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * 계좌 번호에 해당하는 계좌 타입을 결정합니다.
    */
   private determineAccountType(accountNumber: string): "REAL" | "VIRTUAL" {
     // TODO: 실전 확장시 계좌번호 패턴에 따라 결정 로직 구현

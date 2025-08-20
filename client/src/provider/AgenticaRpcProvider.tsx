@@ -9,9 +9,11 @@ import {
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
+import { OrderConfirmation } from "../components/trading/OrderConfirmation";
 import tabs, { TabDetail, TabType } from "../constant/tabs";
-import { selectSessionKey, useAppSelector } from "../store/hooks";
-import { IClientEvents } from "../types/agentica";
+import { selectSessionKey, useAppDispatch, useAppSelector } from "../store/hooks";
+import { setTargetStock } from "../store/slices/tradingSlice";
+import { IClientEvents, StockInfo, TradingConfirmationRequest, TradingConfirmationResponse } from "../types/agentica";
 import { NewsItem, NewsPushPayload } from "../types/news";
 
 export interface IWebSocketHeaders {
@@ -46,15 +48,46 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [currentTab, setCurrentTab] = useState<TabType>(TabType.PORTFOLIO);
 
   const sessionKey = useAppSelector(selectSessionKey);
+  const dispatch = useAppDispatch();
 
   const [newsCompany, setNewsCompany] = useState("");
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [newsFetchedAt, setNewsFetchedAt] = useState<string | null>(null);
   const [hasFirstPush, setHasFirstPush] = useState(false);
 
+  // Trading confirmation modal state
+  const [confirmationRequest, setConfirmationRequest] = useState<TradingConfirmationRequest | null>(null);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [pendingConfirmationResolve, setPendingConfirmationResolve] = useState<((response: TradingConfirmationResponse) => void) | null>(null);
+
   const pushMessage = useCallback(
     async (message: IAgenticaEventJson) =>
       setMessages((prev) => [...prev, message]),
+    []
+  );
+
+  // Handle trading confirmation request - connectWithSessionKey보다 먼저 정의
+  const handleTradingConfirmationRequest = useCallback(
+    (request: TradingConfirmationRequest): Promise<TradingConfirmationResponse> => {
+      console.log('[AgenticaRpcProvider] Received trading confirmation request from server:', {
+        id: request.id,
+        type: request.type,
+        stockName: request.stockInfo.name,
+        stockCode: request.stockInfo.code,
+        quantity: request.quantity,
+        orderCondition: request.orderCondition,
+        price: request.price,
+        estimatedAmount: request.estimatedAmount
+      });
+
+      return new Promise((resolve) => {
+        setConfirmationRequest(request);
+        setIsConfirmationModalOpen(true);
+        setPendingConfirmationResolve(() => resolve);
+
+        console.log('[AgenticaRpcProvider] Trading confirmation modal opened, waiting for user response');
+      });
+    },
     []
   );
 
@@ -100,7 +133,12 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
           setNewsItems(payload.items ?? []);
           setNewsFetchedAt(payload.fetchedAt);
           setHasFirstPush(true);
-        }
+        },
+        onStockFocus: (payload: StockInfo) => {
+          console.log('주식 포커스 변경:', payload);
+          dispatch(setTargetStock(payload));
+        },
+        onTradingConfirmationRequest: handleTradingConfirmationRequest
       });
 
 
@@ -115,7 +153,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     } finally {
       setIsConnecting(false);
     }
-  }, [pushMessage]);
+  }, [pushMessage, dispatch, handleTradingConfirmationRequest]);
 
   // 세션키가 있으면 자동으로 연결 시도
   useEffect(() => {
@@ -142,6 +180,50 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
     [driver]
   );
 
+  // Handle confirmation modal confirm
+  const handleConfirmationConfirm = useCallback(() => {
+    if (pendingConfirmationResolve && confirmationRequest) {
+      const response = {
+        id: confirmationRequest.id,
+        confirmed: true
+      };
+
+      console.log('[AgenticaRpcProvider] User confirmed trading request, sending response to server:', {
+        id: response.id,
+        confirmed: response.confirmed,
+        stockName: confirmationRequest.stockInfo.name,
+        type: confirmationRequest.type
+      });
+
+      pendingConfirmationResolve(response);
+      setIsConfirmationModalOpen(false);
+      setConfirmationRequest(null);
+      setPendingConfirmationResolve(null);
+    }
+  }, [pendingConfirmationResolve, confirmationRequest]);
+
+  // Handle confirmation modal cancel
+  const handleConfirmationCancel = useCallback(() => {
+    if (pendingConfirmationResolve && confirmationRequest) {
+      const response = {
+        id: confirmationRequest.id,
+        confirmed: false
+      };
+
+      console.log('[AgenticaRpcProvider] User cancelled trading request, sending response to server:', {
+        id: response.id,
+        confirmed: response.confirmed,
+        stockName: confirmationRequest.stockInfo.name,
+        type: confirmationRequest.type
+      });
+
+      pendingConfirmationResolve(response);
+      setIsConfirmationModalOpen(false);
+      setConfirmationRequest(null);
+      setPendingConfirmationResolve(null);
+    }
+  }, [pendingConfirmationResolve, confirmationRequest]);
+
   const isConnected = !!driver;
 
   return (
@@ -164,6 +246,19 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
       }}
     >
       {children}
+      {isConfirmationModalOpen && confirmationRequest && (
+        <OrderConfirmation
+          isOpen={isConfirmationModalOpen}
+          orderType={confirmationRequest.type}
+          stockName={confirmationRequest.stockInfo.name}
+          quantity={confirmationRequest.quantity.toString()}
+          orderCondition={confirmationRequest.orderCondition}
+          price={confirmationRequest.price?.toString()}
+          confirmationRequest={confirmationRequest}
+          onConfirm={handleConfirmationConfirm}
+          onCancel={handleConfirmationCancel}
+        />
+      )}
     </AgenticaRpcContext.Provider>
   );
 }

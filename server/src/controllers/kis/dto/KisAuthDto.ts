@@ -94,3 +94,34 @@ export interface IKisAuthResponseDto {
     retryable?: boolean;
   };
 }
+
+/**
+ * KIS 웹소켓 접속키 발급 응답 DTO
+ */
+export interface IKisWebSocketKeyResponseDto {
+  /**
+   * 웹소켓 접속키 발급 성공 여부
+   */
+  success: boolean;
+
+  /**
+   * 웹소켓 접속키 (성공 시)
+   */
+  approvalKey?: string;
+
+  /**
+   * 에러 메시지 (실패 시)
+   */
+  error?: string;
+
+  /**
+   * 에러 코드 (실패 시)
+   */
+  errorCode?: string;
+
+  /**
+   * 발급 시간 (성공 시)
+   * @format date-time
+   */
+  issuedAt?: string;
+}
