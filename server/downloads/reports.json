@@ -1,6 +1,46 @@
 {
-  "lastUpdated": "2025-08-08T11:43:10.168Z",
+  "lastUpdated": "2025-08-20T12:21:07.251Z",
   "reports": [
+    {
+      "id": "2138116",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(8/18~22)",
+      "date": "2025-08-14",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138116.pdf?attachmentId=2138116",
+      "mdFileName": "2138116.md"
+    },
+    {
+      "id": "2138073",
+      "title": "Fixed Income Comment안심하기 이른 인플레이션",
+      "date": "2025-08-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138073.pdf?attachmentId=2138073",
+      "mdFileName": "2138073.md"
+    },
+    {
+      "id": "2137952",
+      "title": "Thematic RadarEp 36. 디지털 자산에 열린 연금 시장",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137952.pdf?attachmentId=2137952",
+      "mdFileName": "2137952.md"
+    },
+    {
+      "id": "2137951",
+      "title": "Credit Market Weekly8.11~15일",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137951.pdf?attachmentId=2137951",
+      "mdFileName": "2137951.md"
+    },
+    {
+      "id": "2137944",
+      "title": "[Earnings Revision] 8월 2주차",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137944.pdf?attachmentId=2137944",
+      "mdFileName": "2137944.md"
+    },
     {
       "id": "2137912",
       "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(8/11~15)",
@@ -42,45 +82,21 @@
       "mdFileName": "2137752.md"
     },
     {
-      "id": "2137691",
-      "title": "[글로벌 자산배분] 8월하반기는 위험관리 강화, 분산도 강화",
-      "date": "2025-08-01",
+      "id": "2138163",
+      "title": "Thematic RadarEp 37. 우크라이나 휴전 가능성 점검",
+      "date": "2025-08-20",
       "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137691.pdf?attachmentId=2137691",
-      "mdFileName": "2137691.md"
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138163.pdf?attachmentId=2138163",
+      "mdFileName": "2138163.md"
     },
     {
-      "id": "2137654",
-      "title": "[글로벌 ETF 주식 전략] 8월관세 부과의 후폭풍",
-      "date": "2025-07-31",
+      "id": "2138135",
+      "title": "Credit Market Weekly8.18~22일",
+      "date": "2025-08-18",
       "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137654.pdf?attachmentId=2137654",
-      "mdFileName": "2137654.md"
-    },
-    {
-      "id": "2137649",
-      "title": "Fixed Income Comment[7월 FOMC] 관세 영향 반영되는 초기 단계",
-      "date": "2025-07-31",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137649.pdf?attachmentId=2137649",
-      "mdFileName": "2137649.md"
-    },
-    {
-      "id": "2137626",
-      "title": "Thematic RadarEp 34. 러시아산 원유 제재의 위협",
-      "date": "2025-07-30",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137626.pdf?attachmentId=2137626",
-      "mdFileName": "2137626.md"
-    },
-    {
-      "id": "2137613",
-      "title": "주식전략[8월] 데자뷰: 익숙하지만 견고해진 하단",
-      "date": "2025-07-30",
-      "author": "",
-      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137613.pdf?attachmentId=2137613",
-      "mdFileName": "2137613.md"
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138135.pdf?attachmentId=2138135",
+      "mdFileName": "2138135.md"
     }
   ],
-  "lastMarkdownUpdate": "2025-08-08T12:49:09.348Z"
+  "lastMarkdownUpdate": "2025-08-20T12:24:14.552Z"
 }

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useAppDispatch, useAppSelector, selectAuth } from '../../store/hooks';
 import { useAuthenticateMutation } from '../../store/api/authApi';
-import { loginStart, loginSuccess, loginFailure, clearError } from '../../store/slices/authSlice';
-import { LoginFormData, AuthState } from '../../types/auth';
-import { formatAccountNumber, validateAccountNumber, validateAppKey, validateAppSecret, SessionManager } from '../../utils/sessionManager';
+import { selectAuth, useAppDispatch, useAppSelector } from '../../store/hooks';
+import { clearError, loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
+import { AuthState, LoginFormData } from '../../types/auth';
+import { formatAccountNumber, SessionManager, validateAppKey, validateAppSecret } from '../../utils/sessionManager';
 
 export const LoginForm: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -11,9 +11,9 @@ export const LoginForm: React.FC = () => {
   const [authenticate] = useAuthenticateMutation();
 
   const [formData, setFormData] = useState<LoginFormData>({
-    accountNumber: '',
-    appKey: '',
-    appSecret: '',
+    accountNumber: import.meta.env.VITE_KIS_ACCOUNT || '',
+    appKey: import.meta.env.VITE_KIS_APP_KEY || '',
+    appSecret: import.meta.env.VITE_KIS_APP_SECRET || '',
   });
 
   const [fieldErrors, setFieldErrors] = useState<{
@@ -98,9 +98,10 @@ export const LoginForm: React.FC = () => {
 
     if (!formData.accountNumber) {
       errors.accountNumber = '계좌번호를 입력해주세요.';
-    } else if (!validateAccountNumber(formData.accountNumber)) {
-      errors.accountNumber = '올바른 계좌번호 형식이 아닙니다. (예: 12345678-01)';
-    }
+    } 
+    // else if (!validateAccountNumber(formData.accountNumber)) {
+    //   errors.accountNumber = '올바른 계좌번호 형식이 아닙니다. (예: 12345678-01)';
+    // }
 
     if (!formData.appKey) {
       errors.appKey = 'App Key를 입력해주세요.';
