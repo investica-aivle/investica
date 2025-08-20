@@ -1,18 +1,30 @@
 import { Menu, UserIcon, LogOutIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector, selectMaskedAccountNumber, selectAccountType } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { logout as logoutAction } from '../../store/slices/authSlice';
+import { useLogoutMutation } from '../../store/api/authApi';
 import { SessionManager } from '../../utils/sessionManager';
 
 const Header = ({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) => {
   const dispatch = useAppDispatch();
   const maskedAccountNumber = useAppSelector(selectMaskedAccountNumber);
   const accountType = useAppSelector(selectAccountType);
+  const [logoutMutation] = useLogoutMutation();
 
-  const handleLogout = () => {
-    // 세션 삭제
-    SessionManager.clearSession();
-    // Redux 상태 초기화
-    dispatch(logout());
+  const handleLogout = async () => {
+    try {
+      // 서버에 로그아웃 API 호출 (RTK Query 사용)
+      console.log('서버 로그아웃 요청 중...');
+      await logoutMutation().unwrap();
+      console.log('서버 로그아웃 성공');
+    } catch (error: any) {
+      console.warn('서버 로그아웃 실패, 로컬 로그아웃 진행:', error.message);
+      // 서버 로그아웃 실패해도 로컬 로그아웃은 진행
+    } finally {
+      // 로컬 세션 삭제 및 Redux 상태 초기화
+      SessionManager.clearSession();
+      dispatch(logoutAction());
+      console.log('로컬 로그아웃 완료');
+    }
   };
 
   return (

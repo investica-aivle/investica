@@ -1,4 +1,4 @@
-import { IKisSessionData, IKisStock } from "@models/KisTrading";
+import { IKisSessionData, IKisStock, IKisPortfolio } from "@models/KisTrading";
 import { Injectable } from "@nestjs/common";
 import { tags } from "typia";
 import { IClientEvents, TradingConfirmationRequest } from "../../types/agentica";
@@ -361,20 +361,19 @@ export class KisService {
   }
 
   /**
-   * Get account stock balance
+   * Get comprehensive portfolio data
    */
-  public async getStockBalance(sessionData: IKisSessionData): Promise<{
-    message: string;
-    stocks: Array<{
-      name: string;
-      quantity: string;
-      buyPrice: string;
-      currentPrice: string;
-      profit: string;
-    }>;
-  }> {
-    // Execute balance inquiry using provided session data
-    return await this.balanceProvider.getStockBalance(sessionData);
+  public async getPortfolioData(sessionData: IKisSessionData): Promise<IKisPortfolio.IPortfolioResponse> {
+    // Execute portfolio data inquiry using provided session data
+    return await this.balanceProvider.getPortfolioData(sessionData);
+  }
+
+  /**
+   * Get portfolio summary for header
+   */
+  public async getPortfolioSummary(sessionData: IKisSessionData): Promise<IKisPortfolio.IPortfolioSummary> {
+    // Execute portfolio summary inquiry using provided session data
+    return await this.balanceProvider.getPortfolioSummary(sessionData);
   }
 
   /**
