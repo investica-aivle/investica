@@ -6,7 +6,7 @@ import * as path from "path";
 import { ReportAiProvider } from "../src/providers/reports/ReportAiProvider";
 
 // .env.local 파일 로드
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 /**
  * ReportAiProvider.evaluateLatestIndustries()를 테스트하기 위한 스크립트입니다.

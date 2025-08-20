@@ -1,5 +1,6 @@
 import { MiraeAssetReport } from "@models/Reports";
 import { Injectable } from "@nestjs/common";
+import * as fs from "fs";
 
 import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
 import { ReportAiProvider } from "./ReportAiProvider";
@@ -22,6 +23,33 @@ export class ReportsService {
     private readonly miraeAssetReportProvider: MiraeAssetReportProvider,
     private readonly reportAiProvider: ReportAiProvider,
   ) {}
+
+  /**
+   * AI가 분석한 산업군 평가를 가져옵니다.
+   * 평가는 '중립적'을 제외하고 '신뢰도 0.6 이상'인 결과만 필터링됩니다.
+   */
+  public async getIndustryEvaluation(): Promise<any> {
+    const filePath = "./downloads/summary/industry_evaluation.json";
+
+    // 1. 파일이 없으면 생성
+    if (!fs.existsSync(filePath)) {
+      console.log("📊 평가 파일이 없어 새로 생성합니다...");
+      await this.reportAiProvider.evaluateLatestIndustries(10); // 파일이 없을땐 10개로 생성
+    }
+
+    // 2. 파일 읽기 및 파싱
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const evaluationData = JSON.parse(fileContent);
+
+    // 3. 고정 필터 적용
+    const filteredEvaluations = evaluationData.industryEvaluations
+      .filter((e: any) => e.evaluationCode !== 'NEUTRAL')
+      .filter((e: any) => e.confidence >= 0.6);
+    
+    evaluationData.industryEvaluations = filteredEvaluations;
+
+    return evaluationData;
+  }
 
   /**
    * 모든 요청 전에 실행되는 동기화 메서드

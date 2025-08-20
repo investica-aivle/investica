@@ -8,7 +8,7 @@ import { ReportAiProvider } from "../src/providers/reports/ReportAiProvider";
 import { ReportsService } from "../src/providers/reports/ReportsService";
 
 // .env.local 파일 로드
-dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 /**
  * ReportsService.syncReports(false)를 테스트하기 위한 스크립트입니다.
@@ -36,7 +36,7 @@ async function runSyncReportsForIA() {
     const reportAiProvider = new ReportAiProvider(httpServiceMock, configServiceMock);
     const reportsService = new ReportsService(miraeAssetProvider, reportAiProvider);
 
-    // syncReports(false) 호출
+    // syncReports(false) 호출 실행전 reportsService 의 syncReports 를 public 으로 설정
     const result = await reportsService.syncReports(false);
 
     console.log("\n✅ 동기화가 성공적으로 완료되었습니다.");

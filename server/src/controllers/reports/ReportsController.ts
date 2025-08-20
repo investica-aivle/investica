@@ -28,6 +28,15 @@ export class ReportsController {
   // ===== 요약 관련 API =====
 
   /**
+   * AI가 분석한 산업군 평가 결과를 반환합니다.
+   * 평가는 '중립적'을 제외하고 '신뢰도 0.6 이상'인 결과만 필터링됩니다.
+   */
+  @Get("summary/industry-evaluation")
+  async getIndustryEvaluation(): Promise<any> {
+    return await this.reportsService.getIndustryEvaluation();
+  }
+
+  /**
    * 최근 주식상황, 경제상황 요약
    */
   @Get("summary")
