@@ -28,7 +28,6 @@ const tabs: TabsConfig = {
         "getSpecificReportContent",
         "fetchKospiIndexPrices",
         "getKospiPrices",
-        "getStockPrice",
     ],
     description: "코스피 현황"
   },
