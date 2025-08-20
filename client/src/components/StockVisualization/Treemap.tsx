@@ -148,6 +148,50 @@ const StockTreemap = () => {
 
   const treemapData = getTreemapData();
 
+  function formatKoreanUnit(value: number | string): string {
+    const numericValue = Number(value);
+
+    if (isNaN(numericValue)) {
+      return "N/A";
+    }
+
+    const units = [
+      { value: 1e16, name: '경' },
+      { value: 1e12, name: '조' },
+      { value: 1e8, name: '억' },
+      { value: 1e4, name: '만' },
+    ];
+
+    if (numericValue < 10000) {
+      return numericValue.toLocaleString('ko-KR');
+    }
+
+    let result = '';
+    let remainder = numericValue;
+
+    for (let i = 0; i < units.length; i++) {
+      const unit = units[i];
+      if (remainder >= unit.value) {
+        const mainValue = Math.floor(remainder / unit.value);
+        result += `${mainValue.toLocaleString()}${unit.name}`;
+        remainder %= unit.value;
+
+        if (remainder > 0 && i + 1 < units.length) {
+          const nextUnit = units[i + 1];
+          const secondValue = Math.floor(remainder / nextUnit.value);
+          if (secondValue > 0) {
+            result += ` ${secondValue.toLocaleString()}${nextUnit.name}`;
+          }
+        }
+        return result;
+      }
+    }
+
+    return numericValue.toLocaleString('ko-KR');
+  }
+
+
+
   return (
     <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
       <h4 className="text-base font-medium mb-3 text-gray-100">시가총액 기준 주식 분포</h4>
@@ -161,7 +205,7 @@ const StockTreemap = () => {
           >
             <Tooltip
               formatter={(value, name, props) => [
-                `시가총액: ${(Number(value) / 1000000000).toFixed(1)}억원`,
+                `시가총액: ${(formatKoreanUnit(Number(value)))}`,
                 props.payload.name
               ]}
               labelFormatter={(label) => `${label}`}
