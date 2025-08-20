@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector, selectMaskedAccountNumber, selectAccoun
 import { logout as logoutAction } from '../../store/slices/authSlice';
 import { useLogoutMutation } from '../../store/api/authApi';
 import { SessionManager } from '../../utils/sessionManager';
+import logo from "../../assets/logo.png"
 
 const Header = ({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) => {
   const dispatch = useAppDispatch();
@@ -37,7 +38,14 @@ const Header = ({ setShowSideContainer }: { setShowSideContainer: (show: boolean
           >
             <Menu className="w-5 h-5 text-white" />
           </button>
-          <h1 className="text-xl font-bold text-gray-100">주식 AI 어드바이저</h1>
+          <div className="flex items-center space-x-0.1">
+            <img
+                src={logo}
+                alt="로고"
+                className="w-12 h-8"
+            />
+            <h1 className="text-xl font-bold text-gray-100">investica</h1>
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
