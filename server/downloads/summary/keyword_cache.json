@@ -1,33 +1,33 @@
 {
   "keywords": [
     {
-      "icon": "📉",
-      "keyword": "미국 금리 인하 기대 확대",
-      "description": "7월 코어 CPI 예상치 부합 및 고용시장 둔화로 연준의 9월 금리 인하 확률이 90%까지 확대.",
+      "icon": "🛡️",
+      "keyword": "글로벌 방산 수요 증가",
+      "description": "우크라이나 휴전 성사 시에도 러시아 위협 유지로 글로벌 방산 수요가 지속적으로 증가할 전망입니다.",
       "impact": "positive"
     },
     {
-      "icon": "🚨",
-      "keyword": "미국 스태그플레이션 우려",
-      "description": "ISM 서비스업 지수 둔화 속 고용 위축 및 가격 지수 상승으로 스태그플레이션 위험이 시사됨.",
+      "icon": "📉",
+      "keyword": "미국 금리 인하 기대감",
+      "description": "7월 코어 CPI가 예상치에 부합하며 하반기 미국 금리 인하 기대감이 유지되고 있습니다.",
+      "impact": "positive"
+    },
+    {
+      "icon": "💸",
+      "keyword": "서비스 인플레이션 가속화",
+      "description": "헬스케어, 자동차 수리 등 서비스 물가 상승 압력 확대로 연준의 9월 빅컷 기대감이 축소되고 있습니다.",
       "impact": "negative"
     },
     {
-      "icon": "💰",
-      "keyword": "연금시장 디지털 자산 투자 허용",
-      "description": "트럼프 행정명령으로 12.2조 달러 DC형 연금의 디지털 자산 등 대체 자산 투자 접근성 개선.",
+      "icon": "📊",
+      "keyword": "국내 재정적자 축소",
+      "description": "정부 지출 구조조정을 통한 2026년 예산안에서 재정적자 축소 및 국채 발행 부담 완화가 기대됩니다.",
       "impact": "positive"
     },
     {
-      "icon": "📈",
-      "keyword": "글로벌 기업 이익 전망 개선",
-      "description": "전세계 12개월 선행 EPS가 소폭 상향 조정되었으며, 특히 미국과 한국 기업의 이익 전망이 개선.",
-      "impact": "positive"
-    },
-    {
-      "icon": "🇰🇷",
-      "keyword": "국내 재정적자 축소 기대",
-      "description": "정부 지출 구조조정으로 내년 통합재정수지 적자 축소 및 국채 발행 부담 완화 기대.",
+      "icon": "🪙",
+      "keyword": "디지털 자산 연금 투자 허용",
+      "description": "트럼프 행정명령으로 DC형 퇴직연금의 디지털 자산 접근성이 개선되어 대규모 연금 자산 유입이 기대됩니다.",
       "impact": "positive"
     }
   ],
@@ -71,7 +71,23 @@
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137944.pdf?attachmentId=2137944",
       "mdFileName": "2137944.md"
+    },
+    {
+      "id": "2138163",
+      "title": "Thematic RadarEp 37. 우크라이나 휴전 가능성 점검",
+      "date": "2025-08-20",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138163.pdf?attachmentId=2138163",
+      "mdFileName": "2138163.md"
+    },
+    {
+      "id": "2138135",
+      "title": "Credit Market Weekly8.18~22일",
+      "date": "2025-08-18",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138135.pdf?attachmentId=2138135",
+      "mdFileName": "2138135.md"
     }
   ],
-  "updatedAt": "2025-08-16"
+  "updatedAt": "2025-08-20"
 }
