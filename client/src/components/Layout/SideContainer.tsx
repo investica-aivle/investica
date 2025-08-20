@@ -1,15 +1,12 @@
 import { BrainIcon, DollarSignIcon, NewspaperIcon, PieChartIcon, TrendingUpIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
 import KospiOverview from '../StockVisualization/KospiOverview';
-import StockTreemap from '../StockVisualization/Treemap';
 import { useAgenticaRpc } from '../../provider/AgenticaRpcProvider';
 import NewsPanel from '../news/NewsPanel';
 import { TradingTab } from '../trading/TradingTab.tsx';
 import { PortfolioHeader } from '../portfolio/PortfolioHeader';
 import { AssetAllocationCard } from '../portfolio/AssetAllocationCard';
-import { IndustryBreakdownCard } from '../portfolio/IndustryBreakdownCard';
 import { StockHoldingsList } from '../portfolio/StockHoldingsList';
-import { AIInsightCard } from '../portfolio/AIInsightCard';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
@@ -60,14 +57,9 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
           <div className="space-y-4">
             <PortfolioHeader />
             <div className="grid grid-cols-1 gap-4">
-              {/* 자산배분과 산업별 비중을 가로로 배치 */}
-              <div className="grid grid-cols-2 gap-4">
-                <AssetAllocationCard />
-                <IndustryBreakdownCard />
-              </div>
+              <AssetAllocationCard />
               <StockHoldingsList />
             </div>
-            <AIInsightCard />
           </div>
         )}
         
