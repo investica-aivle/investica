@@ -2,16 +2,15 @@ import { IKisSessionData } from "@models/KisTrading";
 import { HttpService } from "@nestjs/axios";
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import OpenAI from "openai";
 
 import { labelMap } from "../../common/labelMap";
 
 interface StockRequestDto {
   /**
-   * 기업명 (예: 삼성전자)
-   * @example "삼성전자"
+   * 종목코드 (6자리)
+   * @example "005930"
    */
-  company: string;
+  stockCode: string;
 
   /**
    * 조회 기간 구분 (D:일, W:주, M:월)
@@ -51,20 +50,15 @@ const flngClsCodeMap: Record<string, string> = {
 export class KisPriceProvider {
   private readonly KIS_BASE_URL =
     "https://openapivts.koreainvestment.com:29443";
-  private readonly openai: OpenAI;
 
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
-  ) {
-    this.openai = new OpenAI({
-      apiKey: this.config.getOrThrow("OPENAI_API_KEY"),
-    });
-  }
+  ) {}
 
   /**
    * 국내 주식 현재가 시세 조회
-   * @param body 기업명 요청 DTO
+   * @param body 종목코드 요청 DTO
    * @param session KIS 인증 세션
    * @returns 한글로 매핑된 시세 정보
    */
@@ -72,10 +66,8 @@ export class KisPriceProvider {
     body: StockRequestDto,
     session: IKisSessionData,
   ) {
-    const { company } = body;
+    const { stockCode } = body;
     const { accessToken, appKey, appSecret } = session;
-
-    const stockCode = await this.getStockCodeFromCompany(company);
 
     try {
       const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price`;
@@ -124,7 +116,7 @@ export class KisPriceProvider {
 
   /**
    * 국내 주식 체결 정보 조회
-   * @param body 기업명 요청 DTO
+   * @param body 종목코드 요청 DTO
    * @param session KIS 인증 세션
    * @returns 체결 정보 배열 (한글 키 포함)
    */
@@ -132,10 +124,8 @@ export class KisPriceProvider {
     body: StockRequestDto,
     session: IKisSessionData,
   ) {
-    const { company } = body;
+    const { stockCode } = body;
     const { accessToken, appKey, appSecret } = session;
-
-    const stockCode = await this.getStockCodeFromCompany(company);
 
     try {
       const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-ccnl`;
@@ -182,7 +172,7 @@ export class KisPriceProvider {
 
   /**
    * 국내 주식 일자별 가격 조회 (일/주/월별)
-   * @param body 기업명, 기간구분, 수정주가 여부 DTO
+   * @param body 종목코드, 기간구분, 수정주가 여부 DTO
    * @param session KIS 인증 세션
    * @returns 일자별 가격 데이터 배열 (한글 키 포함)
    */
@@ -190,10 +180,8 @@ export class KisPriceProvider {
     body: StockRequestDto,
     session: IKisSessionData,
   ) {
-    const { company, periodCode = "D", adjustPrice = 1 } = body;
+    const { stockCode, periodCode = "D", adjustPrice = 1 } = body;
     const { accessToken, appKey, appSecret } = session;
-
-    const stockCode = await this.getStockCodeFromCompany(company);
 
     try {
       const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-daily-price`;
@@ -244,26 +232,6 @@ export class KisPriceProvider {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  /**
-   * 기업명을 기반으로 종목 코드를 추출
-   * @param company 기업명
-   * @returns 종목 코드 (6자리)
-   */
-  private async getStockCodeFromCompany(company: string): Promise<string> {
-    const prompt = `${company}의 한국 증권 종목코드를 숫자 6자리로 알려줘.`;
-    const completion = await this.openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const stockCode =
-      completion.choices[0].message.content?.match(/\d{6}/)?.[0];
-    if (!stockCode) {
-      throw new HttpException("종목코드 인식 실패", HttpStatus.BAD_REQUEST);
-    }
-    return stockCode;
   }
 
   /**

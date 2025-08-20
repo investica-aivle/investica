@@ -1,5 +1,6 @@
 import { IKisSessionData, IKisStock } from "@models/KisTrading";
 import { tags } from "typia";
+import { IClientEvents } from "../../types/agentica";
 
 import { KisService } from "./KisService";
 
@@ -19,6 +20,7 @@ export class KisSessionService {
   constructor(
     private readonly kisService: KisService,
     private readonly sessionData: IKisSessionData,
+    private readonly listener?: IClientEvents,
   ) {}
 
   /**
@@ -38,12 +40,12 @@ export class KisSessionService {
    */
   public async buyStock(input: {
     /**
-     * Stock code (6 digits)
-     * @example "005930" Samsung Electronics
-     * @example "035720" Kakao
-     * @example "035420" NAVER
+     * Stock name (Korean)
+     * @example "삼성전자" Samsung Electronics
+     * @example "카카오" Kakao
+     * @example "네이버" NAVER
      */
-    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
+    stockName: string;
 
     /**
      * Order quantity (number of shares)
@@ -66,7 +68,7 @@ export class KisSessionService {
      */
     price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
   }): Promise<IKisStock.IOrderResponse> {
-    return await this.kisService.buyStock(this.sessionData, input);
+    return await this.kisService.buyStock(this.sessionData, input, this.listener);
   }
 
   /**
@@ -86,12 +88,12 @@ export class KisSessionService {
    */
   public async sellStock(input: {
     /**
-     * Stock code (6 digits)
-     * @example "005930" Samsung Electronics
-     * @example "035720" Kakao
-     * @example "035420" NAVER
+     * Stock name (Korean)
+     * @example "삼성전자" Samsung Electronics
+     * @example "카카오" Kakao
+     * @example "네이버" NAVER
      */
-    stockCode: string & tags.Pattern<"^[0-9]{6}$">;
+    stockName: string;
 
     /**
      * Order quantity (number of shares)
@@ -114,7 +116,7 @@ export class KisSessionService {
      */
     price?: number & tags.Type<"uint32"> & tags.Minimum<1>;
   }): Promise<IKisStock.IOrderResponse> {
-    return await this.kisService.sellStock(this.sessionData, input);
+    return await this.kisService.sellStock(this.sessionData, input, this.listener);
   }
 
   /**
@@ -131,15 +133,15 @@ export class KisSessionService {
    */
   public async getStockPrice(input: {
     /**
-     * Company name
+     * Stock name (Korean)
      * @example "삼성전자"
      */
-    company: string;
+    stockName: string;
   }): Promise<{
     message: string;
     data: Record<string, any>;
   }> {
-    return await this.kisService.getStockPrice(this.sessionData, input);
+    return await this.kisService.getStockPrice(this.sessionData, input, this.listener);
   }
 
   /**
@@ -156,10 +158,10 @@ export class KisSessionService {
    */
   public async getStockTrades(input: {
     /**
-     * Company name
+     * Stock name (Korean)
      * @example "카카오"
      */
-    company: string;
+    stockName: string;
   }): Promise<{
     message: string;
     data: Record<string, any>[];
@@ -181,10 +183,10 @@ export class KisSessionService {
    */
   public async getStockDailyPrices(input: {
     /**
-     * Company name
+     * Stock name (Korean)
      * @example "네이버"
      */
-    company: string;
+    stockName: string;
 
     /**
      * Period type (D: Daily, W: Weekly, M: Monthly)
@@ -201,7 +203,7 @@ export class KisSessionService {
     message: string;
     data: Record<string, any>[];
   }> {
-    return await this.kisService.getStockDailyPrices(this.sessionData, input);
+    return await this.kisService.getStockDailyPrices(this.sessionData, input, this.listener);
   }
 
   /**

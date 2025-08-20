@@ -4,6 +4,8 @@ import {
   IKisAuthRequest,
   IKisAuthResponse,
   IKisSessionData,
+  IKisWebSocketKeyRequestBody,
+  IKisWebSocketKeyResponse,
 } from "@models/KisTrading";
 import { Injectable, Logger } from "@nestjs/common";
 
@@ -239,5 +241,87 @@ export class KisAuthProvider {
     }
 
     return headers;
+  }
+
+  /**
+   * 웹소켓 접속키를 발급받습니다.
+   * 실시간 데이터 구독을 위한 웹소켓 연결에 필요한 접속키를 한투 API로부터 발급받습니다.
+   */
+  public async getWebSocketApprovalKey(
+    sessionData: IKisSessionData,
+  ): Promise<string> {
+    const maskedAppKey = MaskingUtil.maskAppKey(sessionData.appKey);
+
+    this.logger.log(
+      `Requesting WebSocket approval key for appKey: ${maskedAppKey}`,
+    );
+
+    try {
+      const requestBody: IKisWebSocketKeyRequestBody = {
+        grant_type: "client_credentials",
+        appkey: sessionData.appKey,
+        secretkey: sessionData.appSecret, // 주의: appsecret과 secretkey는 동일
+      };
+
+      this.logger.debug(
+        `Sending WebSocket approval key request to: ${KisConstants.VIRTUAL_DOMAIN}/oauth2/Approval`,
+      );
+
+      const response = await fetch(
+        `${KisConstants.VIRTUAL_DOMAIN}/oauth2/Approval`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+          },
+          body: JSON.stringify(requestBody),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `WebSocket approval key request failed: ${response.status} ${response.statusText}`,
+          {
+            status: response.status,
+            statusText: response.statusText,
+            responseBody: errorText,
+            appKey: maskedAppKey,
+          },
+        );
+        throw new Error(
+          `웹소켓 접속키 발급 실패: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const result: IKisWebSocketKeyResponse = await response.json();
+
+      if (!result.approval_key) {
+        this.logger.error("WebSocket approval key not found in response", {
+          response: result,
+          appKey: maskedAppKey,
+        });
+        throw new Error("웹소켓 접속키가 응답에 포함되지 않았습니다.");
+      }
+
+      // 접속키는 보안상 일부만 로깅
+      const maskedApprovalKey = `${result.approval_key.substring(0, 20)}...`;
+
+      this.logger.log(
+        `WebSocket approval key issued successfully: ${maskedApprovalKey}`,
+        {
+          appKey: maskedAppKey,
+          approvalKeyLength: result.approval_key.length,
+        },
+      );
+
+      return result.approval_key;
+    } catch (error) {
+      this.logger.error("Failed to get WebSocket approval key", {
+        error: error instanceof Error ? error.message : String(error),
+        appKey: maskedAppKey,
+      });
+      throw error;
+    }
   }
 }
