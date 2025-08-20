@@ -5,6 +5,11 @@ import StockTreemap from '../StockVisualization/Treemap';
 import { useAgenticaRpc } from '../../provider/AgenticaRpcProvider';
 import NewsPanel from '../news/NewsPanel';
 import { TradingTab } from '../trading/TradingTab.tsx';
+import { PortfolioHeader } from '../portfolio/PortfolioHeader';
+import { AssetAllocationCard } from '../portfolio/AssetAllocationCard';
+import { IndustryBreakdownCard } from '../portfolio/IndustryBreakdownCard';
+import { StockHoldingsList } from '../portfolio/StockHoldingsList';
+import { AIInsightCard } from '../portfolio/AIInsightCard';
 
 export function SideContainer({ setShowSideContainer }: { setShowSideContainer: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState('portfolio');
@@ -53,18 +58,16 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
       <div className="flex-1 overflow-y-auto p-4">
         {activeTab === 'portfolio' && (
           <div className="space-y-4">
-            <h3 className="font-medium text-lg text-gray-100">내 포트폴리오</h3>
-            <div className="mt-6 bg-zinc-700/30 rounded-2xl p-4 backdrop-blur-md">
-              <h4 className="font-medium mb-2 text-gray-100">포트폴리오 요약</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-400">총 자산:</div>
-                <div className="text-right font-medium text-gray-100">₩12,450,000</div>
-                <div className="text-gray-400">일간 수익률:</div>
-                <div className="text-right font-medium text-green-400">+2.3%</div>
-                <div className="text-gray-400">총 수익률:</div>
-                <div className="text-right font-medium text-red-400">-4.2%</div>
+            <PortfolioHeader />
+            <div className="grid grid-cols-1 gap-4">
+              {/* 자산배분과 산업별 비중을 가로로 배치 */}
+              <div className="grid grid-cols-2 gap-4">
+                <AssetAllocationCard />
+                <IndustryBreakdownCard />
               </div>
+              <StockHoldingsList />
             </div>
+            <AIInsightCard />
           </div>
         )}
         
