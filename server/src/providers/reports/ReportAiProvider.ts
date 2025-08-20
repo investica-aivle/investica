@@ -895,7 +895,9 @@ export class ReportAiProvider {
     ${contents.join("\n\n---\n\n")}
     --- 내용 끝 ---
     
-    위 자료들을 근거로 '${industryName}' 산업의 동향이 국내 주식 시장에 미칠 영향을 평가하고, 반드시 다음 JSON 스키마에 맞춰서 결과를 반환해라:
+    위 자료들을 근거로 '${industryName}' 산업의 동향이 국내 주식 시장의'${industryName}' 관련주들에 미칠 영향을 평가하되, 
+    특히 해외 경쟁사의 성장이 국내 기업의 시장 점유율과 수익성에 미칠 위협을 중점적으로 분석하고, 
+    반드시 다음 JSON 스키마에 맞춰서 결과를 반환해라:
       {
         "evaluation": "긍정적|부정적|중립적",
         "evaluationCode": "POSITIVE|NEGATIVE|NEUTRAL",
