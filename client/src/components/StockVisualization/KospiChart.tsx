@@ -31,7 +31,9 @@ const KospiChart = () => {
         startDate,
         endDate
       });
-      
+      response.data.sort((a: KospiPriceData, b: KospiPriceData) =>
+          a.기준일자.localeCompare(b.기준일자)
+      );
       const chartData = response.data.map((item: KospiPriceData, index: number, array: KospiPriceData[]) => {
         const currentPrice = parseFloat(item.종가);
         const previousPrice = index < array.length - 1 ? parseFloat(array[index + 1].종가) : currentPrice;
