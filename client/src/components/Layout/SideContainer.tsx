@@ -94,31 +94,6 @@ export function SideContainer({ setShowSideContainer }: { setShowSideContainer: 
                     <AIAnalysis />
                 )}
             </div>
-
-            <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #18181b;
-          border-radius: 4px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #52525b;
-          border-radius: 4px;
-          border: 1px solid #18181b;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #71717a;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:active {
-          background: #a1a1aa;
-        }
-      `}</style>
         </div>
     );
 }

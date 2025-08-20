@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {IndustryEvaluationSummaryResponse} from "../../types/reports.ts";
 import reportsApi from "../../apis/reports.ts"
 
@@ -64,16 +64,6 @@ const AIAnalysis = () => {
         }
         setExpandedItems(newExpandedItems);
     };
-
-    // 공포 지수 관련 함수들
-    const getFearGreedColor = (value: number) => {
-        if (value <= 24) return { bg: 'from-red-600 to-red-500', text: 'text-red-400', label: '극도공포' };
-        if (value <= 49) return { bg: 'from-orange-600 to-orange-500', text: 'text-orange-400', label: '공포' };
-        if (value <= 74) return { bg: 'from-yellow-600 to-yellow-500', text: 'text-yellow-400', label: '경계' };
-        if (value <= 89) return { bg: 'from-green-600 to-green-500', text: 'text-green-400', label: '탐욕' };
-        return { bg: 'from-emerald-600 to-emerald-500', text: 'text-emerald-400', label: '극도탐욕' };
-    };
-
 
     // 표시할 산업 데이터 결정
     const getDisplayedIndustries = () => {
