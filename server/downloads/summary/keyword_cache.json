@@ -1,34 +1,40 @@
 {
   "keywords": [
     {
-      "icon": "📉",
-      "keyword": "미국 금리 인하 기대 확대",
-      "description": "7월 코어 CPI 예상치 부합 및 고용시장 둔화로 연준의 9월 금리 인하 확률이 90%까지 확대.",
+      "icon": "🚀",
+      "keyword": "중국 바이오텍 기술수출",
+      "description": "글로벌 빅파마들의 중국 신약 후보물질 관심 증대로 대규모 라이선스 아웃 계약이 체결되며 관련 지수가 급등.",
       "impact": "positive"
     },
     {
-      "icon": "🚨",
-      "keyword": "미국 스태그플레이션 우려",
-      "description": "ISM 서비스업 지수 둔화 속 고용 위축 및 가격 지수 상승으로 스태그플레이션 위험이 시사됨.",
-      "impact": "negative"
+      "icon": "❄️",
+      "keyword": "미국 고용시장 냉각",
+      "description": "7월 비농업 고용 지표가 시장 예상치를 크게 하회하며 노동시장 냉각 우려를 심화, 연준 금리 인하 기대감으로 이어짐.",
+      "impact": "positive"
     },
     {
-      "icon": "💰",
-      "keyword": "연금시장 디지털 자산 투자 허용",
-      "description": "트럼프 행정명령으로 12.2조 달러 DC형 연금의 디지털 자산 등 대체 자산 투자 접근성 개선.",
+      "icon": "⏬",
+      "keyword": "연준 금리 인하 기대",
+      "description": "둔화된 미국 고용 지표 발표 후 9월 연준의 금리 인하 가능성이 80%로 급증하며 채권 금리 하락.",
       "impact": "positive"
     },
     {
       "icon": "📈",
-      "keyword": "글로벌 기업 이익 전망 개선",
-      "description": "전세계 12개월 선행 EPS가 소폭 상향 조정되었으며, 특히 미국과 한국 기업의 이익 전망이 개선.",
+      "keyword": "글로벌 EPS 소폭 상향",
+      "description": "전세계 12개월 선행 EPS가 지난달 대비 +0.02% 소폭 상향 조정되었으나, 신흥국은 하향 조정.",
+      "impact": "neutral"
+    },
+    {
+      "icon": "🇺🇸⬆️",
+      "keyword": "미국 EPS 상향",
+      "description": "8월 첫째주 미국 12개월 선행 EPS가 +0.6% 상향 조정되며 글로벌 이익 회복을 견인.",
       "impact": "positive"
     },
     {
-      "icon": "🇰🇷",
-      "keyword": "국내 재정적자 축소 기대",
-      "description": "정부 지출 구조조정으로 내년 통합재정수지 적자 축소 및 국채 발행 부담 완화 기대.",
-      "impact": "positive"
+      "icon": "🇨🇳⬇️",
+      "keyword": "중국 EPS 하향",
+      "description": "8월 첫째주 중국 12개월 선행 EPS가 -0.9% 하향 조정되며 이익 모멘텀 둔화 우려.",
+      "impact": "negative"
     }
   ],
   "referencedFiles": [
@@ -71,7 +77,47 @@
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137944.pdf?attachmentId=2137944",
       "mdFileName": "2137944.md"
+    },
+    {
+      "id": "2137912",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(8/11~15)",
+      "date": "2025-08-08",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137912.pdf?attachmentId=2137912",
+      "mdFileName": "2137912.md"
+    },
+    {
+      "id": "2137804",
+      "title": "Thematic RadarEp 35. 중국 바이오텍: 기술 수출 가속화",
+      "date": "2025-08-05",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137804.pdf?attachmentId=2137804",
+      "mdFileName": "2137804.md"
+    },
+    {
+      "id": "2137769",
+      "title": "Credit Market Weekly8.4~8일",
+      "date": "2025-08-04",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137769.pdf?attachmentId=2137769",
+      "mdFileName": "2137769.md"
+    },
+    {
+      "id": "2137765",
+      "title": "Fixed Income Comment미국 금리 급락 관련 체크할 포인트",
+      "date": "2025-08-04",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137765.pdf?attachmentId=2137765",
+      "mdFileName": "2137765.md"
+    },
+    {
+      "id": "2137752",
+      "title": "[Earnings Revision] 8월 1주차",
+      "date": "2025-08-04",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137752.pdf?attachmentId=2137752",
+      "mdFileName": "2137752.md"
     }
   ],
-  "updatedAt": "2025-08-16"
+  "updatedAt": "2025-08-20"
 }
