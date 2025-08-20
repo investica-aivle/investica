@@ -304,7 +304,7 @@ export class KisController {
       const result = await this.kisService.getStockPrice(
         session.kisSessionData,
         {
-          company: body.company,
+          stockName: body.company,
         },
       );
 
@@ -349,7 +349,7 @@ export class KisController {
       const result = await this.kisService.getStockTrades(
         session.kisSessionData,
         {
-          company: body.company,
+          stockName: body.company,
         },
       );
 
