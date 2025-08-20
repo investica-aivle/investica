@@ -243,3 +243,24 @@ export interface IAccountNumberParts {
   CANO: string; // 종합계좌번호 (8자리)
   ACNT_PRDT_CD: string; // 계좌상품코드 (2자리)
 }
+
+/**
+ * 웹소켓 접속키 발급 응답 인터페이스
+ */
+export interface IKisWebSocketKeyResponse {
+  /**
+   * 웹소켓 접속키
+   *
+   * @example "eSg4Sm5CTUItakpaeHoyLVgd..."
+   */
+  approval_key: string;
+}
+
+/**
+ * 웹소켓 접속키 발급 요청 바디 (내부용)
+ */
+export interface IKisWebSocketKeyRequestBody {
+  grant_type: "client_credentials";
+  appkey: string;
+  secretkey: string;
+}

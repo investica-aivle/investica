@@ -12,3 +12,6 @@ export const selectIsLoading = (state: RootState) => state.auth.isLoading;
 export const selectSessionKey = (state: RootState) => state.auth.sessionKey;
 export const selectMaskedAccountNumber = (state: RootState) => state.auth.maskedAccountNumber;
 export const selectAccountType = (state: RootState) => state.auth.accountType;
+
+// Trading Selectors
+export const selectTargetStock = (state: RootState) => state.trading.targetStock;
