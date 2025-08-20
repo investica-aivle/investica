@@ -9,11 +9,12 @@ import {
   useState
 } from "react";
 import { Driver, WebSocketConnector } from "tgrid";
+import { OrderConfirmation } from "../components/trading/OrderConfirmation";
+import tabs, { TabDetail, TabType } from "../constant/tabs";
+import { selectSessionKey, useAppDispatch, useAppSelector } from "../store/hooks";
+import { setTargetStock } from "../store/slices/tradingSlice";
 import { IClientEvents, StockInfo, TradingConfirmationRequest, TradingConfirmationResponse } from "../types/agentica";
 import { NewsItem, NewsPushPayload } from "../types/news";
-import { useAppSelector, useAppDispatch, selectSessionKey } from "../store/hooks";
-import { setTargetStock } from "../store/slices/tradingSlice";
-import { OrderConfirmation } from "../components/trading/OrderConfirmation";
 
 export interface IWebSocketHeaders {
   sessionKey: string;
@@ -25,6 +26,9 @@ interface AgenticaRpcContextType {
   isConnected: boolean;
   isError: boolean;
   isConnecting: boolean;
+  isLoading: boolean;
+  currentTab: TabType;
+  setCurrentTab: (tab: TabType) => void;
   news: {
     company: string;
     items: NewsItem[];
@@ -39,7 +43,9 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   const [messages, setMessages] = useState<IAgenticaEventJson[]>([]);
   const [isError, setIsError] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [driver, setDriver] = useState<Driver<IAgenticaRpcService<"chatgpt">, false>>();
+  const [currentTab, setCurrentTab] = useState<TabType>(TabType.PORTFOLIO);
 
   const sessionKey = useAppSelector(selectSessionKey);
   const dispatch = useAppDispatch();
@@ -102,8 +108,26 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         IAgenticaRpcService<"chatgpt">
       >({ sessionKey }, {
         assistantMessage: pushMessage,
-        describe: pushMessage,
         userMessage: pushMessage,
+        describe: async(evt: IAgenticaEventJson.IDescribe) => {
+          console.log('describe :', evt);
+          setIsLoading(false);
+          pushMessage(evt);
+        },
+        execute: async (evt: IAgenticaEventJson.IExecute) => {
+          console.log('⚡ execute:', evt);
+          // arguments를 통해 인자를 받을 수 있음
+          const functionName = evt?.operation?.function;
+          if (functionName) {
+            for (const [tabType, tabDetail] of Object.entries(tabs)) {
+              if ((tabDetail as TabDetail).function.includes(functionName)) {
+                setCurrentTab(tabType as TabType);
+                console.log(`탭 변경: ${tabType}`);
+                break;
+              }
+            }
+          }
+        },
         onNews: (payload: NewsPushPayload) => {
           setNewsCompany(payload.company);
           setNewsItems(payload.items ?? []);
@@ -116,6 +140,7 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         },
         onTradingConfirmationRequest: handleTradingConfirmationRequest
       });
+
 
       await connector.connect(import.meta.env.VITE_AGENTICA_WS_URL);
       const driver = connector.getDriver();
@@ -139,12 +164,14 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
 
   const conversate = useCallback(
     async (message: string) => {
+      setIsLoading(true);
       if (!driver) {
         console.error("Driver is not connected. Please connect to the server.");
         return;
       }
       try {
         await driver.conversate(message);
+        setIsLoading(false);
       } catch (e) {
         console.error(e);
         setIsError(true);
@@ -207,6 +234,9 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         isConnected,
         isError,
         isConnecting,
+        isLoading,
+        currentTab,
+        setCurrentTab,
         news: {
           company: newsCompany,
           items: newsItems,

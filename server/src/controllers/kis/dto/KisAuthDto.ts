@@ -8,7 +8,7 @@ export interface IKisAuthRequestDto {
    * 계좌번호
    * @example "12345678-01"
    */
-  accountNumber: string & tags.Pattern<"^[0-9]{8}-[0-9]{2}$">;
+  accountNumber: string;
 
   /**
    * KIS App Key

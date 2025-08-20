@@ -161,7 +161,7 @@ const StockTreemap = () => {
           >
             <Tooltip
               formatter={(value, name, props) => [
-                `시가총액: ${(Number(value) / 1000000).toFixed(1)}조원`,
+                `시가총액: ${(Number(value) / 1000000).toFixed(1)}억원`,
                 props.payload.name
               ]}
               labelFormatter={(label) => `${label}`}
