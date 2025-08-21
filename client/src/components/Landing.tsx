@@ -4,11 +4,7 @@ import KospiOverview from './StockVisualization/KospiOverview';
 import StockTreemap from './StockVisualization/Treemap';
 
 export function Landing() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('portfolio');
-  const onClose = () => {
-    setIsSidebarOpen(false);
-  };
 
 
   const tabs = [
@@ -23,7 +19,6 @@ export function Landing() {
       <div className="flex justify-between items-center p-4 border-b border-zinc-700/30">
         <h2 className="font-bold text-lg text-gray-100">주식 대시보드</h2>
         <button
-          onClick={onClose}
           className="p-1 rounded-xl hover:bg-zinc-700/50 transition-colors"
         >
           <XIcon className="w-5 h-5" />
@@ -197,4 +192,3 @@ export function Landing() {
     </div>
   );
 }
-

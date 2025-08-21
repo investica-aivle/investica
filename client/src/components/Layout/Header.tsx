@@ -14,9 +14,7 @@ const Header = ({ setShowSideContainer }: { setShowSideContainer: (show: boolean
   const handleLogout = async () => {
     try {
       // 서버에 로그아웃 API 호출 (RTK Query 사용)
-      console.log('서버 로그아웃 요청 중...');
       await logoutMutation().unwrap();
-      console.log('서버 로그아웃 성공');
     } catch (error: any) {
       console.warn('서버 로그아웃 실패, 로컬 로그아웃 진행:', error.message);
       // 서버 로그아웃 실패해도 로컬 로그아웃은 진행
@@ -24,7 +22,6 @@ const Header = ({ setShowSideContainer }: { setShowSideContainer: (show: boolean
       // 로컬 세션 삭제 및 Redux 상태 초기화
       SessionManager.clearSession();
       dispatch(logoutAction());
-      console.log('로컬 로그아웃 완료');
     }
   };
 

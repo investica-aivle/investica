@@ -252,10 +252,8 @@ export const getPortfolioSummary = async (): Promise<PortfolioSummary> => {
       throw new Error('인증이 필요합니다. 로그인을 다시 해주세요.');
     }
 
-    console.log('포트폴리오 요약 정보 요청 중...');
     const response = await apiClient.post<PortfolioSummary>('/api/kis/portfolio-summary');
 
-    console.log('포트폴리오 요약 정보 응답:', response.data);
     return response.data;
   } catch (error: any) {
     console.error('포트폴리오 요약 정보 조회 실패:', error);
@@ -296,10 +294,8 @@ export const getPortfolioData = async (): Promise<PortfolioData> => {
       throw new Error('인증이 필요합니다. 로그인을 다시 해주세요.');
     }
 
-    console.log('포트폴리오 전체 데이터 요청 중...');
     const response = await apiClient.post<PortfolioData>('/api/kis/portfolio-data');
 
-    console.log('포트폴리오 전체 데이터 응답:', response.data);
     return response.data;
   } catch (error: any) {
     console.error('포트폴리오 전체 데이터 조회 실패:', error);

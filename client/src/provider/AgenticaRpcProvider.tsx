@@ -69,23 +69,10 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
   // Handle trading confirmation request - connectWithSessionKey보다 먼저 정의
   const handleTradingConfirmationRequest = useCallback(
     (request: TradingConfirmationRequest): Promise<TradingConfirmationResponse> => {
-      console.log('[AgenticaRpcProvider] Received trading confirmation request from server:', {
-        id: request.id,
-        type: request.type,
-        stockName: request.stockInfo.name,
-        stockCode: request.stockInfo.code,
-        quantity: request.quantity,
-        orderCondition: request.orderCondition,
-        price: request.price,
-        estimatedAmount: request.estimatedAmount
-      });
-
       return new Promise((resolve) => {
         setConfirmationRequest(request);
         setIsConfirmationModalOpen(true);
         setPendingConfirmationResolve(() => resolve);
-
-        console.log('[AgenticaRpcProvider] Trading confirmation modal opened, waiting for user response');
       });
     },
     []
@@ -110,19 +97,16 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         assistantMessage: pushMessage,
         userMessage: pushMessage,
         describe: async(evt: IAgenticaEventJson.IDescribe) => {
-          console.log('describe :', evt);
           setIsLoading(false);
           pushMessage(evt);
         },
         execute: async (evt: IAgenticaEventJson.IExecute) => {
-          console.log('⚡ execute:', evt);
           // arguments를 통해 인자를 받을 수 있음
           const functionName = evt?.operation?.function;
           if (functionName) {
             for (const [tabType, tabDetail] of Object.entries(tabs)) {
               if ((tabDetail as TabDetail).function.includes(functionName)) {
                 setCurrentTab(tabType as TabType);
-                console.log(`탭 변경: ${tabType}`);
                 break;
               }
             }
@@ -135,7 +119,6 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
           setHasFirstPush(true);
         },
         onStockFocus: (payload: StockInfo) => {
-          console.log('주식 포커스 변경:', payload);
           dispatch(setTargetStock(payload));
         },
         onTradingConfirmationRequest: handleTradingConfirmationRequest
@@ -146,7 +129,6 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
       const driver = connector.getDriver();
       setDriver(driver);
 
-      console.log('WebSocket 연결 성공');
     } catch (e) {
       console.error('WebSocket 연결 실패:', e);
       setIsError(true);
@@ -188,13 +170,6 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         confirmed: true
       };
 
-      console.log('[AgenticaRpcProvider] User confirmed trading request, sending response to server:', {
-        id: response.id,
-        confirmed: response.confirmed,
-        stockName: confirmationRequest.stockInfo.name,
-        type: confirmationRequest.type
-      });
-
       pendingConfirmationResolve(response);
       setIsConfirmationModalOpen(false);
       setConfirmationRequest(null);
@@ -209,13 +184,6 @@ export function AgenticaRpcProvider({ children }: PropsWithChildren) {
         id: confirmationRequest.id,
         confirmed: false
       };
-
-      console.log('[AgenticaRpcProvider] User cancelled trading request, sending response to server:', {
-        id: response.id,
-        confirmed: response.confirmed,
-        stockName: confirmationRequest.stockInfo.name,
-        type: confirmationRequest.type
-      });
 
       pendingConfirmationResolve(response);
       setIsConfirmationModalOpen(false);

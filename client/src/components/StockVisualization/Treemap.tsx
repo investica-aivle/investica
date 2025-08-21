@@ -69,7 +69,7 @@ const StockTreemap = () => {
   };
 
   const CustomizedContent = (props: any) => {
-    const { root, depth, x, y, width, height, index, colors, name, size, change, changeRate } = props;
+    const { depth, x, y, width, height, name, change } = props;
 
     return (
       <g>
@@ -204,7 +204,7 @@ const StockTreemap = () => {
             content={<CustomizedContent />}
           >
             <Tooltip
-              formatter={(value, name, props) => [
+              formatter={(value, _, props) => [
                 `시가총액: ${(formatKoreanUnit(Number(value)))}`,
                 props.payload.name
               ]}
