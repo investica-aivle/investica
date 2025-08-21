@@ -6,7 +6,7 @@ const stockApi = {
    * 상위 주식 목록 조회
    */
   getTopStocks: (): Promise<StockOverviewResponse> => {
-    return apiClient.get('/stockoverview/top')
+    return apiClient.get('api/stockoverview/top')
       .then(response => response.data);
   },
 
