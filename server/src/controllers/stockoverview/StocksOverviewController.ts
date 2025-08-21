@@ -19,7 +19,7 @@ interface StocksOverviewResponse {
   totalCount: number;
 }
 
-@Controller("stockoverview")
+@Controller("api/stockoverview")
 export class StocksOverviewController {
   constructor(
     private readonly stocksOverviewProvider: StocksOverviewProvider,
