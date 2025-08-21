@@ -26,7 +26,7 @@ export default function NewsPanel({
         )}
       </div>
 
-      {loading && <div className="text-sm text-gray-400">뉴스 수신 대기 중…</div>}
+      {loading && <div className="text-sm text-gray-400">챗봇에서 뉴스를 검색하면 여기에 표시됩니다</div>}
       {!loading && items.length === 0 && (
         <div className="text-sm text-gray-400">{emptyHint}</div>
       )}
