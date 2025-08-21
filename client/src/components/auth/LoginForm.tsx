@@ -11,9 +11,9 @@ export const LoginForm: React.FC = () => {
   const [authenticate] = useAuthenticateMutation();
 
   const [formData, setFormData] = useState<LoginFormData>({
-    accountNumber: import.meta.env.VITE_KIS_ACCOUNT || '',
-    appKey: import.meta.env.VITE_KIS_APP_KEY || '',
-    appSecret: import.meta.env.VITE_KIS_APP_SECRET || '',
+    accountNumber: '',
+    appKey: '',
+    appSecret: '',
   });
 
   const [fieldErrors, setFieldErrors] = useState<{
