@@ -1,4 +1,6 @@
 # investica
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica?ref=badge_shield)
+
 2025 오픈소스 개발자대회
 
 # 프로젝트 시작 가이드 (한글)
@@ -48,3 +50,7 @@ npm run build:sdk
 프로젝트를 정상적으로 실행하려면 Open API 키를 반드시 설정해야 합니다.
 
 - Open API 키가 무엇인지, 어디에 입력해야 하는지 잘 모르겠다면 제공된 튜토리얼 영상을 참고해 주세요.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica?ref=badge_large)
