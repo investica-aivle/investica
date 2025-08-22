@@ -1,12 +1,18 @@
+import { useEffect, useRef } from "react";
 import { useAgenticaRpc } from "../../provider/AgenticaRpcProvider";
 import { ChatInput } from "./ChatInput";
 import { ChatMessages } from "./ChatMessages";
 import { ChatStatus } from "./ChatStatus";
-import { useEffect, useRef } from "react";
 
 export function Chat() {
-  const { messages, conversate, isConnected, isError, tryConnect } =
-    useAgenticaRpc();
+  const {
+    messages,
+    conversate,
+    isConnected,
+    isLoading,
+    isError,
+    isConnecting,
+  } = useAgenticaRpc();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasMessage = messages.length > 0;
   const lastMessage = messages[messages.length - 1];
@@ -32,31 +38,34 @@ export function Chat() {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-w-0">
-      <div className="relative w-full h-[calc(100vh-2rem)] md:h-[calc(100vh-4rem)]">
-        <div className="h-full flex flex-col bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30">
+    <div className="flex-1 flex flex-col p-4 md:p-8 min-w-0 h-full">
+      <div className="flex-1 flex flex-col bg-zinc-800/50 backdrop-blur-md rounded-2xl overflow-hidden border border-zinc-700/30 h-full">
           <div
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#52525b #18181b'
+            }}
           >
             {hasMessage && <ChatMessages messages={messages} />}
             <ChatStatus
               isError={isError}
               isConnected={isConnected}
+              isLoading={isLoading}
+              isConnecting={isConnecting}
               hasMessages={hasMessage}
-              onRetryConnect={tryConnect}
               isWsUrlConfigured={import.meta.env.VITE_AGENTICA_WS_URL !== ""}
             />
           </div>
+        </div>
 
-          <div className="p-4">
+          <div className="p-4 flex-shrink-0">
             <ChatInput
               onSendMessage={handleSendMessage}
-              disabled={!isConnected || isError || isLastMessageFromUser}
+              disabled={!isConnected || isError || isLastMessageFromUser || isConnecting || isLoading}
             />
           </div>
-        </div>
-      </div>
     </div>
   );
 }

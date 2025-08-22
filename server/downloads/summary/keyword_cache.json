@@ -1,0 +1,93 @@
+{
+  "keywords": [
+    {
+      "icon": "🛡️",
+      "keyword": "글로벌 방산 수요 증가",
+      "description": "우크라이나 휴전 성사 시에도 러시아 위협 유지로 글로벌 방산 수요가 지속적으로 증가할 전망입니다.",
+      "impact": "positive"
+    },
+    {
+      "icon": "📉",
+      "keyword": "미국 금리 인하 기대감",
+      "description": "7월 코어 CPI가 예상치에 부합하며 하반기 미국 금리 인하 기대감이 유지되고 있습니다.",
+      "impact": "positive"
+    },
+    {
+      "icon": "💸",
+      "keyword": "서비스 인플레이션 가속화",
+      "description": "헬스케어, 자동차 수리 등 서비스 물가 상승 압력 확대로 연준의 9월 빅컷 기대감이 축소되고 있습니다.",
+      "impact": "negative"
+    },
+    {
+      "icon": "📊",
+      "keyword": "국내 재정적자 축소",
+      "description": "정부 지출 구조조정을 통한 2026년 예산안에서 재정적자 축소 및 국채 발행 부담 완화가 기대됩니다.",
+      "impact": "positive"
+    },
+    {
+      "icon": "🪙",
+      "keyword": "디지털 자산 연금 투자 허용",
+      "description": "트럼프 행정명령으로 DC형 퇴직연금의 디지털 자산 접근성이 개선되어 대규모 연금 자산 유입이 기대됩니다.",
+      "impact": "positive"
+    }
+  ],
+  "referencedFiles": [
+    {
+      "id": "2138116",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(8/18~22)",
+      "date": "2025-08-14",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138116.pdf?attachmentId=2138116",
+      "mdFileName": "2138116.md"
+    },
+    {
+      "id": "2138073",
+      "title": "Fixed Income Comment안심하기 이른 인플레이션",
+      "date": "2025-08-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138073.pdf?attachmentId=2138073",
+      "mdFileName": "2138073.md"
+    },
+    {
+      "id": "2137952",
+      "title": "Thematic RadarEp 36. 디지털 자산에 열린 연금 시장",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137952.pdf?attachmentId=2137952",
+      "mdFileName": "2137952.md"
+    },
+    {
+      "id": "2137951",
+      "title": "Credit Market Weekly8.11~15일",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137951.pdf?attachmentId=2137951",
+      "mdFileName": "2137951.md"
+    },
+    {
+      "id": "2137944",
+      "title": "[Earnings Revision] 8월 2주차",
+      "date": "2025-08-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2137944.pdf?attachmentId=2137944",
+      "mdFileName": "2137944.md"
+    },
+    {
+      "id": "2138163",
+      "title": "Thematic RadarEp 37. 우크라이나 휴전 가능성 점검",
+      "date": "2025-08-20",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138163.pdf?attachmentId=2138163",
+      "mdFileName": "2138163.md"
+    },
+    {
+      "id": "2138135",
+      "title": "Credit Market Weekly8.18~22일",
+      "date": "2025-08-18",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138135.pdf?attachmentId=2138135",
+      "mdFileName": "2138135.md"
+    }
+  ],
+  "updatedAt": "2025-08-20"
+}

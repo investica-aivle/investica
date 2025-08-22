@@ -2,6 +2,7 @@
 import type sdk from "@nestia/sdk";
 import { NestFactory } from "@nestjs/core";
 
+import { MyGlobal } from "./src/MyGlobal";
 import { MyModule } from "./src/MyModule";
 
 const NESTIA_CONFIG: sdk.INestiaConfig = {
@@ -11,14 +12,15 @@ const NESTIA_CONFIG: sdk.INestiaConfig = {
     output: "packages/api/swagger.json",
     servers: [
       {
-        url: "http://localhost:37001",
+        url: `http://localhost:${MyGlobal.env.API_PORT}`,
         description: "Local Server",
       },
     ],
     beautify: true,
   },
   distribute: "packages/api",
-  primitive: false,
+  primitive: true,
   simulate: true,
+  clone: true,
 };
 export default NESTIA_CONFIG;
