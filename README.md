@@ -1,4 +1,8 @@
-# Investica
+# investica
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica?ref=badge_shield)
+
+2025 오픈소스 개발자대회
+
 
 > AI 기반 주식 투자 분석 플랫폼 - Agentica Framework 데모
 
@@ -104,6 +108,6 @@ cd client && pnpm dev        # 터미널 2
 - 금융 규제 준수 (전자금융거래법 등)
 - 사용자 자금 보호 시스템
 
-## 라이선스
-
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Finvestica-aivle%2Finvestica?ref=badge_large)
 MIT License - 자세한 내용은 [LICENSE](LICENSE) 참조
