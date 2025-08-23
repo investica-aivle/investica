@@ -17,7 +17,10 @@ type TabsConfig = Record<TabType, TabDetail>;
 const tabs: TabsConfig = {
   [TabType.PORTFOLIO]: {
     name: "portfolio",
-    function: [],
+    function: [
+        "getPortfolioSummary",
+        "getPortfolioData",
+    ],
     description: "포트폴리오"
   },
   [TabType.KOSPI]: {
@@ -40,12 +43,18 @@ const tabs: TabsConfig = {
   },
   [TabType.TRADING]: {
     name: "trading",
-    function: [],
+    function: [
+        "buyStock",
+        "sellStock",
+        "getStockPrice",
+        "getStockTrades",
+        "getStockDailyPrices",
+    ],
     description: "매매 기능"
   },
   [TabType.AI]: {
     name: "ai",
-    function: [],
+    function: ["getIndustryEvaluation"],
     description: "AI 분석"
   }
 };
