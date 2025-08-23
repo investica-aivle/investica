@@ -3,7 +3,6 @@
 
 2025 오픈소스 개발자대회
 
-
 > AI 기반 주식 투자 분석 플랫폼 - Agentica Framework 데모
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,6 +11,10 @@
 [![NestJS](https://img.shields.io/badge/NestJS-11.0.0-red.svg)](https://nestjs.com/)
 [![Agentica](https://img.shields.io/badge/Agentica-0.30.5-purple.svg)](https://github.com/wrtnlabs/agentica)
 
+https://github.com/user-attachments/assets/66027ab4-ec71-4cf9-8e3c-d8b10a2d3a64
+
+
+[시연 영상(유튜브)](https://www.youtube.com/watch?v=lRAGhhJsJKI&t=38s)
 ## 프로젝트 개요
 
 이 프로젝트는 [Agentica](https://github.com/wrtnlabs/agentica) 프레임워크의 **긍정적 활용 사례**를 실증하기 위해 개발되었습니다. Agentica를 통해 잘 구성된 API들을 활용하여 **빠르고 완성도 높은 혁신적인 챗봇 서비스**를 개발할 수 있음을 보여줍니다.
