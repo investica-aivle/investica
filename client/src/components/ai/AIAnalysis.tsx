@@ -63,6 +63,16 @@ const AIAnalysis = () => {
         return styles[evaluationCode as keyof typeof styles] || styles.NEUTRAL;
     };
 
+    const getConfidenceColor = (percentage: number) => {
+        if (percentage > 80) {
+            return 'bg-green-500';
+        }
+        if (percentage > 50) {
+            return 'bg-yellow-500';
+        }
+        return 'bg-red-500';
+    };
+
     // 더보기/접기 핸들러
     const handleToggleShowAll = () => {
         setShowAll(!showAll);
@@ -124,6 +134,7 @@ const AIAnalysis = () => {
                             const style = getEvaluationStyle(industry.evaluationCode);
                             const confidencePercentage = Math.round(industry.confidence * 100);
                             const isExpanded = expandedItems.has(index);
+                            const confidenceColor = getConfidenceColor(confidencePercentage);
 
                             return (
                                 <div
@@ -151,7 +162,7 @@ const AIAnalysis = () => {
                                     <div className="mb-3">
                                         <div className="h-1.5 bg-zinc-800/50 rounded-full overflow-hidden">
                                             <div
-                                                className={`h-full ${style.color.replace('text-', 'bg-').replace('-400', '-500')}`}
+                                                className={`h-full ${confidenceColor}`}
                                                 style={{ width: `${confidencePercentage}%` }}
                                             ></div>
                                         </div>
