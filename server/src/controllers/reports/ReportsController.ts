@@ -4,8 +4,8 @@ import type {
   KeywordSummaryResult,
   MiraeAssetReport,
 } from "../../models/Reports";
-import { ReportAiProvider } from "../../providers/reports/ReportAiProvider";
 import { ReportsService } from "../../providers/reports/ReportsService";
+import { ReportKeywordExtractor } from "../../providers/reports/ReportKeywordExtractor";
 
 // API 응답 타입들을 export하여 Nestia가 인식할 수 있도록 함
 export interface SecuritiesReportListResponse {
@@ -22,7 +22,6 @@ export interface SecuritiesReportListRequest {
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
-    private readonly reportAiProvider: ReportAiProvider,
   ) {}
 
   // ===== 요약 관련 API =====
@@ -62,10 +61,7 @@ export class ReportsController {
   async getKeywordSummary(
     @Query("limit") limit?: number,
   ): Promise<KeywordSummaryResult> {
-    return await this.reportAiProvider.generateKeywordSummary(
-      "./downloads/reports.json",
-      limit || 5,
-    );
+    return await this.reportsService.getKeywords();
   }
 
   /**
@@ -88,11 +84,7 @@ export class ReportsController {
         shouldLimitLength !== undefined ? shouldLimitLength : true,
     };
 
-    return await this.reportAiProvider.getLatestMarkdownFiles(
-      "./downloads/reports.json",
-      limit || 20,
-      options,
-    );
+    return this.reportsService.getLatestMarkdownFiles();
   }
 
   // ===== 투자 전략 리포트 관련 API =====

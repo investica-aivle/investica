@@ -1,12 +1,13 @@
-import { MiraeAssetReport } from "@models/Reports";
+import { KeywordSummaryResult, MiraeAssetReport } from "@models/Reports";
 import { Injectable } from "@nestjs/common";
 import * as fs from "fs";
 
-import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
 import { AiAnalysisProvider } from "./AiAnalysisProvider";
+import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
 import { ReportConverter } from "./ReportConverter";
-import { ReportSummarizer } from "./ReportSummarizer";
 import { ReportFileManager } from "./ReportFileManager";
+import { ReportKeywordExtractor } from "./ReportKeywordExtractor";
+import { ReportSummarizer } from "./ReportSummarizer";
 
 @Injectable()
 export class ReportsService {
@@ -16,7 +17,20 @@ export class ReportsService {
     private readonly reportConverter: ReportConverter,
     private readonly reportSummarizer: ReportSummarizer,
     private readonly fileManager: ReportFileManager,
+    private readonly reportKeywordExtractor: ReportKeywordExtractor,
   ) {}
+
+  public async getKeywords(): Promise<KeywordSummaryResult> {
+    return this.reportKeywordExtractor.generateKeywordSummary();
+  }
+
+  public getLatestMarkdownFiles(): {
+    limitedFiles: MiraeAssetReport[];
+    fileContents: { fileName: string; content: string }[];
+  } {
+
+    return this.fileManager.getLatestMarkdownFiles();
+  }
 
   /**
    * AI가 분석한 산업군 평가를 가져옵니다.
