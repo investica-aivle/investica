@@ -98,7 +98,7 @@ export class AiAnalysisProvider {
     initialEvaluation: any,
     reportContents: string[],
   ): Promise<number> {
-    console.log(`  - 신뢰도 재평가 중...`);
+    console.log(`  - 신뢰도 평가 중...`);
     const prompt = `
       다음은 여러 증권사 원본 보고서에서 발췌한 내용과, 그것을 AI가 1차 분석한 결과입니다.
 
