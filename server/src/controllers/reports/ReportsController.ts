@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Post, Query } from "@nestjs/common";
 
 import type {
   KeywordSummaryResult,
@@ -192,5 +192,10 @@ export class ReportsController {
       title: decodeURIComponent(title),
       isISReport: true, // 기본값: 투자 전략
     });
+  }
+
+  @Post("update-reports")
+  async updateAIReports() {
+    await this.reportsService.updateAiReports();
   }
 }

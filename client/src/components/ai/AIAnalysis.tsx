@@ -10,22 +10,36 @@ const AIAnalysis = () => {
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set()); // 자세히 보기 상태 추가
 
 
+    const fetchIndustryData = async () => {
+        try {
+            setLoading(true);
+            const result = await reportsApi.getIndustryEvaluationSummary();
+            setIndustryData(result);
+        } catch (err) {
+            setError('산업 분석 데이터를 불러오는데 실패했습니다.');
+            console.error('Industry evaluation API 호출 실패:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
     useEffect(() => {
-        const fetchIndustryData = async () => {
-            try {
-                setLoading(true);
-                const result = await reportsApi.getIndustryEvaluationSummary();
-                setIndustryData(result);
-            } catch (err) {
-                setError('산업 분석 데이터를 불러오는데 실패했습니다.');
-                console.error('Industry evaluation API 호출 실패:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
+
 
         fetchIndustryData();
     }, []);
+
+    const handleUpdate = async () => {
+        try {
+            setLoading(true);
+            await reportsApi.updateIndustryEvaluation();
+            await fetchIndustryData();
+        } catch (err) {
+            setError('산업 분석 데이터를 업데이트하는데 실패했습니다.');
+            console.error('Industry evaluation update API 호출 실패:', err);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     // 평가 코드에 따른 스타일 반환
     const getEvaluationStyle = (evaluationCode: string) => {
@@ -78,7 +92,10 @@ const AIAnalysis = () => {
             {/* 산업별 평가 분석 */}
             <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
                 <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-base font-medium text-gray-100">AI 산업별 평가</h4>
+                    <div className="flex items-center gap-4">
+                        <h4 className="text-base font-medium text-gray-100">AI 산업별 평가</h4>
+                        <button onClick={handleUpdate} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">업데이트</button>
+                    </div>
                     {industryData && (
                         <span className="text-sm text-gray-400">
               {new Date(industryData.lastEvaluated).toLocaleDateString('ko-KR')} 업데이트

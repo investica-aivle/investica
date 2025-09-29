@@ -20,6 +20,39 @@ export class ReportsService {
     private readonly reportKeywordExtractor: ReportKeywordExtractor,
   ) {}
 
+  public async updateAiReports() {
+    const limit = 5;
+    const filePath = "./downloads/summary/industry_evaluation.json";
+    const now = new Date();
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+
+    if (fs.existsSync(filePath)) {
+      try {
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        const evaluationData = JSON.parse(fileContent);
+        
+        if (evaluationData.lastEvaluated) {
+          const lastEvaluatedDate = new Date(evaluationData.lastEvaluated);
+          const timeDifference = now.getTime() - lastEvaluatedDate.getTime();
+
+          if (timeDifference < twentyFourHoursInMs) {
+            const message = `AI 리포트가 마지막 업데이트 후 24시간이 지나지 않아 건너뜁니다. 마지막 업데이트: ${lastEvaluatedDate.toLocaleString()}`;
+            console.log(message);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("기존 AI 리포트 파일을 읽는 중 오류 발생:", error);
+      }
+    }
+
+    console.log(`📊 AI 리포트를 새로 생성하거나 업데이트합니다 (보고서 ${limit}개 기준)...`);
+    await this.aiAnalysisProvider.evaluateLatestIndustries(limit);
+    const message = "AI 리포트가 성공적으로 업데이트되었습니다.";
+    console.log(message);
+    return;
+  }
+
   public async getKeywords(): Promise<KeywordSummaryResult> {
     return this.reportKeywordExtractor.generateKeywordSummary();
   }
@@ -39,10 +72,12 @@ export class ReportsService {
   public async getIndustryEvaluation(): Promise<any> {
     const filePath = "./downloads/summary/industry_evaluation.json";
 
-    // 1. 파일이 없으면 생성
+    // AI 리포트 업데이트 확인 및 실행 (파일이 없으면 10개 기준으로 생성)
+    await this.updateAiReports();
+
+    // 파일이 여전히 존재하지 않는 경우 (업데이트 후에도 생성 실패)
     if (!fs.existsSync(filePath)) {
-      console.log("📊 평가 파일이 없어 새로 생성합니다...");
-      await this.aiAnalysisProvider.evaluateLatestIndustries(10); // 파일이 없을땐 10개로 생성
+      throw new Error("AI 리포트 파일을 찾을 수 없거나 생성에 실패했습니다.");
     }
 
     // 2. 파일 읽기 및 파싱
