@@ -4,6 +4,7 @@ import * as fs from "fs";
 
 import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
 import { ReportAiProvider } from "./ReportAiProvider";
+import { AiAnalysisProvider } from "./AiAnalysisProvider";
 
 /**
  * Reports Service for Agentica Class Protocol
@@ -22,6 +23,7 @@ export class ReportsService {
   constructor(
     private readonly miraeAssetReportProvider: MiraeAssetReportProvider,
     private readonly reportAiProvider: ReportAiProvider,
+    private readonly aiAnalysisProvider: AiAnalysisProvider,
   ) {}
 
   /**
@@ -34,7 +36,7 @@ export class ReportsService {
     // 1. 파일이 없으면 생성
     if (!fs.existsSync(filePath)) {
       console.log("📊 평가 파일이 없어 새로 생성합니다...");
-      await this.reportAiProvider.evaluateLatestIndustries(10); // 파일이 없을땐 10개로 생성
+      await this.aiAnalysisProvider.evaluateLatestIndustries(10); // 파일이 없을땐 10개로 생성
     }
 
     // 2. 파일 읽기 및 파싱
