@@ -12,7 +12,7 @@ export class AiAnalysisProvider {
   ) {}
 
   private readonly industryTags = [
-    "반도체", "IT하드웨어", "IT소프트웨어", "인터넷/게임", "통신서비스",
+    "반도체", "IT하드웨어", "IT소프트웨어", "인터넷", "게임", "통신서비스",
     "자동차", "내구소비재/의류", "유통/소매", "미디어/엔터테인먼트", "호텔/레저",
     "필수소비재", "음식료", "기계", "조선", "운송", "건설", "상사/자본재",
     "제약/바이오", "헬스케어", "은행", "증권", "보험", "화학", "정유",
@@ -20,7 +20,7 @@ export class AiAnalysisProvider {
   ];
 
   /**
-   * 산업 분석 보고서를 기반으로 산업군별 평가.
+   * 산업 분석 보고서를 기반으로 산업군별 평가하는 함수
    */
   public async evaluateLatestIndustries(limit: number = 5): Promise<any> {
     console.log(`산업군 평가 시작: 보고서 ${limit} 개`);
@@ -50,9 +50,14 @@ export class AiAnalysisProvider {
       //산업군별 전망 평가
       const industryEvaluations = [];
       for (const [industryName, reports] of reportsByIndustry.entries()) {
-        console.log(`\n${industryName} 산업 평가 중... (${reports.reportContents.length}개 보고서)`);
+        console.log(`\n${industryName} 산업 1차 평가 중... (${reports.reportContents.length}개 보고서)`);
         const evaluationResult = await this.evaluateIndustryContents(industryName, reports.reportContents);
+        
         if (evaluationResult) {
+          // 2차 신뢰도 평가
+          const confidence = await this.rateConfidence(evaluationResult, reports.reportContents);
+          evaluationResult.confidence = confidence;
+
           industryEvaluations.push({
             industryName,
             ...evaluationResult,
@@ -80,6 +85,54 @@ export class AiAnalysisProvider {
     } catch (error) {
       console.error("산업군 평가 실패:", error);
       return null;
+    }
+  }
+
+  /**
+   * 1차 평가 결과와 원본 보고서 내용을 바탕으로 신뢰도 점수를 평가합니다.
+   * @param initialEvaluation 1차 평가 결과
+   * @param reportContents 원본 보고서 내용
+   * @returns 0.0에서 1.0 사이의 신뢰도 점수
+   */
+  private async rateConfidence(
+    initialEvaluation: any,
+    reportContents: string[],
+  ): Promise<number> {
+    console.log(`  - 신뢰도 재평가 중...`);
+    const prompt = `
+      다음은 여러 증권사 원본 보고서에서 발췌한 내용과, 그것을 AI가 1차 분석한 결과입니다.
+
+      --- 원본 보고서 내용 요약 ---
+      ${reportContents.map(c => c.substring(0, 1000)).join("\n\n---\n\n")}
+      --- 내용 끝 ---
+
+      --- 1차 분석 결과 ---
+      - 평가: ${initialEvaluation.evaluation}
+      - 요약: ${initialEvaluation.summary}
+      - 긍정 요인: ${initialEvaluation.keyDrivers.join(", ")}
+      - 리스크 요인: ${initialEvaluation.keyRisks.join(", ")}
+      --- 결과 끝 ---
+
+      원본 보고서 내용을 근거로 판단했을 때, 1차 분석 결과가 얼마나 정확하고 논리적인지 0.0에서 1.0 사이의 신뢰도 점수로 평가해주세요.
+      - 1.0에 가까울수록 원본 내용에 매우 충실하고 정확한 분석입니다.
+      - 0.0에 가까울수록 원본 내용과 동떨어지거나 논리적 오류가 있는 분석입니다.
+
+      숫자만 포함된 JSON 형식으로 다음과 같이 응답해주세요:
+      { "confidence": 0.85 }
+    `;
+
+    try {
+      const result = await this.callGenerativeModel(prompt);
+      const confidence = result?.confidence;
+      if (typeof confidence === 'number' && confidence >= 0 && confidence <= 1) {
+        console.log(`  - 신뢰도 점수: ${confidence}`);
+        return confidence;
+      }
+      console.warn("  - 신뢰도 점수 파싱 실패, 기본값 0.5 사용");
+      return 0.5;
+    } catch (error) {
+      console.error("  - 신뢰도 평가 중 오류 발생, 기본값 0.5 사용", error);
+      return 0.5;
     }
   }
 
@@ -150,7 +203,7 @@ export class AiAnalysisProvider {
       {
         "evaluation": "긍정적|부정적|중립적",
         "evaluationCode": "POSITIVE|NEGATIVE|NEUTRAL",
-        "confidence": 0.0,
+        "confidence": 0, (무조건 0으로 고정)
         "summary": "종합 평가 요약 (2-3 문장)",
         "keyDrivers": ["핵심 긍정 요인1", "요인2"],
         "keyRisks": ["핵심 리스크1", "리스크2"]
