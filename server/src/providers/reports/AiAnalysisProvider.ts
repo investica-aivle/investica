@@ -44,6 +44,8 @@ export class AiAnalysisProvider {
         throw new Error("산업군 분류에 실패했습니다.");
       }
 
+      console.log(`분류된 보고서 수: ${classifiedReports.length}`);
+
       //분류 결과 기반 데이터 재구성
       const reportsByIndustry = this.groupReportsByIndustry(classifiedReports, limitedFiles, fileContents);
 
@@ -114,6 +116,9 @@ export class AiAnalysisProvider {
       --- 결과 끝 ---
 
       원본 보고서 내용을 근거로 판단했을 때, 1차 분석 결과가 얼마나 정확하고 논리적인지 0.0에서 1.0 사이의 신뢰도 점수로 평가해주세요.
+      특히 1차 분석 결과 내용에서 국내 시장에 미치는 영향에 대해 정확하고 논리적으로 판단했는지 중점적으로 평가해주세요.
+      해당 분석에 대해 국내시장에 미칠 영향(긍정적, 부정적, 중립적)이 타당한지 평가하세요.
+      다음 기준을 참고하세요:
       - 1.0에 가까울수록 원본 내용에 매우 충실하고 정확한 분석입니다.
       - 0.0에 가까울수록 원본 내용과 동떨어지거나 논리적 오류가 있는 분석입니다.
 
