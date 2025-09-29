@@ -75,21 +75,6 @@ const AIAnalysis = () => {
         <div className="space-y-4">
             <h3 className="font-medium text-lg text-gray-100">AI 분석</h3>
 
-            <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
-                <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-sm font-medium text-gray-100">시장 공포 지수</h4>
-                    <span className="text-yellow-300 text-sm font-medium">65 (경계)</span>
-                </div>
-                <div className="h-2 bg-zinc-800/50 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 w-[65%]"></div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>0</span>
-                    <span>50</span>
-                    <span>100</span>
-                </div>
-            </div>
-
             {/* 산업별 평가 분석 */}
             <div className="bg-zinc-700/30 p-4 rounded-2xl backdrop-blur-md">
                 <div className="flex justify-between items-center mb-3">
