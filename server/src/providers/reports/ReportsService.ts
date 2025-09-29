@@ -3,27 +3,19 @@ import { Injectable } from "@nestjs/common";
 import * as fs from "fs";
 
 import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
-import { ReportAiProvider } from "./ReportAiProvider";
 import { AiAnalysisProvider } from "./AiAnalysisProvider";
-
-/**
- * Reports Service for Agentica Class Protocol
- *
- * This service provides comprehensive report functionality for Agentica AI agents
- * using the Class protocol. It combines Mirae Asset scraping and PDF conversion
- * to provide a complete solution for accessing and processing financial reports.
- *
- * > If you're an A.I. chatbot and the user wants to access Korean financial reports,
- * > you should use the methods in this service to find, download, and convert reports.
- * > Each method contains detailed information about required parameters and return values.
- */
+import { ReportConverter } from "./ReportConverter";
+import { ReportSummarizer } from "./ReportSummarizer";
+import { ReportFileManager } from "./ReportFileManager";
 
 @Injectable()
 export class ReportsService {
   constructor(
     private readonly miraeAssetReportProvider: MiraeAssetReportProvider,
-    private readonly reportAiProvider: ReportAiProvider,
     private readonly aiAnalysisProvider: AiAnalysisProvider,
+    private readonly reportConverter: ReportConverter,
+    private readonly reportSummarizer: ReportSummarizer,
+    private readonly fileManager: ReportFileManager,
   ) {}
 
   /**
@@ -88,7 +80,7 @@ export class ReportsService {
         ? "./downloads/reports.json"
         : "./downloads/reports_IA.json";
       const conversionResults: { success: boolean; error?: string }[] =
-        await this.reportAiProvider.convertReportsFromJson(
+        await this.reportConverter.convertReportsFromJson(
           jsonFilePath,
           "./downloads/markdown",
         );
@@ -113,20 +105,8 @@ export class ReportsService {
 
   /**
    * 1) 최근 주식상황, 경제상황 요약 (유저용)
-   *
-   * 유저가 "최근 주식상황 어때?" 또는 "경제상황 어때?"라고 요청할 때 사용합니다.
-   * 최신 5개의 투자 전략 보고서를 요약해서 제공합니다.
-   *
-   * @param input 요약 조건
-   * @returns 요약된 주식/경제 상황
    */
   public async getRecentMarketSummary(input: {
-    /**
-     * 요약할 최신 파일 개수 (기본값: 5)
-     * @minimum 1
-     * @maximum 10
-     * @example 5
-     */
     limit?: number;
   }): Promise<{
     message: string;
@@ -143,7 +123,7 @@ export class ReportsService {
       await this.syncReports();
 
       // 최신 마크다운 파일들 요약
-      const result = await this.reportAiProvider.summarizeLatestMarkdownFiles(
+      const result = await this.reportSummarizer.summarizeLatestMarkdownFiles(
         "./downloads/reports.json",
         input.limit || 5,
       );
@@ -162,13 +142,6 @@ export class ReportsService {
 
   /**
    * 2) 투자 전략 카테고리 증권보고서 리스트 제공 (유저용)
-   *
-   * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용합니다.
-   * 혹은 보고서 머가있어? 라고 요청할 때 사용합니다.
-   * 최신 투자 전략 카테고리의 증권보고서들의 목록을 제공합니다.
-   *
-   * @param input 검색 조건
-   * @returns 증권보고서 리스트
    */
   public async getSecuritiesISReportList(input: {
     keywords?: string[];
@@ -179,12 +152,6 @@ export class ReportsService {
 
   /**
    * 2) 산업 분석 카테고리 증권보고서 리스트 제공 (유저용)
-   *
-   * 유저가 "요즘 살펴볼만한 분야 뭐가 있어?"라고 요청할 때 사용합니다.
-   * 최신 산업 분석 카테고리의 증권보고서들의 목록을 제공합니다.
-   *
-   * @param input 검색 조건
-   * @returns 증권보고서 리스트
    */
   public async getSecuritiesIAReportList(input: {
     keywords?: string[];
@@ -195,34 +162,10 @@ export class ReportsService {
 
   /**
    * 2) 증권보고서 리스트 제공 (유저용)
-   *
-   * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용합니다.
-   * 혹은 보고서 머가있어? 라고 요청할 때 사용합니다.
-   * 최신 투자 전략 카테고리의 증권보고서들의 목록을 제공합니다.
-   *
-   * @param input 검색 조건
-   * @param isISReport true: 투자 전략 보고서, false: 산업 분석 보고서
-   * @returns 증권보고서 리스트
    */
   public async getSecuritiesReportList(input: {
-    /**
-     * 검색할 키워드들 (선택사항)
-     * @example []
-     */
     keywords?: string[];
-
-    /**
-     * 가져올 보고서 개수 (기본값: 10)
-     * @minimum 1
-     * @maximum 50
-     * @example 10
-     */
     limit?: number;
-
-    /**
-     * 보고서 타입 (기본값: true - 투자 전략 보고서)
-     * @example true
-     */
     isISReport?: boolean;
   }): Promise<{
     message: string;
@@ -245,7 +188,7 @@ export class ReportsService {
 
     // JSON에서 마크다운 파일들 가져오기
     const markdownFiles: MiraeAssetReport[] =
-      this.reportAiProvider.getMarkdownFilesFromJson(jsonFilePath);
+      this.fileManager.getMarkdownFilesFromJson(jsonFilePath);
 
     // limit 적용
     const limitedReports: MiraeAssetReport[] = markdownFiles.slice(
@@ -261,17 +204,8 @@ export class ReportsService {
 
   /**
    * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
-   *
-   * 유저가 특정 투자 전략 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
-   *
-   * @param input 보고서 정보
-   * @returns 보고서 내용
    */
   public async getSpecificISReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
     title: string;
   }): Promise<{
     message: string;
@@ -287,17 +221,8 @@ export class ReportsService {
 
   /**
    * 3) 특정 산업 분석 증권보고서 내용 보기 (유저용)
-   *
-   * 유저가 특정 산업 분석 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
-   *
-   * @param input 보고서 정보
-   * @returns 보고서 내용
    */
   public async getSpecificIAReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
     title: string;
   }): Promise<{
     message: string;
@@ -313,24 +238,9 @@ export class ReportsService {
 
   /**
    * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
-   *
-   * 유저가 특정 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
-   *
-   * @param input 보고서 정보
-   * @param isISReport true: 투자 전략 카테고리 보고서, false: 산업 분석 카테고리 보고서
-   * @returns 보고서 내용
    */
   public async getSpecificReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
     title: string;
-
-    /**
-     * 보고서 타입 (기본값: true - 투자 전략 보고서)
-     * @example true
-     */
     isISReport?: boolean;
   }): Promise<{
     message: string;
@@ -364,7 +274,7 @@ export class ReportsService {
 
       // JSON에서 마크다운 파일들 가져오기
       const markdownFiles: MiraeAssetReport[] =
-        this.reportAiProvider.getMarkdownFilesFromJson(jsonFilePath);
+        this.fileManager.getMarkdownFilesFromJson(jsonFilePath);
 
       // 제목으로 보고서 찾기
       const targetReport: MiraeAssetReport | undefined = markdownFiles.find(

@@ -1,28 +1,15 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import PdfConversionResult, {
-  Keyword,
-  KeywordCacheData,
-  KeywordSummaryResult,
-  MiraeAssetReport,
-  ReportsJsonData,
-} from "@models/Reports";
-import { HttpService } from "@nestjs/axios";
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { Injectable } from "@nestjs/common";
 import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
-import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
-import { ReportAiProvider } from "./ReportAiProvider";
+import { MiraeAssetReport } from "@models/Reports";
+import { ReportBaseProvider } from "./ReportBaseProvider";
+import { ReportFileManager } from "./ReportFileManager";
 
-
-export class AiAnalysisProvider{
-
+@Injectable()
+export class AiAnalysisProvider {
   constructor(
-    private readonly miraeAssetReportProvider: MiraeAssetReportProvider,
-    private readonly reportAiProvider: ReportAiProvider,
+    private readonly baseProvider: ReportBaseProvider,
+    private readonly fileManager: ReportFileManager,
   ) {}
-
 
   private readonly industryTags = [
     "반도체", "IT하드웨어", "IT소프트웨어", "인터넷/게임", "통신서비스",
@@ -32,14 +19,14 @@ export class AiAnalysisProvider{
     "철강/금속", "에너지", "유틸리티"
   ];
 
-  /*
+  /**
    * 산업 분석 보고서를 기반으로 산업군별 평가.
    */
   public async evaluateLatestIndustries(limit: number = 5): Promise<any> {
     console.log(`산업군 평가 시작: 보고서 ${limit} 개`);
 
     // 1. 최신 데이터 수집
-    const { limitedFiles, fileContents } = await this.reportAiProvider.getLatestMarkdownFiles(
+    const { limitedFiles, fileContents } = this.fileManager.getLatestMarkdownFiles(
       "./downloads/reports_IA.json",
       limit,
       { contentLengthLimit: 10000, shouldLimitLength: true }
@@ -96,14 +83,14 @@ export class AiAnalysisProvider{
     }
   }
 
-  /*
+  /**
    * LLM을 호출하여 보고서를 산업군 태그로 분류.
    */
   private async classifyIndustries(reports: MiraeAssetReport[]): Promise<Array<{ id: string; industries: string[] }>> {
     console.log("LLM 호출: 산업군 분류 중...");
     const reportsToClassify = reports.map(r => (
-      { id: r.id, title: r.title, content: this.reportAiProvider.readLatestMarkdownFiles([r], { contentLengthLimit: 200, shouldLimitLength: true })[0]?.content || '' })
-    );
+      { id: r.id, title: r.title, content: this.fileManager.readLatestMarkdownFiles([r], { contentLengthLimit: 200, shouldLimitLength: true })[0]?.content || '' }
+    ));
 
     const prompt = `
     다음은 미리 정의된 산업군 태그 목록입니다:
@@ -121,7 +108,7 @@ export class AiAnalysisProvider{
     return this.callGenerativeModel(prompt);
   }
 
-  /*
+  /**
    * 분류된 산업군에 따라 보고서 내용을 그룹화.
    */
   private groupReportsByIndustry(classifiedReports: Array<{ id: string; industries: string[] }>, allReports: MiraeAssetReport[], allContents: Array<{ fileName: string; content: string }>) {
@@ -146,7 +133,7 @@ export class AiAnalysisProvider{
     return reportsByIndustry;
   }
 
-  /*
+  /**
    * LLM을 호출하여 특정 산업군에 대한 평가
    */
   private async evaluateIndustryContents(industryName: string, contents: string[]): Promise<any> {
@@ -171,23 +158,18 @@ export class AiAnalysisProvider{
                                                                     `;
     return this.callGenerativeModel(prompt);
   }
-  /*
- * gemini 호출하고 JSON 응답을 파싱합니다.
- */
+
+  /**
+   * gemini 호출하고 JSON 응답을 파싱합니다.
+   */
   private async callGenerativeModel(prompt: string): Promise<any> {
     try {
-      const model = this.reportAiProvider.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
-
-      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
-
-      return JSON.parse(jsonStr);
+      return await this.baseProvider.callGenerativeModelAndParseJson(prompt);
     } catch (error) {
-      console.error("LLM 호출 또는 JSON 파싱 실패:", error, "Original Text:", (error as any).responseText || '');
+      console.error("LLM 호출 또는 JSON 파싱 실패:", error);
       return null;
     }
   }
 }
+
 
