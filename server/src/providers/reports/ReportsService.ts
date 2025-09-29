@@ -376,4 +376,12 @@ export class ReportsService {
       };
     }
   }
+
+
+  public async triggerPdfConversion() {
+    console.log(`PDF 변환 트리거 실행 '산업 분석'`);
+    const jsonFilePath = "./downloads/reports_IA.json";
+    
+    await this.reportConverter.convertReportsFromJson(jsonFilePath, "./downloads/markdown");
+  }
 }

@@ -74,6 +74,7 @@
     "inquirer": "8.2.5",
     "node-fetch": "^3.3.2",
     "openai": "5.10.2",
+    "pdf-lib": "^1.17.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "serialize-error": "^4.1.0",

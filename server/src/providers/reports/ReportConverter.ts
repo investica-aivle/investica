@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { ReportBaseProvider } from "./ReportBaseProvider";
 import PdfConversionResult, { ReportsJsonData } from "@models/Reports";
+import { PDFDocument } from 'pdf-lib';
 
 @Injectable()
 export class ReportConverter {
@@ -88,28 +89,47 @@ export class ReportConverter {
     let tempPdfPath: string | null = null;
     try {
       console.log(`URL에서 변환 시작: ${pdfFileName}`);
-      console.log(`다운로드 URL: ${downloadUrl}`);
-
-      const markdownFileName = `${pdfFileName.replace(".pdf", "")}.md`;
-      const markdownFilePath = path.join(mdFolderPath, markdownFileName);
-
+      
+      // 1. PDF 다운로드 및 로드
       tempPdfPath = await this.downloadPdf(downloadUrl);
       const pdfBuffer = fs.readFileSync(tempPdfPath);
-      const base64Pdf = pdfBuffer.toString("base64");
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+      const totalPages = pdfDoc.getPageCount();
+      console.log(`  - PDF 총 페이지: ${totalPages}`);
 
-      const filePart = {
-        inlineData: {
-          mimeType: "application/pdf",
-          data: base64Pdf,
-        },
-      };
+      if (totalPages === 0) {
+        throw new Error("PDF에 페이지가 없습니다.");
+      }
 
-      const prompt = `
-      중요: 첨부된 PDF 파일은 페이지 수가 많은 긴 문서일 수 있습니다. 반드시 문서 전체를 처음부터 끝까지 순차적으로 처리하여 모든 내용을 요약해야 합니다. 중간에 요약을 멈추지 마십시오.
+      // 2. 지능형 분할 규칙에 따라 청크 계획 수립
+      const chunks: { start: number; end: number }[] = [];
+      const chunkSize = 20;
+      const threshold = chunkSize * 1.2; // 24
+      
+      if (totalPages <= threshold) {
+        chunks.push({ start: 0, end: totalPages });
+      } else {
+        chunks.push({ start: 0, end: chunkSize }); // First chunk of 20
+        chunks.push({ start: chunkSize, end: totalPages }); // Second chunk with all remaining pages
+      }
 
-      ---
+      // 3. 계획된 청크에 따라 요약 실행 (Map 단계)
+      const partialSummaries: string[] = [];
+      for (const chunk of chunks) {
+        const { start, end } = chunk;
+        console.log(`  - ${start + 1} ~ ${end} 페이지 요약 중...`);
 
-      첨부된 PDF는 금융 보고서입니다.
+        const chunkPdfDoc = await PDFDocument.create();
+        const pageIndices = Array.from({length: end - start}, (_, k) => start + k);
+        const copiedPages = await chunkPdfDoc.copyPages(pdfDoc, pageIndices);
+        copiedPages.forEach((page) => chunkPdfDoc.addPage(page));
+        
+        const chunkPdfBytes = await chunkPdfDoc.save();
+        const chunkBase64 = Buffer.from(chunkPdfBytes).toString("base64");
+
+        const filePart = { inlineData: { mimeType: "application/pdf", data: chunkBase64 } };
+
+        const chunkPrompt = `첨부된 PDF는 금융 보고서입니다.
 
 이 문서의 내용을 가능한 한 정확하고 자세하게 쓰되 요약하여 정리하십시오.
 보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.
@@ -121,33 +141,45 @@ export class ReportConverter {
 
 문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
 보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
-
-결과는 아래 예시와 같이 **굵은 글씨**와 -을 활용한 리스트 형식으로 깔끔하게 정리하여야 함.
-
-## 전세계 주식시장의 이익동향
-
-    **전세계 12개월 선행 EPS** : 전월 대비 -0.1% 하락
-
-    - 신흥국: -0.6%
-
-    - 선진국: -0.01%
-
-    - 국가별 변화
-
-    - 상향 조정: 미국(+0.4%), 홍콩(+0.2%)
-
-    - 하향 조정: 브라질(-2.0%), 일본(-1.2%), 중국(-0.9%)
             
 `;
-      
-      const markdownContent = await this.baseProvider.callGenerativeModel([prompt, filePart]);
 
-      // 마크다운 파일 저장
-      fs.writeFileSync(markdownFilePath, markdownContent, "utf8");
+
+
+        const partialSummary = await this.baseProvider.callGenerativeModel([chunkPrompt, filePart]);
+        partialSummaries.push(partialSummary);
+      }
+
+      // 4. 부분 요약들을 하나로 합치기 (Reduce 단계)
+      let finalMarkdown: string;
+      if (partialSummaries.length === 0) {
+        throw new Error("부분 요약을 생성하지 못했습니다.");
+      } else if (partialSummaries.length === 1) {
+        console.log("  - 단일 청크, 최종 요약으로 사용합니다.");
+        finalMarkdown = partialSummaries[0];
+      } else {
+        console.log(`  - ${partialSummaries.length}개의 부분 요약을 최종 요약으로 합치는 중...`);
+        const reducePrompt = `
+          다음은 하나의 금융 보고서를 페이지 순서대로 요약한 여러 개의 부분 요약입니다.
+          이들을 모두 종합하여, 전체 보고서의 흐름과 논리를 완벽하게 반영하는 하나의 상세하고 일관된 마크다운 문서를 만들어주세요.
+          각 부분의 핵심 내용이 누락되지 않도록 하고, 전체적인 구조를 잘 정리하여 최종 결과물을 작성하세요.
+          최종 결과물은 마크다운 형식이어야 합니다.
+
+          --- 부분 요약 목록 ---
+          ${partialSummaries.join("\n\n---\n\n")}
+          --- 요약 끝 ---
+        `;
+        finalMarkdown = await this.baseProvider.callGenerativeModel(reducePrompt);
+      }
+
+      // 5. 최종 마크다운 파일 저장
+      const markdownFileName = `${pdfFileName.replace(".pdf", "")}.md`;
+      const markdownFilePath = path.join(mdFolderPath, markdownFileName);
+      fs.writeFileSync(markdownFilePath, finalMarkdown, "utf8");
       console.log(`마크다운 파일 저장 완료: ${markdownFilePath}`);
 
       return {
-        markdown: markdownContent,
+        markdown: finalMarkdown,
         fileName: markdownFileName,
         success: true,
       };

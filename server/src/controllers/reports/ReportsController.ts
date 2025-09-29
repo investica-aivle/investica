@@ -5,7 +5,6 @@ import type {
   MiraeAssetReport,
 } from "../../models/Reports";
 import { ReportsService } from "../../providers/reports/ReportsService";
-import { ReportKeywordExtractor } from "../../providers/reports/ReportKeywordExtractor";
 
 // API 응답 타입들을 export하여 Nestia가 인식할 수 있도록 함
 export interface SecuritiesReportListResponse {
@@ -76,14 +75,6 @@ export class ReportsController {
     limitedFiles: any[];
     fileContents: any[];
   }> {
-    const options = {
-      contentLengthLimit: contentLengthLimit
-        ? parseInt(contentLengthLimit.toString())
-        : 2000,
-      shouldLimitLength:
-        shouldLimitLength !== undefined ? shouldLimitLength : true,
-    };
-
     return this.reportsService.getLatestMarkdownFiles();
   }
 
@@ -194,8 +185,20 @@ export class ReportsController {
     });
   }
 
+  // ===== 수동 트리거 API =====
+
+  /**
+   * AI 리포트 생성을 수동으로 트리거합니다.
+   */
   @Post("update-reports")
   async updateAIReports() {
     await this.reportsService.updateAiReports();
+  }
+
+
+  @Post("pdf-ccc")
+  async triggerPdfConversion() {
+    console.log("PDF 변환 수동 트리거");
+    await this.reportsService.triggerPdfConversion();
   }
 }
