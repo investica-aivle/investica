@@ -21,7 +21,7 @@ export class ReportsService {
   ) {}
 
   public async updateAiReports() {
-    const limit = 5;
+    const limit = 8;
     const filePath = "./downloads/summary/industry_evaluation.json";
     const now = new Date();
     const twentyFourHoursInMs = 24 * 60 * 60 * 1000;

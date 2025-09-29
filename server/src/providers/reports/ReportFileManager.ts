@@ -100,6 +100,7 @@ export class ReportFileManager {
     // 2. limit만큼 자르기
     const limitedFiles = sortedFiles.slice(0, limit);
 
+    console.log(`최신 ${limitedFiles.length}개의 마크다운 파일을 선택했습니다.`);
     // 3. 파일 내용 읽기
     const fileContents = this.readLatestMarkdownFiles(limitedFiles, options);
 

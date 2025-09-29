@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { HttpService } from "@nestjs/axios";
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -38,7 +38,7 @@ export class ReportBaseProvider {
    * @returns 모델 응답 텍스트
    */
   async callGenerativeModel(
-    prompt: string,
+    prompt: string | (string | Part) [],
     modelName: string = "gemini-2.5-flash",
   ): Promise<string> {
     try {
@@ -59,7 +59,7 @@ export class ReportBaseProvider {
    * @returns 파싱된 JSON 객체
    */
   async callGenerativeModelAndParseJson(
-    prompt: string,
+    prompt: string | (string | Part) [],
     modelName: string = "gemini-2.5-flash",
   ): Promise<any> {
     try {
