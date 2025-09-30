@@ -129,7 +129,8 @@ export class ReportConverter {
 
         const filePart = { inlineData: { mimeType: "application/pdf", data: chunkBase64 } };
 
-        const chunkPrompt = `첨부된 PDF는 금융 보고서입니다.
+        const chunkPrompt = `
+첨부된 PDF는 금융 보고서의 전체 ${totalPages}페이지 중 ${start + 1} - ${end} 페이지 입니다.
 
 이 문서의 내용을 가능한 한 정확하고 자세하게 쓰되 요약하여 정리하십시오.
 보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.
