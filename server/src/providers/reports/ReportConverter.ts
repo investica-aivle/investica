@@ -89,8 +89,7 @@ export class ReportConverter {
     let tempPdfPath: string | null = null;
     try {
       console.log(`URL에서 변환 시작: ${pdfFileName}`);
-      
-      // 1. PDF 다운로드 및 로드
+
       tempPdfPath = await this.downloadPdf(downloadUrl);
       const pdfBuffer = fs.readFileSync(tempPdfPath);
       const pdfDoc = await PDFDocument.load(pdfBuffer);
@@ -101,19 +100,21 @@ export class ReportConverter {
         throw new Error("PDF에 페이지가 없습니다.");
       }
 
-      // 2. 지능형 분할 규칙에 따라 청크 계획 수립
       const chunks: { start: number; end: number }[] = [];
       const chunkSize = 20;
-      const threshold = chunkSize * 1.2; // 24
-      
-      if (totalPages <= threshold) {
-        chunks.push({ start: 0, end: totalPages });
-      } else {
-        chunks.push({ start: 0, end: chunkSize }); // First chunk of 20
-        chunks.push({ start: chunkSize, end: totalPages }); // Second chunk with all remaining pages
+      if(totalPages >= 40){
+        for (let i = 0; i < totalPages; i += chunkSize) {
+          const start = i;
+          if(totalPages - i <= chunkSize + 5){
+            const end = totalPages;
+            chunks.push({ start, end });
+            break;
+          }
+          const end = Math.min(i + chunkSize, totalPages);
+          chunks.push({ start, end });
+        }
       }
 
-      // 3. 계획된 청크에 따라 요약 실행 (Map 단계)
       const partialSummaries: string[] = [];
       for (const chunk of chunks) {
         const { start, end } = chunk;
@@ -131,6 +132,7 @@ export class ReportConverter {
 
         const chunkPrompt = `
 첨부된 PDF는 금융 보고서의 전체 ${totalPages}페이지 중 ${start + 1} - ${end} 페이지 입니다.
+전체 페이지를 고려하여 너무 길어지지 않게 하십시오.
 
 이 문서의 내용을 가능한 한 정확하고 자세하게 쓰되 요약하여 정리하십시오.
 보고서의 흐름과 세부 내용을 충실히 반영해 작성하십시오.
@@ -141,7 +143,8 @@ export class ReportConverter {
 제목이나 항목 구분 하며 본문 내용을 작성하십시오.
 
 문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
-보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
+보고서의 주 내용이 아닌 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
+
             
 `;
 
@@ -165,7 +168,12 @@ export class ReportConverter {
           이들을 모두 종합하여, 전체 보고서의 흐름과 논리를 완벽하게 반영하는 하나의 상세하고 일관된 마크다운 문서를 만들어주세요.
           각 부분의 핵심 내용이 누락되지 않도록 하고, 전체적인 구조를 잘 정리하여 최종 결과물을 작성하세요.
           최종 결과물은 마크다운 형식이어야 합니다.
-
+          
+          내용이 너무 길어지지 않게 주의하세요.
+          
+          문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
+          보고서 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
+          
           --- 부분 요약 목록 ---
           ${partialSummaries.join("\n\n---\n\n")}
           --- 요약 끝 ---

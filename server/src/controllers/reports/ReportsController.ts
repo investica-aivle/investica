@@ -196,7 +196,7 @@ export class ReportsController {
   }
 
 
-  @Post("pdf-ccc")
+  @Post("pdf-conversion")
   async triggerPdfConversion() {
     console.log("PDF 변환 수동 트리거");
     await this.reportsService.triggerPdfConversion();
