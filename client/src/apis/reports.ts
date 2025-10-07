@@ -25,6 +25,11 @@ const reportsApi = {
   getIndustryEvaluationSummary: (): Promise<IndustryEvaluationSummaryResponse> => { // 타입 변경
     return apiClient.get('/api/reports/summary/industry-evaluation')
       .then(response => response.data);
+  },
+
+  updateIndustryEvaluation: () => {
+    return apiClient.post('/api/reports/update-reports')
+        .then(response => response.data);
   }
 };
 
