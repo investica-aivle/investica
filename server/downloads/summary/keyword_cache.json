@@ -1,33 +1,51 @@
 {
   "keywords": [
     {
-      "icon": "🛡️",
-      "keyword": "글로벌 방산 수요 증가",
-      "description": "우크라이나 휴전 성사 시에도 러시아 위협 유지로 글로벌 방산 수요가 지속적으로 증가할 전망입니다.",
+      "icon": "⚛️",
+      "keyword": "미국 원전 정책 강화",
+      "description": "미국 정부가 신규 원전 인허가 단축, 2050년까지 발전 용량 4배 증가 목표, 우라늄 비축량 확대를 통해 원전 산업을 강력히 지원.",
       "impact": "positive"
     },
     {
       "icon": "📉",
-      "keyword": "미국 금리 인하 기대감",
-      "description": "7월 코어 CPI가 예상치에 부합하며 하반기 미국 금리 인하 기대감이 유지되고 있습니다.",
+      "keyword": "미국 금리 인하 기대",
+      "description": "미국 고용시장 둔화 신호와 인플레이션 지표 완화로 연준의 연내 2~3회 금리 인하 기대가 지속되며 10년물 국채 금리가 하락.",
       "impact": "positive"
     },
     {
-      "icon": "💸",
-      "keyword": "서비스 인플레이션 가속화",
-      "description": "헬스케어, 자동차 수리 등 서비스 물가 상승 압력 확대로 연준의 9월 빅컷 기대감이 축소되고 있습니다.",
+      "icon": "📈",
+      "keyword": "글로벌 EPS 상향 조정",
+      "description": "전세계 12개월 선행 EPS가 소폭 상향 조정되었으며, 특히 미국과 한국의 이익 전망치가 개선되어 전반적인 시장 모멘텀 강화.",
+      "impact": "positive"
+    },
+    {
+      "icon": "💻",
+      "keyword": "IT/금융 EPS 강세",
+      "description": "글로벌 IT 및 금융 업종의 12개월 선행 EPS가 전월 대비 상향 조정되며 견조한 이익 모멘텀을 보여 해당 섹터에 긍정적.",
+      "impact": "positive"
+    },
+    {
+      "icon": "🇨🇳",
+      "keyword": "중국 EPS 하향 조정",
+      "description": "중국의 12개월 선행 EPS가 -1.8% 하향 조정되며 중국 경제 및 기업 이익에 대한 우려가 지속.",
       "impact": "negative"
     },
     {
-      "icon": "📊",
-      "keyword": "국내 재정적자 축소",
-      "description": "정부 지출 구조조정을 통한 2026년 예산안에서 재정적자 축소 및 국채 발행 부담 완화가 기대됩니다.",
-      "impact": "positive"
+      "icon": "🤝",
+      "keyword": "미국-EU 무역합의 불확실성",
+      "description": "EU 의회의 반대로 미국-EU 무역합의가 재협상되거나 무산될 가능성이 높아지며 통상 마찰 우려 증대.",
+      "impact": "negative"
     },
     {
-      "icon": "🪙",
-      "keyword": "디지털 자산 연금 투자 허용",
-      "description": "트럼프 행정명령으로 DC형 퇴직연금의 디지털 자산 접근성이 개선되어 대규모 연금 자산 유입이 기대됩니다.",
+      "icon": "💰",
+      "keyword": "관세 영향 인플레이션",
+      "description": "미국 관세 정책이 자동차, 의류 등 특정 상품 인플레이션을 가속화하고 전반적인 물가 상승 압력으로 작용.",
+      "impact": "negative"
+    },
+    {
+      "icon": "☢️",
+      "keyword": "우라늄 비축 및 지원 확대",
+      "description": "미국 정부가 전략적 우라늄 비축량을 확대하고 자국 내 우라늄 채굴 기업에 대한 정책적 지원을 강화하여 에너지 안보를 확보.",
       "impact": "positive"
     }
   ],
@@ -87,7 +105,47 @@
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138135.pdf?attachmentId=2138135",
       "mdFileName": "2138135.md"
+    },
+    {
+      "id": "2138627",
+      "title": "Thematic RadarEp 43. 미국 내 원전 정책 모멘텀 지속",
+      "date": "2025-09-18",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138627.pdf?attachmentId=2138627",
+      "mdFileName": "2138627.md"
+    },
+    {
+      "id": "2138557",
+      "title": "Credit Market Weekly9.15~19일",
+      "date": "2025-09-15",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138557.pdf?attachmentId=2138557",
+      "mdFileName": "2138557.md"
+    },
+    {
+      "id": "2138554",
+      "title": "[Earnings Revision] 9월 3주차",
+      "date": "2025-09-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138554.pdf?attachmentId=2138554",
+      "mdFileName": "2138554.md"
+    },
+    {
+      "id": "2138550",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(9/15~19)",
+      "date": "2025-09-12",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138550.pdf?attachmentId=2138550",
+      "mdFileName": "2138550.md"
+    },
+    {
+      "id": "2138518",
+      "title": "Thematic RadarEp 42. 위협받는 미국-EU 무역합의",
+      "date": "2025-09-11",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138518.pdf?attachmentId=2138518",
+      "mdFileName": "2138518.md"
     }
   ],
-  "updatedAt": "2025-08-20"
+  "updatedAt": "2025-09-18"
 }
