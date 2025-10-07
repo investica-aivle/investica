@@ -18,7 +18,7 @@ export class ReportsService {
     private readonly reportSummarizer: ReportSummarizer,
     private readonly fileManager: ReportFileManager,
     private readonly reportKeywordExtractor: ReportKeywordExtractor,
-  ) {}
+  ) { }
 
   public async updateAiReports() {
     const limit = 8;
@@ -30,7 +30,7 @@ export class ReportsService {
       try {
         const fileContent = fs.readFileSync(filePath, "utf8");
         const evaluationData = JSON.parse(fileContent);
-        
+
         if (evaluationData.lastEvaluated) {
           const lastEvaluatedDate = new Date(evaluationData.lastEvaluated);
           const timeDifference = now.getTime() - lastEvaluatedDate.getTime();
@@ -73,7 +73,7 @@ export class ReportsService {
     const filePath = "./downloads/summary/industry_evaluation.json";
 
     // AI 리포트 업데이트 확인 및 실행 (파일이 없으면 10개 기준으로 생성)
-    await this.updateAiReports();
+    // await this.updateAiReports();
 
     // 파일이 여전히 존재하지 않는 경우 (업데이트 후에도 생성 실패)
     if (!fs.existsSync(filePath)) {
@@ -88,7 +88,7 @@ export class ReportsService {
     const filteredEvaluations = evaluationData.industryEvaluations
       .filter((e: any) => e.evaluationCode !== 'NEUTRAL')
       .filter((e: any) => e.confidence >= 0.6);
-    
+
     evaluationData.industryEvaluations = filteredEvaluations;
 
     return evaluationData;
@@ -381,7 +381,7 @@ export class ReportsService {
   public async triggerPdfConversion() {
     console.log(`PDF 변환 트리거 실행 '산업 분석'`);
     const jsonFilePath = "./downloads/reports_IA.json";
-    
+
     await this.reportConverter.convertReportsFromJson(jsonFilePath, "./downloads/markdown");
   }
 }
