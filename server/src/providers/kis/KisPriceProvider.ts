@@ -261,12 +261,12 @@ export class KisPriceProvider {
     const { accessToken, appKey, appSecret } = session;
 
     try {
-      // 국내주식업종기간별시세(일/주/월/년) API 사용 - KOSPI 200 (업종코드: 2001)
+      // 국내주식업종기간별시세(일/주/월/년) API 사용 - KOSPI (업종코드: 0001)
 
       const url = `${this.KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice`;
       const requestParams = {
         FID_COND_MRKT_DIV_CODE: "U", // 업종
-        FID_INPUT_ISCD: "2001", // KOSPI 200 업종코드
+        FID_INPUT_ISCD: "0001", // 업종코드 KOSPI 200
         FID_PERIOD_DIV_CODE: periodCode, // D:일, W:주, M:월, Y:년
         FID_INPUT_DATE_1: defaultStartDate, // 조회시작일자
         FID_INPUT_DATE_2: defaultEndDate, // 조회종료일자
