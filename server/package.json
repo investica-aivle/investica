@@ -46,6 +46,7 @@
   },
   "homepage": "https://github.com/samchon/nestia-start#readme",
   "dependencies": {
+    "@agentica/benchmark": "^0.32.9",
     "@agentica/core": "^0.30.5",
     "@agentica/rpc": "^0.30.5",
     "@google/generative-ai": "^0.24.1",

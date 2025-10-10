@@ -57,9 +57,24 @@ const getOptions = () =>
   });
 
 const main = async (): Promise<void> => {
-  // CONFIGURATIONS
-  const options: IOptions = await getOptions();
+  console.log("🚀 Agentica 벤치마크 시작");
   MyGlobal.testing = true;
+
+  // Agentica 벤치마크만 실행 (API 벤치마크는 일시적으로 비활성화)
+  console.log("\n🤖 Agentica 벤치마크 실행");
+  await runAgenticaBenchmark();
+
+  console.log("\n✅ 벤치마크 완료!");
+  process.exit(0); // 프로세스 명시적 종료
+};
+
+const runApiBenchmark = async (): Promise<void> => {
+  // CONFIGURATIONS (기본값 사용)
+  const options: IOptions = {
+    count: 100,
+    threads: 4,
+    simultaneous: 10,
+  };
 
   // BACKEND SERVER
   const backend: MyBackend = new MyBackend();
@@ -78,11 +93,7 @@ const main = async (): Promise<void> => {
     count: options.count,
     threads: options.threads,
     simultaneous: options.simultaneous,
-    filter: (func) =>
-      (!options.include?.length ||
-        (options.include ?? []).some((str) => func.includes(str))) &&
-      (!options.exclude?.length ||
-        (options.exclude ?? []).every((str) => !func.includes(str))),
+    filter: (func) => true, // 모든 함수 포함
     progress: (value: number) => {
       if (value >= 100 + prev.value) {
         bar.update(value);
@@ -100,7 +111,7 @@ const main = async (): Promise<void> => {
     });
   } catch {}
   await fs.promises.writeFile(
-    `${MyConfiguration.ROOT}/docs/benchmarks/${os
+    `${MyConfiguration.ROOT}/docs/benchmarks/api-${os
       .cpus()[0]
       .model.trim()
       .split("\\")
@@ -113,6 +124,18 @@ const main = async (): Promise<void> => {
 
   // CLOSE
   await backend.close();
+  console.log("✅ API 벤치마크 완료");
+};
+
+const runAgenticaBenchmark = async (): Promise<void> => {
+  try {
+    // AgenticaBenchmark.ts의 main 함수를 동적으로 import해서 실행
+    const { default: agenticaMain } = await import("./AgenticaBenchmark");
+    await agenticaMain();
+    console.log("✅ Agentica 전체 벤치마크 완료");
+  } catch (error) {
+    console.error("❌ Agentica 전체 벤치마크 실패:", error);
+  }
 };
 main().catch((exp) => {
   console.error(exp);
