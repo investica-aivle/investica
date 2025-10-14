@@ -323,14 +323,39 @@ export const getPortfolioData = async (): Promise<PortfolioData> => {
 };
 
 /**
- * 보유 주식 목록만 조회하는 편의 함수
+ * 보유 주식 목록만 조회하는 함수
  */
 export const getStockHoldings = async (): Promise<StockHolding[]> => {
   try {
-    const portfolioData = await getPortfolioData();
-    return portfolioData.output1;
-  } catch (error) {
+    // 세션 상태 확인
+    const session = SessionManager.restoreSession();
+    if (!session || !session.isAuthenticated) {
+      throw new Error('인증이 필요합니다. 로그인을 다시 해주세요.');
+    }
+
+    // 보유 주식 목록만 직접 조회
+    const response = await apiClient.get<StockHolding[]>('/api/kis/holdings');
+    return response.data;
+  } catch (error: any) {
     console.error('보유 주식 목록 조회 실패:', error);
-    throw error;
+
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || error.message;
+
+      if (status === 401) {
+        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+      } else if (status === 403) {
+        throw new Error('포트폴리오 정보에 접근할 권한이 없습니다.');
+      } else if (status === 500) {
+        throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        throw new Error(`API 오류 (${status}): ${message}`);
+      }
+    } else if (error.request) {
+      throw new Error('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
+    } else {
+      throw new Error(error.message || '알 수 없는 오류가 발생했습니다.');
+    }
   }
 };

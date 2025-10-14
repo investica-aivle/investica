@@ -16,16 +16,7 @@ export function PortfolioDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* 포트폴리오 헤더 - 전체 너비, API 연동된 실제 데이터 사용 */}
                     <div className="col-span-1 lg:col-span-2">
-                        <PortfolioHeader
-                            fallbackData={{
-                                totalValue: 15420000,
-                                changeAmount: 320000,
-                                changePercent: 2.12,
-                                totalInvestment: 15100000,
-                                stockCount: 8,
-                                message: "임시 데이터를 표시중입니다"
-                            }}
-                        />
+                        <PortfolioHeader />
                     </div>
                     {/* 자산 배분 카드 */}
                     <AssetAllocationCard />
