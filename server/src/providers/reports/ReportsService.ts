@@ -20,6 +20,10 @@ export class ReportsService {
     private readonly reportKeywordExtractor: ReportKeywordExtractor,
   ) { }
 
+  /**
+   * API용 함수
+   * 호출 금지
+   */
   public async updateAiReports() {
     const limit = 8;
     const filePath = "./downloads/summary/industry_evaluation.json";
@@ -53,10 +57,18 @@ export class ReportsService {
     return;
   }
 
+  /**
+   * API용 함수
+   * 호출 금지
+   */
   public async getKeywords(): Promise<KeywordSummaryResult> {
     return this.reportKeywordExtractor.generateKeywordSummary();
   }
 
+  /**
+   * API용 함수
+   * 호출 금지
+   */
   public getLatestMarkdownFiles(): {
     limitedFiles: MiraeAssetReport[];
     fileContents: { fileName: string; content: string }[];
@@ -66,6 +78,9 @@ export class ReportsService {
   }
 
   /**
+   * API용 함수
+   * 호출 금지
+   *
    * AI가 분석한 산업군 평가를 가져옵니다.
    * 평가는 '중립적'을 제외하고 '신뢰도 0.6 이상'인 결과만 필터링됩니다.
    */
@@ -95,14 +110,18 @@ export class ReportsService {
   }
 
   /**
+   * API용 함수
+   * 호출 금지
+   *
    * 모든 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
-  private async syncReports(isISReports: boolean = true): Promise<{
+  public async syncReports(input: { isISReports?: boolean }): Promise<{
     message: string;
     scrapedCount: number;
     convertedCount: number;
   }> {
+    const { isISReports = true } = input;
     try {
       console.log("🔄 보고서 동기화 시작");
 
@@ -154,6 +173,7 @@ export class ReportsService {
 
   /**
    * 1) 최근 주식상황, 경제상황 요약 (유저용)
+   * 최신 투자 전략 보고서를 가져와 LLM 요약후 반환
    */
   public async getRecentMarketSummary(input: {
     limit?: number;
@@ -169,7 +189,7 @@ export class ReportsService {
   }> {
     try {
       // 동기화 먼저 실행
-      await this.syncReports();
+      // await this.syncReports();
 
       // 최신 마크다운 파일들 요약
       const result = await this.reportSummarizer.summarizeLatestMarkdownFiles(
@@ -190,7 +210,7 @@ export class ReportsService {
   }
 
   /**
-   * 2) 투자 전략 카테고리 증권보고서 리스트 제공 (유저용)
+   * 2.1) 투자 전략 카테고리 증권보고서 리스트(JSON) 제공 (유저용)
    */
   public async getSecuritiesISReportList(input: {
     keywords?: string[];
@@ -200,7 +220,7 @@ export class ReportsService {
   }
 
   /**
-   * 2) 산업 분석 카테고리 증권보고서 리스트 제공 (유저용)
+   * 2.2) 산업 분석 카테고리 증권보고서 리스트(JSON) 제공 (유저용)
    */
   public async getSecuritiesIAReportList(input: {
     keywords?: string[];
@@ -209,10 +229,7 @@ export class ReportsService {
     return this.getSecuritiesReportList({ ...input, isISReport: false });
   }
 
-  /**
-   * 2) 증권보고서 리스트 제공 (유저용)
-   */
-  public async getSecuritiesReportList(input: {
+  private async getSecuritiesReportList(input: {
     keywords?: string[];
     limit?: number;
     isISReport?: boolean;
@@ -221,7 +238,7 @@ export class ReportsService {
     reports: Array<MiraeAssetReport>;
   }> {
     // 동기화 먼저 실행
-    await this.syncReports(input.isISReport ?? true);
+    // await this.syncReports(input.isISReport ?? true);
 
     // JSON 파일에서 보고서 정보 읽기
     const jsonFilePath =
@@ -252,7 +269,9 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
+   * 3.1) 특정 "투자 전략" 증권보고서 내용 보기 (유저용)
+   *  @input { title: 보고서 제목 }
+   *
    */
   public async getSpecificISReportContent(input: {
     title: string;
@@ -269,7 +288,8 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 산업 분석 증권보고서 내용 보기 (유저용)
+   * 3.2) 특정 "산업 분석" 증권보고서 내용 보기 (유저용)
+   * @input { title: 보고서 제목 }
    */
   public async getSpecificIAReportContent(input: {
     title: string;
@@ -286,7 +306,7 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
+   * 호출 금지
    */
   public async getSpecificReportContent(input: {
     title: string;
@@ -301,7 +321,7 @@ export class ReportsService {
     error?: string;
   }> {
     // 동기화 먼저 실행
-    await this.syncReports();
+    // await this.syncReports();
 
     try {
       // JSON 파일에서 보고서 정보 읽기

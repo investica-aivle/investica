@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-09-29T13:47:07.637Z",
+  "lastUpdated": "2025-10-14T08:00:00.468Z",
   "reports": [
     {
       "id": "2138116",
@@ -103,7 +103,7 @@
       "date": "2025-09-29",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138836.pdf?attachmentId=2138836",
-      "mdFileName": null
+      "mdFileName": "2138836.md"
     },
     {
       "id": "2138834",
@@ -111,7 +111,7 @@
       "date": "2025-09-29",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138834.pdf?attachmentId=2138834",
-      "mdFileName": null
+      "mdFileName": "2138834.md"
     },
     {
       "id": "2138823",
@@ -119,7 +119,7 @@
       "date": "2025-09-29",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138823.pdf?attachmentId=2138823",
-      "mdFileName": null
+      "mdFileName": "2138823.md"
     },
     {
       "id": "2138822",
@@ -127,7 +127,7 @@
       "date": "2025-09-29",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138822.pdf?attachmentId=2138822",
-      "mdFileName": null
+      "mdFileName": "2138822.md"
     },
     {
       "id": "2138816",
@@ -135,7 +135,7 @@
       "date": "2025-09-26",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138816.pdf?attachmentId=2138816",
-      "mdFileName": null
+      "mdFileName": "2138816.md"
     },
     {
       "id": "2138798",
@@ -143,7 +143,7 @@
       "date": "2025-09-26",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138798.pdf?attachmentId=2138798",
-      "mdFileName": null
+      "mdFileName": "2138798.md"
     },
     {
       "id": "2138762",
@@ -151,7 +151,7 @@
       "date": "2025-09-25",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138762.pdf?attachmentId=2138762",
-      "mdFileName": null
+      "mdFileName": "2138762.md"
     },
     {
       "id": "2138691",
@@ -159,7 +159,7 @@
       "date": "2025-09-22",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138691.pdf?attachmentId=2138691",
-      "mdFileName": null
+      "mdFileName": "2138691.md"
     },
     {
       "id": "2138686",
@@ -167,7 +167,7 @@
       "date": "2025-09-20",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138686.pdf?attachmentId=2138686",
-      "mdFileName": null
+      "mdFileName": "2138686.md"
     },
     {
       "id": "2138678",
@@ -175,8 +175,56 @@
       "date": "2025-09-19",
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138678.pdf?attachmentId=2138678",
-      "mdFileName": null
+      "mdFileName": "2138678.md"
+    },
+    {
+      "id": "2138926",
+      "title": "Thematic RadarEp 46. 의약품에도 적용되는 트럼프식 교환 정책",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138926.pdf?attachmentId=2138926",
+      "mdFileName": "2138926.md"
+    },
+    {
+      "id": "2138936",
+      "title": "투자 레터",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138936.pdf?attachmentId=2138936",
+      "mdFileName": "2138936.md"
+    },
+    {
+      "id": "2138896",
+      "title": "Fixed Income Monthly[10월] 중앙은행의 균형잡기",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138896.pdf?attachmentId=2138896",
+      "mdFileName": "2138896.md"
+    },
+    {
+      "id": "2138868",
+      "title": "[글로벌 자산배분] 10월미국 인플레 및 환율 추세의 전환",
+      "date": "2025-09-30",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138868.pdf?attachmentId=2138868",
+      "mdFileName": "2138868.md"
+    },
+    {
+      "id": "2139037",
+      "title": "Thematic RadarEp 47. 희토류 수출 통제와 미국의 대응",
+      "date": "2025-10-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2139037.pdf?attachmentId=2139037",
+      "mdFileName": "2139037.md"
+    },
+    {
+      "id": "2139018",
+      "title": "Credit Market Weekly10.13~10.17일",
+      "date": "2025-10-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2139018.pdf?attachmentId=2139018",
+      "mdFileName": "2139018.md"
     }
   ],
-  "lastMarkdownUpdate": "2025-09-29T14:01:57.563Z"
+  "lastMarkdownUpdate": "2025-10-14T09:05:52.394Z"
 }
