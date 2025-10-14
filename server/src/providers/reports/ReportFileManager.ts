@@ -40,6 +40,8 @@ export class ReportFileManager {
 
   /**
    * 마크다운 파일 내용 읽기
+   * [마크다운 파일명, 내용] 배열을 반환
+   * @return filecontents
    */
   public readLatestMarkdownFiles(
     sortedFiles: MiraeAssetReport[],
@@ -75,6 +77,8 @@ export class ReportFileManager {
 
   /**
    * 최신 마크다운 파일들을 가져오기
+   * 최신 보고서 정보 {JSON, {마크다운 파일명, 내용}} 반환
+   *
    */
   public getLatestMarkdownFiles(
     jsonFilePath: string = "./downloads/reports.json",
@@ -112,6 +116,8 @@ export class ReportFileManager {
 
   /**
    * 참조 파일 목록 생성
+   * JSON, {파일명, 내용} 입력 받아 파일 참조 생성
+   * [파일명, 일자, 제목, 내용] 반환
    */
   public createReferencedFiles(
     sortedFiles: MiraeAssetReport[],

@@ -102,18 +102,18 @@ export class ReportConverter {
 
       const chunks: { start: number; end: number }[] = [];
       const chunkSize = 20;
-      if(totalPages >= 40){
-        for (let i = 0; i < totalPages; i += chunkSize) {
-          const start = i;
-          if(totalPages - i <= chunkSize + 5){
-            const end = totalPages;
-            chunks.push({ start, end });
-            break;
-          }
-          const end = Math.min(i + chunkSize, totalPages);
+
+      for (let i = 0; i < totalPages; i += chunkSize) {
+        const start = i;
+        if(totalPages - i <= chunkSize + 5){
+          const end = totalPages;
           chunks.push({ start, end });
+          break;
         }
+        const end = Math.min(i + chunkSize, totalPages);
+        chunks.push({ start, end });
       }
+
 
       const partialSummaries: string[] = [];
       for (const chunk of chunks) {
@@ -148,13 +148,10 @@ export class ReportConverter {
             
 `;
 
-
-
         const partialSummary = await this.baseProvider.callGenerativeModel([chunkPrompt, filePart]);
         partialSummaries.push(partialSummary);
       }
 
-      // 4. 부분 요약들을 하나로 합치기 (Reduce 단계)
       let finalMarkdown: string;
       if (partialSummaries.length === 0) {
         throw new Error("부분 요약을 생성하지 못했습니다.");

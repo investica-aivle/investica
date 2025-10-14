@@ -10,7 +10,7 @@ export class ReportSummarizer {
   ) {}
 
   /**
-   * 최신마크다운문서들을 확인하고 요약
+   * 최신마크다운문서 Limit개 가져와 LLM 요약후 반환
    */
   public async summarizeLatestMarkdownFiles(
     jsonFilePath: string = "./downloads/reports.json",
@@ -28,6 +28,7 @@ export class ReportSummarizer {
     try {
       console.log("summarizeLatestMarkdownFiles");
 
+      //JSON, {fileName, content}
       const { limitedFiles, fileContents } = this.fileManager.getLatestMarkdownFiles(
         jsonFilePath,
         limit,
