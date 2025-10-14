@@ -56,6 +56,8 @@ export class ReportConverter {
 
         if (result.success) {
           console.log(`변환 성공: ${result.fileName}`);
+          // JSON 파일 업데이트
+          await this.updateReportsJsonFromResults(jsonFilePath, [result]);
         } else {
           console.log(`변환 실패: ${result.error}`);
         }
@@ -68,8 +70,7 @@ export class ReportConverter {
         `\n📊 변환 결과: ${results.length}개 중 ${successCount}개 성공`,
       );
 
-      // JSON 파일 업데이트
-      await this.updateReportsJsonFromResults(jsonFilePath, results);
+
 
       return results;
     } catch (error) {
@@ -144,8 +145,6 @@ export class ReportConverter {
 
 문서 외적인 설명, 요약, 해설, 주석은 포함하지 마십시오.
 보고서의 주 내용이 아닌 제목, 작성자, 날짜와 같은 부가 정보는 모두 제외하십시오.
-
-            
 `;
 
         const partialSummary = await this.baseProvider.callGenerativeModel([chunkPrompt, filePart]);
