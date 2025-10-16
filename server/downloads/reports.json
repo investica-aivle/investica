@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-08-20T12:21:07.251Z",
+  "lastUpdated": "2025-10-14T08:00:00.468Z",
   "reports": [
     {
       "id": "2138116",
@@ -96,7 +96,135 @@
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138135.pdf?attachmentId=2138135",
       "mdFileName": "2138135.md"
+    },
+    {
+      "id": "2138836",
+      "title": "[글로벌 주식 전략] 10월원자재 테마로 분산",
+      "date": "2025-09-29",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138836.pdf?attachmentId=2138836",
+      "mdFileName": "2138836.md"
+    },
+    {
+      "id": "2138834",
+      "title": "주식전략[10월] 리레이팅 조건: 실적 변동성 축소",
+      "date": "2025-09-29",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138834.pdf?attachmentId=2138834",
+      "mdFileName": "2138834.md"
+    },
+    {
+      "id": "2138823",
+      "title": "Credit Market Weekly9.29~10.3일",
+      "date": "2025-09-29",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138823.pdf?attachmentId=2138823",
+      "mdFileName": "2138823.md"
+    },
+    {
+      "id": "2138822",
+      "title": "ESG 퀀트전략견제가 만드는 수익률 차이 (feat. 지배구조보고서 활용법)",
+      "date": "2025-09-29",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138822.pdf?attachmentId=2138822",
+      "mdFileName": "2138822.md"
+    },
+    {
+      "id": "2138816",
+      "title": "[Earnings Revision] 10월 1주차",
+      "date": "2025-09-26",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138816.pdf?attachmentId=2138816",
+      "mdFileName": "2138816.md"
+    },
+    {
+      "id": "2138798",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(9/29~10/3)",
+      "date": "2025-09-26",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138798.pdf?attachmentId=2138798",
+      "mdFileName": "2138798.md"
+    },
+    {
+      "id": "2138762",
+      "title": "Thematic RadarEp 45. 미국 정부의 리튬 광산 개입",
+      "date": "2025-09-25",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138762.pdf?attachmentId=2138762",
+      "mdFileName": "2138762.md"
+    },
+    {
+      "id": "2138691",
+      "title": "Credit Market Weekly9.22~26일",
+      "date": "2025-09-22",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138691.pdf?attachmentId=2138691",
+      "mdFileName": "2138691.md"
+    },
+    {
+      "id": "2138686",
+      "title": "[Earnings Revision] 9월 4주차",
+      "date": "2025-09-20",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138686.pdf?attachmentId=2138686",
+      "mdFileName": "2138686.md"
+    },
+    {
+      "id": "2138678",
+      "title": "Week Ahead Snapshot다음 주 주목할 금융시장 이슈(9/22~26)",
+      "date": "2025-09-19",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138678.pdf?attachmentId=2138678",
+      "mdFileName": "2138678.md"
+    },
+    {
+      "id": "2138926",
+      "title": "Thematic RadarEp 46. 의약품에도 적용되는 트럼프식 교환 정책",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138926.pdf?attachmentId=2138926",
+      "mdFileName": "2138926.md"
+    },
+    {
+      "id": "2138936",
+      "title": "투자 레터",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138936.pdf?attachmentId=2138936",
+      "mdFileName": "2138936.md"
+    },
+    {
+      "id": "2138896",
+      "title": "Fixed Income Monthly[10월] 중앙은행의 균형잡기",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138896.pdf?attachmentId=2138896",
+      "mdFileName": "2138896.md"
+    },
+    {
+      "id": "2138868",
+      "title": "[글로벌 자산배분] 10월미국 인플레 및 환율 추세의 전환",
+      "date": "2025-09-30",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138868.pdf?attachmentId=2138868",
+      "mdFileName": "2138868.md"
+    },
+    {
+      "id": "2139037",
+      "title": "Thematic RadarEp 47. 희토류 수출 통제와 미국의 대응",
+      "date": "2025-10-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2139037.pdf?attachmentId=2139037",
+      "mdFileName": "2139037.md"
+    },
+    {
+      "id": "2139018",
+      "title": "Credit Market Weekly10.13~10.17일",
+      "date": "2025-10-13",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2139018.pdf?attachmentId=2139018",
+      "mdFileName": "2139018.md"
     }
   ],
-  "lastMarkdownUpdate": "2025-08-20T14:22:54.497Z"
+  "lastMarkdownUpdate": "2025-10-14T09:05:52.394Z"
 }

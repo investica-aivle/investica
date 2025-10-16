@@ -9,6 +9,7 @@ import { NewsModule } from "./controllers/news/NewsModule";
 import { ReportsModule } from "./controllers/reports/ReportsModule";
 import { StockModule } from "./controllers/stock/StockModule";
 import { StockOverviewModule } from "./controllers/stockoverview/StockOverviewModule";
+import { SchedulerModule } from "./controllers/scheduler/SchedulerModule";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { StockOverviewModule } from "./controllers/stockoverview/StockOverviewMo
     ReportsModule,
     StockOverviewModule,
     StockModule,
+    SchedulerModule,
   ],
 })
 export class MyModule {}

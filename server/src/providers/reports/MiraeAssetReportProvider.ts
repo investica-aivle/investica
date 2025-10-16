@@ -32,23 +32,35 @@ export class MiraeAssetReportProvider {
       return true;
     }
 
-    const stats = fs.statSync(jsonFilePath);
-    const lastModified = stats.mtime;
-    const now = new Date();
-    const hoursDiff =
-      (now.getTime() - lastModified.getTime()) / (1000 * 60 * 60);
+    try {
+      const jsonContent = fs.readFileSync(jsonFilePath, "utf8");
+      const reportsData: ReportsJsonData = JSON.parse(jsonContent);
 
-    if (hoursDiff < hoursThreshold) {
+      if (!reportsData.lastUpdated) {
+        console.log(`📅 JSON에 lastUpdated 필드가 없음 - 스크래핑 필요`);
+        return true;
+      }
+
+      const lastUpdated = new Date(reportsData.lastUpdated);
+      const now = new Date();
+      const hoursDiff =
+        (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
+
+      if (hoursDiff < hoursThreshold) {
+        console.log(
+          `📅 JSON 업데이트 시간이 ${hoursDiff.toFixed(1)}시간 전임 - 스크래핑 건너뛰기`,
+        );
+        return false;
+      }
+
       console.log(
-        `📅 JSON 파일이 ${hoursDiff.toFixed(1)}시간 전에 업데이트됨 - 스크래핑 건너뛰기`,
+        `📅 JSON 업데이트 시간이 ${hoursDiff.toFixed(1)}시간 전임 - 스크래핑 필요`,
       );
-      return false;
+      return true;
+    } catch (error) {
+      console.error(`JSON 파일 처리 중 오류 발생 - 스크래핑 필요:`, error);
+      return true; // If file is corrupt or unreadable, scrape again.
     }
-
-    console.log(
-      `📅 JSON 파일이 ${hoursDiff.toFixed(1)}시간 전에 업데이트됨 - 스크래핑 필요`,
-    );
-    return true;
   }
   /**
    * 미래에셋증권 보고서 스크래핑 및 다운로드 (동기화 포함)

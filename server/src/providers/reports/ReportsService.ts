@@ -1,40 +1,98 @@
-import { MiraeAssetReport } from "@models/Reports";
+import { KeywordSummaryResult, MiraeAssetReport } from "@models/Reports";
 import { Injectable } from "@nestjs/common";
 import * as fs from "fs";
 
+import { AiAnalysisProvider } from "./AiAnalysisProvider";
 import { MiraeAssetReportProvider } from "./MiraeAssetReportProvider";
-import { ReportAiProvider } from "./ReportAiProvider";
-
-/**
- * Reports Service for Agentica Class Protocol
- *
- * This service provides comprehensive report functionality for Agentica AI agents
- * using the Class protocol. It combines Mirae Asset scraping and PDF conversion
- * to provide a complete solution for accessing and processing financial reports.
- *
- * > If you're an A.I. chatbot and the user wants to access Korean financial reports,
- * > you should use the methods in this service to find, download, and convert reports.
- * > Each method contains detailed information about required parameters and return values.
- */
+import { ReportConverter } from "./ReportConverter";
+import { ReportFileManager } from "./ReportFileManager";
+import { ReportKeywordExtractor } from "./ReportKeywordExtractor";
+import { ReportSummarizer } from "./ReportSummarizer";
 
 @Injectable()
 export class ReportsService {
   constructor(
     private readonly miraeAssetReportProvider: MiraeAssetReportProvider,
-    private readonly reportAiProvider: ReportAiProvider,
-  ) {}
+    private readonly aiAnalysisProvider: AiAnalysisProvider,
+    private readonly reportConverter: ReportConverter,
+    private readonly reportSummarizer: ReportSummarizer,
+    private readonly fileManager: ReportFileManager,
+    private readonly reportKeywordExtractor: ReportKeywordExtractor,
+  ) { }
 
   /**
+   * API용 함수
+   * 호출 금지
+   */
+  public async updateAiReports() {
+    const limit = 8;
+    const filePath = "./downloads/summary/industry_evaluation.json";
+    const now = new Date();
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+
+    if (fs.existsSync(filePath)) {
+      try {
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        const evaluationData = JSON.parse(fileContent);
+
+        if (evaluationData.lastEvaluated) {
+          const lastEvaluatedDate = new Date(evaluationData.lastEvaluated);
+          const timeDifference = now.getTime() - lastEvaluatedDate.getTime();
+
+          if (timeDifference < twentyFourHoursInMs) {
+            const message = `AI 리포트가 마지막 업데이트 후 24시간이 지나지 않아 건너뜁니다. 마지막 업데이트: ${lastEvaluatedDate.toLocaleString()}`;
+            console.log(message);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("기존 AI 리포트 파일을 읽는 중 오류 발생:", error);
+      }
+    }
+
+    console.log(`📊 AI 리포트를 새로 생성하거나 업데이트합니다 (보고서 ${limit}개 기준)...`);
+    await this.aiAnalysisProvider.evaluateLatestIndustries(limit);
+    const message = "AI 리포트가 성공적으로 업데이트되었습니다.";
+    console.log(message);
+    return;
+  }
+
+  /**
+   * API용 함수
+   * 호출 금지
+   */
+  public async getKeywords(): Promise<KeywordSummaryResult> {
+    return this.reportKeywordExtractor.generateKeywordSummary();
+  }
+
+  /**
+   * API용 함수
+   * 호출 금지
+   */
+  public getLatestMarkdownFiles(): {
+    limitedFiles: MiraeAssetReport[];
+    fileContents: { fileName: string; content: string }[];
+  } {
+
+    return this.fileManager.getLatestMarkdownFiles();
+  }
+
+  /**
+   * API용 함수
+   * 호출 금지
+   *
    * AI가 분석한 산업군 평가를 가져옵니다.
    * 평가는 '중립적'을 제외하고 '신뢰도 0.6 이상'인 결과만 필터링됩니다.
    */
   public async getIndustryEvaluation(): Promise<any> {
     const filePath = "./downloads/summary/industry_evaluation.json";
 
-    // 1. 파일이 없으면 생성
+    // AI 리포트 업데이트 확인 및 실행 (파일이 없으면 10개 기준으로 생성)
+    // await this.updateAiReports();
+
+    // 파일이 여전히 존재하지 않는 경우 (업데이트 후에도 생성 실패)
     if (!fs.existsSync(filePath)) {
-      console.log("📊 평가 파일이 없어 새로 생성합니다...");
-      await this.reportAiProvider.evaluateLatestIndustries(10); // 파일이 없을땐 10개로 생성
+      throw new Error("AI 리포트 파일을 찾을 수 없거나 생성에 실패했습니다.");
     }
 
     // 2. 파일 읽기 및 파싱
@@ -45,21 +103,25 @@ export class ReportsService {
     const filteredEvaluations = evaluationData.industryEvaluations
       .filter((e: any) => e.evaluationCode !== 'NEUTRAL')
       .filter((e: any) => e.confidence >= 0.6);
-    
+
     evaluationData.industryEvaluations = filteredEvaluations;
 
     return evaluationData;
   }
 
   /**
+   * API용 함수
+   * 호출 금지
+   *
    * 모든 요청 전에 실행되는 동기화 메서드
    * 최신 보고서를 다운로드하고 마크다운으로 변환합니다.
    */
-  private async syncReports(isISReports: boolean = true): Promise<{
+  public async syncReports(input: { isISReports?: boolean }): Promise<{
     message: string;
     scrapedCount: number;
     convertedCount: number;
   }> {
+    const { isISReports = true } = input;
     try {
       console.log("🔄 보고서 동기화 시작");
 
@@ -86,7 +148,7 @@ export class ReportsService {
         ? "./downloads/reports.json"
         : "./downloads/reports_IA.json";
       const conversionResults: { success: boolean; error?: string }[] =
-        await this.reportAiProvider.convertReportsFromJson(
+        await this.reportConverter.convertReportsFromJson(
           jsonFilePath,
           "./downloads/markdown",
         );
@@ -111,20 +173,9 @@ export class ReportsService {
 
   /**
    * 1) 최근 주식상황, 경제상황 요약 (유저용)
-   *
-   * 유저가 "최근 주식상황 어때?" 또는 "경제상황 어때?"라고 요청할 때 사용합니다.
-   * 최신 5개의 투자 전략 보고서를 요약해서 제공합니다.
-   *
-   * @param input 요약 조건
-   * @returns 요약된 주식/경제 상황
+   * 최신 투자 전략 보고서를 가져와 LLM 요약후 반환
    */
   public async getRecentMarketSummary(input: {
-    /**
-     * 요약할 최신 파일 개수 (기본값: 5)
-     * @minimum 1
-     * @maximum 10
-     * @example 5
-     */
     limit?: number;
   }): Promise<{
     message: string;
@@ -138,10 +189,10 @@ export class ReportsService {
   }> {
     try {
       // 동기화 먼저 실행
-      await this.syncReports();
+      // await this.syncReports();
 
       // 최신 마크다운 파일들 요약
-      const result = await this.reportAiProvider.summarizeLatestMarkdownFiles(
+      const result = await this.reportSummarizer.summarizeLatestMarkdownFiles(
         "./downloads/reports.json",
         input.limit || 5,
       );
@@ -159,14 +210,7 @@ export class ReportsService {
   }
 
   /**
-   * 2) 투자 전략 카테고리 증권보고서 리스트 제공 (유저용)
-   *
-   * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용합니다.
-   * 혹은 보고서 머가있어? 라고 요청할 때 사용합니다.
-   * 최신 투자 전략 카테고리의 증권보고서들의 목록을 제공합니다.
-   *
-   * @param input 검색 조건
-   * @returns 증권보고서 리스트
+   * 2.1) 투자 전략 카테고리 증권보고서 리스트(JSON) 제공 (유저용)
    */
   public async getSecuritiesISReportList(input: {
     keywords?: string[];
@@ -176,13 +220,7 @@ export class ReportsService {
   }
 
   /**
-   * 2) 산업 분석 카테고리 증권보고서 리스트 제공 (유저용)
-   *
-   * 유저가 "요즘 살펴볼만한 분야 뭐가 있어?"라고 요청할 때 사용합니다.
-   * 최신 산업 분석 카테고리의 증권보고서들의 목록을 제공합니다.
-   *
-   * @param input 검색 조건
-   * @returns 증권보고서 리스트
+   * 2.2) 산업 분석 카테고리 증권보고서 리스트(JSON) 제공 (유저용)
    */
   public async getSecuritiesIAReportList(input: {
     keywords?: string[];
@@ -191,43 +229,16 @@ export class ReportsService {
     return this.getSecuritiesReportList({ ...input, isISReport: false });
   }
 
-  /**
-   * 2) 증권보고서 리스트 제공 (유저용)
-   *
-   * 유저가 "증권보고서가 뭐가 있어?"라고 요청할 때 사용합니다.
-   * 혹은 보고서 머가있어? 라고 요청할 때 사용합니다.
-   * 최신 투자 전략 카테고리의 증권보고서들의 목록을 제공합니다.
-   *
-   * @param input 검색 조건
-   * @param isISReport true: 투자 전략 보고서, false: 산업 분석 보고서
-   * @returns 증권보고서 리스트
-   */
-  public async getSecuritiesReportList(input: {
-    /**
-     * 검색할 키워드들 (선택사항)
-     * @example []
-     */
+  private async getSecuritiesReportList(input: {
     keywords?: string[];
-
-    /**
-     * 가져올 보고서 개수 (기본값: 10)
-     * @minimum 1
-     * @maximum 50
-     * @example 10
-     */
     limit?: number;
-
-    /**
-     * 보고서 타입 (기본값: true - 투자 전략 보고서)
-     * @example true
-     */
     isISReport?: boolean;
   }): Promise<{
     message: string;
     reports: Array<MiraeAssetReport>;
   }> {
     // 동기화 먼저 실행
-    await this.syncReports(input.isISReport ?? true);
+    // await this.syncReports(input.isISReport ?? true);
 
     // JSON 파일에서 보고서 정보 읽기
     const jsonFilePath =
@@ -243,7 +254,7 @@ export class ReportsService {
 
     // JSON에서 마크다운 파일들 가져오기
     const markdownFiles: MiraeAssetReport[] =
-      this.reportAiProvider.getMarkdownFilesFromJson(jsonFilePath);
+      this.fileManager.getMarkdownFilesFromJson(jsonFilePath);
 
     // limit 적용
     const limitedReports: MiraeAssetReport[] = markdownFiles.slice(
@@ -258,18 +269,11 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
+   * 3.1) 특정 "투자 전략" 증권보고서 내용 보기 (유저용)
+   *  @input { title: 보고서 제목 }
    *
-   * 유저가 특정 투자 전략 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
-   *
-   * @param input 보고서 정보
-   * @returns 보고서 내용
    */
   public async getSpecificISReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
     title: string;
   }): Promise<{
     message: string;
@@ -284,18 +288,10 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 산업 분석 증권보고서 내용 보기 (유저용)
-   *
-   * 유저가 특정 산업 분석 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
-   *
-   * @param input 보고서 정보
-   * @returns 보고서 내용
+   * 3.2) 특정 "산업 분석" 증권보고서 내용 보기 (유저용)
+   * @input { title: 보고서 제목 }
    */
   public async getSpecificIAReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
     title: string;
   }): Promise<{
     message: string;
@@ -310,25 +306,10 @@ export class ReportsService {
   }
 
   /**
-   * 3) 특정 투자 전략 증권보고서 내용 보기 (유저용)
-   *
-   * 유저가 특정 보고서를 선택했을 때 해당 보고서의 마크다운 내용을 제공합니다.
-   *
-   * @param input 보고서 정보
-   * @param isISReport true: 투자 전략 카테고리 보고서, false: 산업 분석 카테고리 보고서
-   * @returns 보고서 내용
+   * 호출 금지
    */
   public async getSpecificReportContent(input: {
-    /**
-     * 보고서 제목
-     * @example "주식시장 동향 분석"
-     */
     title: string;
-
-    /**
-     * 보고서 타입 (기본값: true - 투자 전략 보고서)
-     * @example true
-     */
     isISReport?: boolean;
   }): Promise<{
     message: string;
@@ -340,7 +321,7 @@ export class ReportsService {
     error?: string;
   }> {
     // 동기화 먼저 실행
-    await this.syncReports();
+    // await this.syncReports();
 
     try {
       // JSON 파일에서 보고서 정보 읽기
@@ -362,7 +343,7 @@ export class ReportsService {
 
       // JSON에서 마크다운 파일들 가져오기
       const markdownFiles: MiraeAssetReport[] =
-        this.reportAiProvider.getMarkdownFilesFromJson(jsonFilePath);
+        this.fileManager.getMarkdownFilesFromJson(jsonFilePath);
 
       // 제목으로 보고서 찾기
       const targetReport: MiraeAssetReport | undefined = markdownFiles.find(
@@ -414,5 +395,13 @@ export class ReportsService {
         error: error instanceof Error ? error.message : String(error),
       };
     }
+  }
+
+
+  public async triggerPdfConversion() {
+    console.log(`PDF 변환 트리거 실행 '산업 분석'`);
+    const jsonFilePath = "./downloads/reports_IA.json";
+
+    await this.reportConverter.convertReportsFromJson(jsonFilePath, "./downloads/markdown");
   }
 }

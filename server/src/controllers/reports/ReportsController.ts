@@ -1,10 +1,9 @@
-import { Controller, Get, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Post, Query } from "@nestjs/common";
 
 import type {
   KeywordSummaryResult,
   MiraeAssetReport,
 } from "../../models/Reports";
-import { ReportAiProvider } from "../../providers/reports/ReportAiProvider";
 import { ReportsService } from "../../providers/reports/ReportsService";
 
 // API 응답 타입들을 export하여 Nestia가 인식할 수 있도록 함
@@ -22,7 +21,6 @@ export interface SecuritiesReportListRequest {
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
-    private readonly reportAiProvider: ReportAiProvider,
   ) {}
 
   // ===== 요약 관련 API =====
@@ -62,10 +60,7 @@ export class ReportsController {
   async getKeywordSummary(
     @Query("limit") limit?: number,
   ): Promise<KeywordSummaryResult> {
-    return await this.reportAiProvider.generateKeywordSummary(
-      "./downloads/reports.json",
-      limit || 5,
-    );
+    return await this.reportsService.getKeywords();
   }
 
   /**
@@ -80,19 +75,7 @@ export class ReportsController {
     limitedFiles: any[];
     fileContents: any[];
   }> {
-    const options = {
-      contentLengthLimit: contentLengthLimit
-        ? parseInt(contentLengthLimit.toString())
-        : 2000,
-      shouldLimitLength:
-        shouldLimitLength !== undefined ? shouldLimitLength : true,
-    };
-
-    return await this.reportAiProvider.getLatestMarkdownFiles(
-      "./downloads/reports.json",
-      limit || 20,
-      options,
-    );
+    return this.reportsService.getLatestMarkdownFiles();
   }
 
   // ===== 투자 전략 리포트 관련 API =====
@@ -176,10 +159,9 @@ export class ReportsController {
     @Query("limit") limit?: number,
   ): Promise<SecuritiesReportListResponse> {
     const keywordArray = keywords ? keywords.split(",") : undefined;
-    return await this.reportsService.getSecuritiesReportList({
+    return await this.reportsService.getSecuritiesISReportList({
       keywords: keywordArray,
-      limit: limit || 10,
-      isISReport: true, // 기본값: 투자 전략
+      limit: limit || 10
     });
   }
 
@@ -200,5 +182,40 @@ export class ReportsController {
       title: decodeURIComponent(title),
       isISReport: true, // 기본값: 투자 전략
     });
+  }
+
+  // ===== 수동 트리거 API =====
+
+  /**
+   * 수동 트리거 API
+   * AI 리포트를 수동으로 업데이트 합니다.
+   * (관리용 호출 금지)
+   */
+  @Post("update-ai-report")
+  async triggerUpdateAIReports() {
+    await this.reportsService.updateAiReports();
+  }
+
+  /**
+   * 수동 트리거 API
+   * JSON -> mdFIle 변환 파이프라인을 수동으로 실행합니다.
+   * (관리용 호출 금지)
+   */
+  @Post("pdf-conversion")
+  async triggerPdfConversion() {
+    console.log("PDF 변환 수동 트리거");
+    await this.reportsService.triggerPdfConversion();
+  }
+
+  /**
+   * 수동 트리거 API
+   * 미래에셋 보고서 수동 최신화
+   * @param flag 1: 투자 전략 보고서, 2: 산업 분석 보고서
+   * (관리용 호출 금지)
+   */
+  @Post("sync-report/:flag")
+  async triggerMeraeAssetReport(@Param("flag") flag: string) {
+    const isISReport = flag === "1";
+    await this.reportsService.syncReports({ isISReports: isISReport });
   }
 }
