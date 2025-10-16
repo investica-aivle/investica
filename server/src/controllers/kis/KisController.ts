@@ -622,7 +622,7 @@ export class KisController {
     }>;
 
     /**
-     * 계좌 요약 정��
+     * 계좌 요약 정보
      */
     output2: Array<{
       /**
@@ -839,6 +839,35 @@ export class KisController {
         `오류: ${error instanceof Error ? error.message : String(error)}`,
       );
 
+      throw error;
+    }
+  }
+
+  /**
+   * 보유 주식 목록만 별도로 조회합니다.
+   *
+   * @param session 현재 세션 정보
+   * @returns 보유 주식 목록
+   */
+  @TypedRoute.Get("holdings")
+  @UseGuards(SessionGuard)
+  public async getHoldings(@Session() session: ISessionData) {
+    try {
+      this.logger.log(`=== 보유 주식 목록 조회 요청 ===`);
+      const result = await this.kisService.getBalances(session.kisSessionData);
+
+      if (result?.output1) {
+        this.logger.log(`=== 보유 주식 목록 조회 성공 ===`);
+        this.logger.log(`조회된 종목 수: ${result.output1.length}개`);
+        return result.output1;
+      }
+
+      throw new Error("보유 주식 정보를 가져올 수 없습니다.");
+    } catch (error) {
+      this.logger.error(`=== 보유 주식 목록 조회 실패 ===`);
+      this.logger.error(
+        `오류: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }

@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-09-29T14:15:36.388Z",
+  "lastUpdated": "2025-10-14T08:03:20.498Z",
   "reports": [
     {
       "id": "2138803",
@@ -80,7 +80,47 @@
       "author": "",
       "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138506.pdf?attachmentId=2138506",
       "mdFileName": "2138506.md"
+    },
+    {
+      "id": "2138911",
+      "title": "자동차 (비중확대/유지)9월: 양호한 해외/미국, HMG 점유율 11.3%",
+      "date": "2025-10-02",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138911.pdf?attachmentId=2138911",
+      "mdFileName": null
+    },
+    {
+      "id": "2138893",
+      "title": "China AI Vibe딥시크, 엔비디아 CUDA가 아닌 화웨이 소프트웨어에 최적화된 고성능 모델 발표",
+      "date": "2025-10-01",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138893.pdf?attachmentId=2138893",
+      "mdFileName": null
+    },
+    {
+      "id": "2138886",
+      "title": "Energy Bites글로벌 정제설비 업데이트: 연말 정제마진 강세 전망 유지",
+      "date": "2025-10-01",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2138886.pdf?attachmentId=2138886",
+      "mdFileName": null
+    },
+    {
+      "id": "2139051",
+      "title": "통신서비스(비중확대/신규)보여줄게 완전히 달라진 통신",
+      "date": "2025-10-14",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2139051.pdf?attachmentId=2139051",
+      "mdFileName": null
+    },
+    {
+      "id": "2139009",
+      "title": "Energy Bites국제유가 제한적 약세 전망",
+      "date": "2025-10-10",
+      "author": "",
+      "downloadUrl": "https://securities.miraeasset.com/bbs/download/2139009.pdf?attachmentId=2139009",
+      "mdFileName": null
     }
   ],
-  "lastMarkdownUpdate": "2025-09-30T06:53:27.883Z"
+  "lastMarkdownUpdate": "2025-10-07T05:30:03.470Z"
 }

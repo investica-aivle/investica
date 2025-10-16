@@ -133,7 +133,7 @@ export class MyChatController {
       });
 
       agent.on("initialize", async () => {
-        this.logger.log("🤖 AGENT ��기화");
+        this.logger.log("🤖 AGENT 초기화");
       });
       agent.on("select", async (event) => {
         this.logger.log(

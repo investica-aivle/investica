@@ -59,6 +59,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/schedule": "^6.0.1",
     "@nestjs/serve-static": "^5.0.0",
     "@nestjs/swagger": "^11.2.0",
     "@samchon/openapi": "^4.6.0",
@@ -85,6 +86,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@agentica/benchmark": "^0.32.9",
     "@nestia/benchmark": "^7.3.0",
     "@nestia/e2e": "^7.3.0",
     "@nestjs/cli": "^10.0.0",

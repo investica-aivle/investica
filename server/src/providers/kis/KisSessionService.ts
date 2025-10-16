@@ -125,8 +125,18 @@ export class KisSessionService {
    * Retrieve real-time stock price information for a specific company.
    * Provides current price, price change from previous day, change rate, trading volume, etc.
    *
+   * **This function also provides:**
+   * - 52-week high/low prices (52주 최고가/최저가)
+   * - Price limits: upper/lower price limits (상한가/하한가)
+   * - Financial ratios: PER, PBR, EPS, BPS (재무지표)
+   * - Market cap (시가총액)
+   * - Trading volume (거래량)
+   * - Previous day comparison (전일 대비)
+   *
    * > Use this to check current market price before trading stocks.
    * > Real-time data helps you understand accurate market conditions.
+   * > When users ask for "52주 최고가", "PER", "PBR", "EPS", "BPS", "시가총액",
+   * > "상한가", "하한가", "거래량", or "전일 대비", use THIS function, not getStockDailyPrices.
    *
    * @param input Company information to query
    * @returns Stock price information and detailed data
@@ -175,8 +185,16 @@ export class KisSessionService {
    * Retrieve historical stock price data for a specific company in daily/weekly/monthly intervals.
    * Provides time-series data including open, high, low, close prices and trading volume.
    *
-   * > Use this to analyze historical trends and create charts.
-   * > Useful for technical analysis and investment pattern analysis.
+   * > **IMPORTANT**: Use this ONLY for historical price trends, charts, and time-series analysis.
+   * > For single-value queries like "52주 최고가", "PER", "현재가", use getStockPrice instead.
+   * > This function returns MULTIPLE data points (array), not a single current value.
+   * > 
+   * > Use this when users ask for:
+   * > - "최근 일주일 추이" (recent week trend)
+   * > - "월봉 차트" (monthly chart)
+   * > - "작년부터 올해까지 그래프" (year-to-date graph)
+   * > - Any request involving "추이", "차트", "그래프", "흐름"
+   * >
    * > ALWAYS present results in markdown table format using | (pipes) and - (hyphens).
    * > Table structure: | 날짜 | 시가 | 고가 | 저가 | 종가 | 거래량 |
    * > Example: |2024-01-15|75,000원|78,000원|74,500원|77,500원|1,234,567주|
@@ -290,3 +308,4 @@ export class KisSessionService {
     return await this.kisService.getKospiPrices(this.sessionData, input);
   }
 }
+

@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@agentica/core':
-        specifier: ^0.30.5
-        version: 0.30.8(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))
+        specifier: ^0.32.9
+        version: 0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))
       '@agentica/rpc':
-        specifier: ^0.30.5
-        version: 0.30.8(@agentica/core@0.30.8(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2)))(typescript@5.9.2)
+        specifier: ^0.32.9
+        version: 0.32.9(@agentica/core@0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2)))(typescript@5.9.2)
       '@google/generative-ai':
         specifier: ^0.24.1
         version: 0.24.1
@@ -117,6 +117,9 @@ importers:
         specifier: ^9.0.0
         version: 9.0.1
     devDependencies:
+      '@agentica/benchmark':
+        specifier: ^0.32.9
+        version: 0.32.9(@agentica/core@0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2)))(typescript@5.9.2)
       '@nestia/benchmark':
         specifier: ^7.3.0
         version: 7.3.3
@@ -225,17 +228,26 @@ importers:
 
 packages:
 
-  '@agentica/core@0.30.8':
-    resolution: {integrity: sha512-/nJ2BLXFNQ5IPEacusVJb8KyZEgZV1cCBwYrKpblgkPvlEjQyBZHpIqTsn27+t11tCHvdrCv3IBwabuxCeiSwg==}
+  '@agentica/benchmark@0.32.9':
+    resolution: {integrity: sha512-+GZ5Ow7pUTkjcql4CmX0/npTXmR4cVqjy6z7QYJt9dqIJpAquirG4LgxQe+6Px7/dk+O2bRg+FwmLISvkdFjpA==}
     peerDependencies:
-      '@samchon/openapi': ^4.6.0
-      openai: ^5.2.0
-      typia: ^9.6.0
+      '@agentica/core': ^0.32.9
 
-  '@agentica/rpc@0.30.8':
-    resolution: {integrity: sha512-bS5XpRSEt9rS6FjQC9uPIlDLDKlxUqrOVvzD2ZVuqi7Sk+u6PGD2Mzyjlja6xFjNHJiJn4Z0gcaztHzHUBGZVg==}
+  '@agentica/core@0.32.9':
+    resolution: {integrity: sha512-ifsLVSKS+ZKlxoBfYlN40k21MB4jkL/U7YL4PWBJMf15aBDEt5zw8XmXVZ3tKwg7IwBhs1X5Hjn8fJR7nbukvA==}
     peerDependencies:
-      '@agentica/core': ^0.30.8
+      '@modelcontextprotocol/sdk': ^1.12.0
+      '@samchon/openapi': ^4.7.1
+      openai: ^5.2.0
+      typia: ^9.7.0
+    peerDependenciesMeta:
+      '@modelcontextprotocol/sdk':
+        optional: true
+
+  '@agentica/rpc@0.32.9':
+    resolution: {integrity: sha512-m+9uojAt0mhg5rdtfaWXFSAuHtiIpncPvByFKN30vXWVQ8zb5rLgfglIiYqFSXQaaeuUxdFHYLahQcoI6H58Rw==}
+    peerDependencies:
+      '@agentica/core': ^0.32.9
 
   '@angular-devkit/core@17.3.11':
     resolution: {integrity: sha512-vTNDYNsLIWpYk2I969LMQFH29GTsLzxNk/0cLw5q56ARF0v5sIWfHYwGTS88jdDqIpuuettcSczbxeA7EuAmqQ==}
@@ -1770,6 +1782,9 @@ packages:
   es-errors@1.3.0:
     resolution: {integrity: sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==}
     engines: {node: '>= 0.4'}
+
+  es-jsonkit@0.1.6:
+    resolution: {integrity: sha512-fQ1ufr6cQcpBliliEU4eOW2ZFdaWbfu1wpgizt1Z2F+WI2akLJDI2a203S0MEtEYQCXNxMD8Y070bABMF5dTaQ==}
 
   es-module-lexer@1.7.0:
     resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
@@ -3466,17 +3481,31 @@ packages:
 
 snapshots:
 
-  '@agentica/core@0.30.8(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))':
+  '@agentica/benchmark@0.32.9(@agentica/core@0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2)))(typescript@5.9.2)':
     dependencies:
+      '@agentica/core': 0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))
       '@samchon/openapi': 4.7.1
       openai: 5.10.2
       tstl: 3.0.0
       typia: 9.7.1(typescript@5.9.2)
       uuid: 11.1.0
+    transitivePeerDependencies:
+      - typescript
+      - ws
+      - zod
 
-  '@agentica/rpc@0.30.8(@agentica/core@0.30.8(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2)))(typescript@5.9.2)':
+  '@agentica/core@0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))':
     dependencies:
-      '@agentica/core': 0.30.8(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))
+      '@samchon/openapi': 4.7.1
+      es-jsonkit: 0.1.6
+      openai: 5.10.2
+      tstl: 3.0.0
+      typia: 9.7.1(typescript@5.9.2)
+      uuid: 11.1.0
+
+  '@agentica/rpc@0.32.9(@agentica/core@0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2)))(typescript@5.9.2)':
+    dependencies:
+      '@agentica/core': 0.32.9(@samchon/openapi@4.7.1)(openai@5.10.2)(typia@9.7.1(typescript@5.9.2))
       '@samchon/openapi': 4.7.1
       typia: 9.7.1(typescript@5.9.2)
     transitivePeerDependencies:
@@ -5184,6 +5213,8 @@ snapshots:
   es-define-property@1.0.1: {}
 
   es-errors@1.3.0: {}
+
+  es-jsonkit@0.1.6: {}
 
   es-module-lexer@1.7.0: {}
 

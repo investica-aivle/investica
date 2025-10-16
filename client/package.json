@@ -14,6 +14,7 @@
     "@agentica/rpc": "^0.30.5",
     "@reduxjs/toolkit": "^2.8.2",
     "@tailwindcss/vite": "^4.1.11",
+    "@tanstack/react-query": "^5.90.3",
     "@types/prismjs": "^1.26.5",
     "@types/react-redux": "^7.1.34",
     "axios": "^1.11.0",
