@@ -14,4 +14,4 @@ _mydocs/
 .DS_Store
 server/src/api/
 server/packages/api/
-/server/docs/benchmarks/
+server/docs/benchmarks/

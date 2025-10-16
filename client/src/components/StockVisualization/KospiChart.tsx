@@ -54,8 +54,8 @@ const KospiChart = () => {
       
       // 최신 데이터로 현재가 정보 업데이트
       if (chartData.length > 0) {
-        const latest = chartData[0]; // 가장 최신 데이터 (배열의 첫 번째)
-        const previous = chartData.length > 1 ? chartData[1] : latest; // 이전 데이터
+        const latest = chartData[chartData.length-1]; // 가장 최신 데이터 (배열의 첫 번째)
+        const previous = chartData.length > 1 ? chartData[chartData.length-2] : latest; // 이전 데이터
         
         setCurrentPrice(latest.kospi.toLocaleString());
         
