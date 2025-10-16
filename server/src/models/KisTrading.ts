@@ -517,6 +517,36 @@ export namespace IKisPortfolio {
   }
 
   /**
+   * 보유 주식 목록 조회 응답
+   */
+  export interface IBalanceResponse {
+    /**
+     * 응답 코드 (0: 성공)
+     */
+    rt_cd: string;
+
+    /**
+     * 응답 메시지 코드
+     */
+    msg_cd: string;
+
+    /**
+     * 응답 메시지
+     */
+    msg1: string;
+
+    /**
+     * 보유 주식 목록
+     */
+    output1: IStockHolding[];
+
+    /**
+     * 요약 메시지
+     */
+    message: string;
+  }
+
+  /**
    * 포트폴리오 전체 응답
    */
   export interface IPortfolioResponse {

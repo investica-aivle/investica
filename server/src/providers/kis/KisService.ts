@@ -377,6 +377,22 @@ export class KisService {
   }
 
   /**
+   * 보유 잔고 (주식) 조회
+   * @param sessionData KIS 세션 데이터
+   * @returns 보유 주식 목록과 계좌 정보
+   */
+  public async getBalances(
+    sessionData: IKisSessionData,
+  ): Promise<IKisPortfolio.IBalanceResponse> {
+    try {
+      const response = await this.balanceProvider.getStockBalances(sessionData);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Notify client about stock focus change
    */
   private async notifyStockFocus(stockName: string, stockCode: string, listener?: IClientEvents): Promise<void> {
